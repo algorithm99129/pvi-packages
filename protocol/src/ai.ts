@@ -47,6 +47,8 @@ export interface ImageModelOption {
 
 export interface EditorAiConfig {
   openaiApiKey?: string;
+  /** HTTP(S) proxy for OpenAI requests, e.g. http://user:pass@host:port */
+  openaiProxyUrl?: string;
   textModel: string;
   imageModel: string;
   imageSize: ImageSizeOption;
@@ -215,6 +217,8 @@ export interface AiGenerateImageResult {
 export interface AiConfigPublic {
   hasApiKey: boolean;
   apiKeyPreview?: string;
+  hasProxy: boolean;
+  proxyPreview?: string;
   textModel: string;
   imageModel: string;
   imageSize: EditorAiConfig['imageSize'];
@@ -275,4 +279,38 @@ export function applyOutputExtension(path: string, format: ImageOutputFormat): s
   const ext = extensionForOutputFormat(format);
   const base = path.replace(/\.(png|jpe?g|webp)$/i, '');
   return `${base}.${ext}`;
+}
+
+export function normalizeOpenAiProxyUrl(raw?: string): string | undefined {
+  const trimmed = raw?.trim();
+  if (!trimmed) return undefined;
+
+  let candidate = trimmed;
+  if (!/^[a-z]+:\/\//i.test(candidate)) {
+    candidate = `http://${candidate}`;
+  }
+
+  const parsed = new URL(candidate);
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error('Proxy URL must use http:// or https://');
+  }
+  if (!parsed.hostname) {
+    throw new Error('Proxy URL must include a host');
+  }
+
+  return parsed.toString().replace(/\/$/, '');
+}
+
+export function maskProxyUrl(url?: string): string | undefined {
+  if (!url?.trim()) return undefined;
+  try {
+    const parsed = new URL(url);
+    const host = `${parsed.hostname}${parsed.port ? `:${parsed.port}` : ''}`;
+    if (parsed.username) {
+      return `${parsed.protocol}//••••@${host}`;
+    }
+    return `${parsed.protocol}//${host}`;
+  } catch {
+    return '••••';
+  }
 }
