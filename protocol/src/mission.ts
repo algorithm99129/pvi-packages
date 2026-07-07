@@ -58,7 +58,7 @@ export interface ServerMissionExport {
   rewards: MissionDefinition['rewards'];
 }
 
-/** Client — display strings + map reference */
+/** Client — display strings + map reference + offline battle scenario */
 export interface ClientMissionExport {
   id: string;
   chapterId: string;
@@ -66,5 +66,7 @@ export interface ClientMissionExport {
   displayName: string;
   description: string;
   mapTemplateId: string;
+  presetDefense?: MissionDefinition['presetDefense'];
+  waves?: MissionDefinition['waves'];
   starCriteria: MissionDefinition['starCriteria'];
 }

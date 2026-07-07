@@ -26,6 +26,8 @@ export interface GameDataBundle {
   maps: MapTemplateDefinition[];
 }
 
+export * from './merge';
+
 export function toServerPlant(plant: PlantDefinition): ServerPlantExport {
   return {
     id: plant.id,
@@ -91,6 +93,8 @@ export function toClientMission(mission: MissionDefinition): ClientMissionExport
     displayName: mission.displayName,
     description: mission.description,
     mapTemplateId: mission.mapTemplateId,
+    presetDefense: mission.presetDefense,
+    waves: mission.waves,
     starCriteria: mission.starCriteria,
   };
 }
@@ -112,6 +116,7 @@ export function toClientMap(map: MapTemplateDefinition): ClientMapExport {
     tier: map.tier,
     laneCount: map.laneCount,
     lanes: map.lanes,
+    corePosition: map.server.corePosition,
     client: map.client,
   };
 }

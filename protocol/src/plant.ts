@@ -63,7 +63,7 @@ export interface ServerPlantExport {
   server: PlantServerConfig;
 }
 
-/** Exported to Cocos client — includes asset paths */
+/** Exported to Unity client — includes asset paths */
 export interface ClientPlantExport {
   id: EntityId;
   displayName: string;

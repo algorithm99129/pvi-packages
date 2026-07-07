@@ -39,5 +39,6 @@ export interface ClientMapExport {
   tier: number;
   laneCount: number;
   lanes: MapLaneConfig[];
+  corePosition: MapTemplateDefinition['server']['corePosition'];
   client: MapTemplateDefinition['client'];
 }
