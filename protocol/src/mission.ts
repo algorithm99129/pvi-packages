@@ -35,6 +35,10 @@ export interface MissionDefinition {
     delayMs: number;
     spawns: Array<{ insectId: EntityId; lane: number; level?: number }>;
   }>;
+  /** Starting sun for offline PVZ-style battles */
+  startingSun?: number;
+  /** Plant ids available in the seed chooser */
+  availablePlants?: EntityId[];
   starCriteria: {
     oneStar: MissionObjective;
     twoStar: MissionObjective;
@@ -68,5 +72,7 @@ export interface ClientMissionExport {
   mapTemplateId: string;
   presetDefense?: MissionDefinition['presetDefense'];
   waves?: MissionDefinition['waves'];
+  startingSun?: number;
+  availablePlants?: EntityId[];
   starCriteria: MissionDefinition['starCriteria'];
 }

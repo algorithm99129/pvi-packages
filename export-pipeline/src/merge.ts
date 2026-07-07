@@ -67,6 +67,8 @@ export function mergeMission(client: ClientMissionExport, server?: ServerMission
     mapTemplateId: server?.mapTemplateId ?? client.mapTemplateId,
     presetDefense: server?.presetDefense ?? client.presetDefense,
     waves: server?.waves ?? client.waves,
+    startingSun: client.startingSun,
+    availablePlants: client.availablePlants,
     starCriteria: server?.starCriteria ?? client.starCriteria,
     rewards: server?.rewards ?? { firstClear: {} },
   };

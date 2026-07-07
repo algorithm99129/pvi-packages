@@ -4,7 +4,7 @@ export interface EditorWorkspaceConfig {
   name: string;
   /** Absolute or repo-relative path to Unity project root */
   clientDirectory: string;
-  /** Absolute or repo-relative path to server runtime balance JSON */
+  /** Absolute or repo-relative path to NestJS API project root (balance JSON under data/game/) */
   serverDirectory: string;
   lastOpenedAt?: string;
 }
@@ -13,5 +13,5 @@ export const DEFAULT_WORKSPACE: EditorWorkspaceConfig = {
   version: 1,
   name: 'Garden Siege',
   clientDirectory: 'apps/client',
-  serverDirectory: 'apps/api/data/game',
+  serverDirectory: 'apps/api',
 };

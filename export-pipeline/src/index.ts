@@ -95,6 +95,8 @@ export function toClientMission(mission: MissionDefinition): ClientMissionExport
     mapTemplateId: mission.mapTemplateId,
     presetDefense: mission.presetDefense,
     waves: mission.waves,
+    startingSun: mission.startingSun,
+    availablePlants: mission.availablePlants,
     starCriteria: mission.starCriteria,
   };
 }
