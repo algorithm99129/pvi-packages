@@ -85,7 +85,7 @@ export interface AiGenerateImageRequest {
   entityId?: string;
   prompt: string;
   assetType?: 'icon' | 'sheet';
-  /** When set, saves directly to this Resources-relative path (e.g. game/branding/loading-screen.png) */
+  /** When set, saves directly to this Resources-relative path (e.g. custom/branding/loading-screen.png) */
   targetRelativePath?: string;
   /** Per-request overrides from the generation modal */
   imageModel?: string;

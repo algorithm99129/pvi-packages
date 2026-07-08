@@ -4,7 +4,7 @@ export interface EditorWorkspaceConfig {
   name: string;
   /** Absolute or repo-relative path to Unity project root */
   clientDirectory: string;
-  /** Absolute or repo-relative path to NestJS API project root (balance JSON under data/game/) */
+  /** Absolute or repo-relative path to NestJS API project root (balance JSON under Resources/) */
   serverDirectory: string;
   lastOpenedAt?: string;
 }

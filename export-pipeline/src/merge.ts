@@ -14,6 +14,7 @@ import type {
   ServerMissionExport,
   ServerPlantExport,
 } from '@garden-siege/protocol';
+import { defaultInsectClientAssets, defaultPlantClientAssets } from '@garden-siege/protocol';
 import type { GameDataBundle } from './index';
 
 const DEFAULT_PLANT_SERVER: PlantServerConfig = {
@@ -122,11 +123,7 @@ export function mergeGameDataBundle(parts: {
             role: server.role,
             rarity: server.rarity,
             description: '',
-            client: {
-              spriteSheet: `game/plants/${server.id}/sheet.gif`,
-              icon: `game/plants/${server.id}/icon.png`,
-              animationPrefix: server.id,
-            },
+            client: defaultPlantClientAssets('Peashooter'),
             stats: server.stats,
           },
           server,
@@ -146,12 +143,7 @@ export function mergeGameDataBundle(parts: {
             archetype: server.archetype,
             rarity: server.rarity,
             description: '',
-            client: {
-              spriteSheet: `game/insects/${server.id}/sheet.gif`,
-              icon: `game/insects/${server.id}/icon.png`,
-              animationPrefix: server.id,
-              marchAnimation: 'walk',
-            },
+            client: defaultInsectClientAssets('Zombie'),
             stats: server.stats,
           },
           server,
@@ -193,7 +185,8 @@ export function mergeGameDataBundle(parts: {
             lanes: server.lanes,
             corePosition: server.server.corePosition,
             client: {
-              backgroundImage: `game/maps/${server.id}/bg.png`,
+              backgroundImage: 'Screen/Background/sprites/animations/Background/0',
+              backgroundType: 0,
             },
           },
           server,

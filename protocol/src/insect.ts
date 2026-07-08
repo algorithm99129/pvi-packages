@@ -32,13 +32,19 @@ export interface InsectStatCurve {
   };
 }
 
+import type { GfxRectCrop, GfxAnimationSlot } from './gfx';
+
 export interface InsectClientAssets {
-  spriteSheet: string;
-  icon: string;
-  animationPrefix: string;
-  marchAnimation: string;
-  attackEffect?: string;
-  deathEffect?: string;
+  /** PascalCase unit folder under Insects/, e.g. NormalZombie */
+  folder: string;
+  /** Walk animation name (= subfolder under sprites/animations/) */
+  walk: string;
+  attack?: string;
+  die?: string;
+  extraAnimations?: GfxAnimationSlot[];
+  cropX?: number;
+  cropWidth?: number;
+  crop?: GfxRectCrop;
   scale?: number;
 }
 

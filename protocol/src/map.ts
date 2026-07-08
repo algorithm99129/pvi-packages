@@ -11,9 +11,11 @@ export interface MapTemplateDefinition {
   tier: number;
   laneCount: number;
   lanes: MapLaneConfig[];
-  /** Client background / tileset */
+  /** Client background / tileset — paths relative to Assets/Resources/gfx */
   client: {
     backgroundImage: string;
+    /** Background variant index (0=day, 1=night, …) */
+    backgroundType?: number;
     tileset?: string;
     parallaxLayers?: string[];
   };

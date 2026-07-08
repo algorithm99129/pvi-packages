@@ -17,7 +17,7 @@
     "lint": "echo \"no lint configured\""
   },
   "dependencies": {
-    "@garden-siege/protocol": "workspace:*"
+    "@garden-siege/protocol": "*"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

@@ -4,6 +4,8 @@ export type EntityId = string;
 /** Balance data version — bump when server/client exports change */
 export const BALANCE_VERSION = '0.1.0';
 
+export * from './resources';
+export * from './gfx';
 export * from './plant';
 export * from './insect';
 export * from './mission';

@@ -38,12 +38,19 @@ export interface PlantStatCurve {
   };
 }
 
+import type { GfxRectCrop, GfxAnimationSlot } from './gfx';
+
 export interface PlantClientAssets {
-  spriteSheet: string;
-  icon: string;
-  animationPrefix: string;
-  attackEffect?: string;
-  deathEffect?: string;
+  /** PascalCase unit folder under Plants/, e.g. CherryBomb */
+  folder: string;
+  /** Idle animation name (= subfolder under sprites/animations/) */
+  idle: string;
+  attack?: string;
+  die?: string;
+  /** Bullet folder under Bullets/, e.g. PeaNormal */
+  bullet?: string;
+  extraAnimations?: GfxAnimationSlot[];
+  crop?: GfxRectCrop;
   scale?: number;
 }
 
