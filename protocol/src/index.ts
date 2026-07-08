@@ -15,4 +15,5 @@ export * from './map';
 export * from './workspace';
 export * from './export-paths';
 export * from './ai';
+export * from './gallery';
 export * from './branding';

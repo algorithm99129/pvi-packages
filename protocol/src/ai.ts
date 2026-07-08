@@ -30,6 +30,8 @@ export type ImageQualityOption = GptImageQuality | Dalle3Quality;
 
 export type ImageModelFamily = 'gpt-image' | 'dall-e-3' | 'dall-e-2';
 
+export type AiImageGenerationMode = 'generate' | 'edit' | 'inpaint';
+
 export interface ImageModelOption {
   id: string;
   label: string;
@@ -40,6 +42,8 @@ export interface ImageModelOption {
   supportsOutputFormat: boolean;
   supportsQuality: boolean;
   supportsStyle: boolean;
+  /** Supports /v1/images/edits (reference refine & inpainting) */
+  supportsEdits: boolean;
   qualityOptions: readonly ImageQualityOption[];
   defaultQuality: ImageQualityOption;
   badges?: readonly string[];
@@ -87,6 +91,15 @@ export interface AiGenerateImageRequest {
   assetType?: 'icon' | 'sheet';
   /** When set, saves directly to this Resources-relative path (e.g. custom/branding/loading-screen.png) */
   targetRelativePath?: string;
+  /** Save output under repo-root Gallery/ instead of client Resources */
+  saveToGallery?: boolean;
+  mode?: AiImageGenerationMode;
+  /** Local file path for edit / inpaint reference */
+  referenceAbsolutePath?: string;
+  /** Gallery image id for edit / inpaint reference */
+  referenceGalleryId?: string;
+  /** PNG data URL — transparent regions are inpainted (alpha 0 = edit area) */
+  maskDataUrl?: string;
   /** Per-request overrides from the generation modal */
   imageModel?: string;
   imageSize?: ImageSizeOption;
@@ -94,6 +107,15 @@ export interface AiGenerateImageRequest {
   imageOutputFormat?: ImageOutputFormat;
   imageQuality?: ImageQualityOption;
   imageStyle?: DalleStyle;
+}
+
+export interface AiEnhanceImagePromptRequest {
+  prompt: string;
+  context?: string;
+}
+
+export interface AiEnhanceImagePromptResult {
+  prompt: string;
 }
 
 export const IMAGE_MODEL_OPTIONS: readonly ImageModelOption[] = [
@@ -116,6 +138,7 @@ export const IMAGE_MODEL_OPTIONS: readonly ImageModelOption[] = [
     supportsOutputFormat: true,
     supportsQuality: true,
     supportsStyle: false,
+    supportsEdits: false,
     qualityOptions: ['low', 'medium', 'high', 'auto'],
     defaultQuality: 'auto',
     badges: ['Latest', '4K'],
@@ -130,6 +153,7 @@ export const IMAGE_MODEL_OPTIONS: readonly ImageModelOption[] = [
     supportsOutputFormat: true,
     supportsQuality: true,
     supportsStyle: false,
+    supportsEdits: true,
     qualityOptions: ['low', 'medium', 'high', 'auto'],
     defaultQuality: 'auto',
     badges: ['Transparent', 'Recommended'],
@@ -144,6 +168,7 @@ export const IMAGE_MODEL_OPTIONS: readonly ImageModelOption[] = [
     supportsOutputFormat: true,
     supportsQuality: true,
     supportsStyle: false,
+    supportsEdits: true,
     qualityOptions: ['low', 'medium', 'high', 'auto'],
     defaultQuality: 'auto',
     badges: ['Transparent'],
@@ -158,6 +183,7 @@ export const IMAGE_MODEL_OPTIONS: readonly ImageModelOption[] = [
     supportsOutputFormat: true,
     supportsQuality: true,
     supportsStyle: false,
+    supportsEdits: true,
     qualityOptions: ['low', 'medium', 'high', 'auto'],
     defaultQuality: 'low',
     badges: ['Fast', 'Transparent'],
@@ -172,6 +198,7 @@ export const IMAGE_MODEL_OPTIONS: readonly ImageModelOption[] = [
     supportsOutputFormat: true,
     supportsQuality: true,
     supportsStyle: false,
+    supportsEdits: true,
     qualityOptions: ['low', 'medium', 'high', 'auto'],
     defaultQuality: 'auto',
     badges: ['Alias'],
@@ -186,6 +213,7 @@ export const IMAGE_MODEL_OPTIONS: readonly ImageModelOption[] = [
     supportsOutputFormat: false,
     supportsQuality: true,
     supportsStyle: true,
+    supportsEdits: false,
     qualityOptions: ['standard', 'hd'],
     defaultQuality: 'standard',
     badges: ['Legacy'],
@@ -200,6 +228,7 @@ export const IMAGE_MODEL_OPTIONS: readonly ImageModelOption[] = [
     supportsOutputFormat: false,
     supportsQuality: false,
     supportsStyle: false,
+    supportsEdits: true,
     qualityOptions: [],
     defaultQuality: 'standard',
     badges: ['Legacy', 'Budget'],
@@ -212,6 +241,7 @@ export interface AiGenerateImageResult {
   entityId: string;
   savedPath: string;
   relativePath: string;
+  galleryId?: string;
 }
 
 export interface AiConfigPublic {
@@ -230,6 +260,27 @@ export interface AiConfigPublic {
 
 export function getImageModelOption(modelId: string): ImageModelOption {
   return IMAGE_MODEL_OPTIONS.find((entry) => entry.id === modelId) ?? IMAGE_MODEL_OPTIONS[1];
+}
+
+export function imageModelsForMode(mode: AiImageGenerationMode): readonly ImageModelOption[] {
+  if (mode === 'generate') return IMAGE_MODEL_OPTIONS;
+  return IMAGE_MODEL_OPTIONS.filter((entry) => entry.supportsEdits);
+}
+
+export function defaultImageModelForMode(mode: AiImageGenerationMode): string {
+  const options = imageModelsForMode(mode);
+  const preferred = options.find((entry) => entry.id === 'gpt-image-1.5') ?? options[0];
+  return preferred?.id ?? DEFAULT_AI_CONFIG.imageModel;
+}
+
+export function coerceImageModelForMode(modelId: string, mode: AiImageGenerationMode): string {
+  const options = imageModelsForMode(mode);
+  return options.some((entry) => entry.id === modelId) ? modelId : defaultImageModelForMode(mode);
+}
+
+export function editSizeForModel(modelId: string, size: ImageSizeOption): string {
+  const resolved = coerceImageSize(modelId, size);
+  return resolved === 'auto' ? '1024x1024' : resolved;
 }
 
 export function sizesForImageModel(modelId: string): readonly ImageSizeOption[] {
