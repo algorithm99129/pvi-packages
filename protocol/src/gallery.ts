@@ -1,6 +1,9 @@
 import type { AiImageGenerationMode } from './ai';
 
-export const GALLERY_FOLDER_NAME = 'Gallery';
+export const DEFAULT_GALLERY_DIRECTORY = 'gallery';
+
+/** @deprecated Use DEFAULT_GALLERY_DIRECTORY */
+export const GALLERY_FOLDER_NAME = DEFAULT_GALLERY_DIRECTORY;
 
 export interface GalleryImageMetadata {
   id: string;

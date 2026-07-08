@@ -1,4 +1,6 @@
 /** Electron editor persisted workspace — client & server directory paths */
+import { DEFAULT_GALLERY_DIRECTORY } from './gallery';
+
 export interface EditorWorkspaceConfig {
   version: 1;
   name: string;
@@ -6,6 +8,8 @@ export interface EditorWorkspaceConfig {
   clientDirectory: string;
   /** Absolute or repo-relative path to NestJS API project root (balance JSON under Resources/) */
   serverDirectory: string;
+  /** Absolute or repo-relative folder for AI-generated images (default: gallery at repo root) */
+  galleryDirectory?: string;
   lastOpenedAt?: string;
 }
 
@@ -14,4 +18,5 @@ export const DEFAULT_WORKSPACE: EditorWorkspaceConfig = {
   name: 'Garden Siege',
   clientDirectory: 'apps/client',
   serverDirectory: 'apps/api',
+  galleryDirectory: DEFAULT_GALLERY_DIRECTORY,
 };
