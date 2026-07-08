@@ -42,6 +42,7 @@ export function mergePlant(client: ClientPlantExport, server?: ServerPlantExport
     stats: server?.stats ?? client.stats,
     client: client.client,
     server: server?.server ?? DEFAULT_PLANT_SERVER,
+    behavior: client.behavior,
   };
 }
 

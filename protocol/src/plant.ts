@@ -23,6 +23,8 @@ export interface PlantDefinition {
   client: PlantClientAssets;
   /** Server-only rules */
   server: PlantServerConfig;
+  /** Optional combat behavior overrides (see resolvePlantBehavior). */
+  behavior?: PlantBehaviorConfig;
 }
 
 export interface PlantStatCurve {
@@ -39,6 +41,7 @@ export interface PlantStatCurve {
 }
 
 import type { GfxRectCrop, GfxAnimationSlot } from './gfx';
+import type { PlantBehaviorConfig } from './plant-behavior';
 
 /** Normalized spawn point on the plant sprite (0–1 from bottom-left of displayed bounds). */
 export interface PlantBulletSpawnPoint {
@@ -51,7 +54,7 @@ export interface PlantBulletSpawnPoint {
 export const DEFAULT_PLANT_BULLET_SPAWN: PlantBulletSpawnPoint = { x: 0.75, y: 0.5 };
 
 export function plantSupportsBullets(role: PlantRole): boolean {
-  return role === 'shooter' || role === 'splash';
+  return role === 'shooter';
 }
 
 export function resolveBulletSpawn(client: PlantClientAssets): PlantBulletSpawnPoint {
@@ -73,6 +76,10 @@ export interface PlantClientAssets {
   folder: string;
   /** Idle animation name (= subfolder under sprites/animations/) */
   idle: string;
+  /** Emerging / arming animation (PotatoMineInit). */
+  init?: string;
+  /** Aim wind-up animation (SquashAim). */
+  aim?: string;
   attack?: string;
   die?: string;
   /** Bullet folder under Bullets/, e.g. PeaNormal */
@@ -81,6 +88,9 @@ export interface PlantClientAssets {
   bulletSpawn?: PlantBulletSpawnPoint;
   extraAnimations?: GfxAnimationSlot[];
   crop?: GfxRectCrop;
+  /** Fraction of grid cell width (0–1). Default 0.8. Height follows sprite aspect ratio. */
+  cellWidthFill?: number;
+  /** Extra multiplier applied after cell-width fitting. */
   scale?: number;
 }
 
@@ -110,4 +120,5 @@ export interface ClientPlantExport {
   client: PlantClientAssets;
   /** Combat stats needed for local sim preview in editor */
   stats: PlantStatCurve;
+  behavior?: PlantBehaviorConfig;
 }

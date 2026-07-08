@@ -45,6 +45,9 @@ export interface InsectClientAssets {
   cropX?: number;
   cropWidth?: number;
   crop?: GfxRectCrop;
+  /** Fraction of grid cell width (0–1). Default 0.9. Height follows sprite aspect ratio. */
+  cellWidthFill?: number;
+  /** Extra multiplier applied after cell-width fitting. */
   scale?: number;
 }
 

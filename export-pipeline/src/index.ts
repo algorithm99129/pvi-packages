@@ -47,6 +47,7 @@ export function toClientPlant(plant: PlantDefinition): ClientPlantExport {
     description: plant.description,
     client: plant.client,
     stats: plant.stats,
+    behavior: plant.behavior,
   };
 }
 
