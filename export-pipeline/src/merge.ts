@@ -59,13 +59,17 @@ export function mergeInsect(client: ClientInsectExport, server?: ServerInsectExp
 }
 
 export function mergeMission(client: ClientMissionExport, server?: ServerMissionExport): MissionDefinition {
+  const rules = server?.rules ?? client.rules;
+  const side = client.side ?? server?.side ?? (rules?.mode === 'i_zombie' ? 'attacker' : 'defender');
   return {
     id: client.id,
     chapterId: client.chapterId,
     order: client.order,
     displayName: client.displayName,
     description: client.description,
+    side,
     mapTemplateId: server?.mapTemplateId ?? client.mapTemplateId,
+    rules,
     presetDefense: server?.presetDefense ?? client.presetDefense,
     waves: server?.waves ?? client.waves,
     startingSun: client.startingSun,
@@ -76,11 +80,17 @@ export function mergeMission(client: ClientMissionExport, server?: ServerMission
 }
 
 export function mergeMap(client: ClientMapExport, server?: ServerMapExport): MapTemplateDefinition {
+  const legacyColumns = Math.max(
+    ...(client.lanes ?? []).map((lane) => lane.plantColumns ?? 0),
+    ...(server?.lanes ?? []).map((lane) => lane.plantColumns ?? 0),
+    0,
+  );
   return {
     id: client.id,
     displayName: client.displayName,
     tier: server?.tier ?? client.tier,
     laneCount: server?.laneCount ?? client.laneCount,
+    gridColumns: client.gridColumns ?? server?.gridColumns ?? (legacyColumns > 0 ? legacyColumns : 9),
     lanes: server?.lanes ?? client.lanes,
     client: client.client,
     server: server?.server ?? {
@@ -163,6 +173,7 @@ export function mergeGameDataBundle(parts: {
             order: server.order,
             displayName: server.id,
             description: '',
+            side: server.side ?? 'defender',
             mapTemplateId: server.mapTemplateId,
             starCriteria: server.starCriteria,
           },
@@ -182,6 +193,7 @@ export function mergeGameDataBundle(parts: {
             displayName: server.id,
             tier: server.tier,
             laneCount: server.laneCount,
+            gridColumns: server.gridColumns ?? 9,
             lanes: server.lanes,
             corePosition: server.server.corePosition,
             client: {

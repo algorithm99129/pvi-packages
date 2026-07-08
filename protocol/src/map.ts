@@ -1,7 +1,59 @@
+export type MapCellType = 'ground' | 'water' | 'bridge';
+
+export const MAP_CELL_TYPES: MapCellType[] = ['ground', 'water', 'bridge'];
+
 export interface MapLaneConfig {
   laneIndex: number;
-  plantColumns: number;
-  terrain?: 'ground' | 'water' | 'bridge';
+  /** @deprecated Use per-cell `gridLayout.cellTypes` */
+  terrain?: MapCellType;
+  /** @deprecated Use map-level `gridColumns` */
+  plantColumns?: number;
+}
+
+/** Per-grid-cell terrain / surface type. Omitted cells default to `ground`. */
+export interface MapGridCellType {
+  lane: number;
+  column: number;
+  type: MapCellType;
+}
+
+/** @deprecated Legacy cell-center anchors — migrated to `corners` on load */
+export interface MapGridCellAnchor {
+  lane: number;
+  column: number;
+  x: number;
+  y: number;
+}
+
+/** Grid mesh intersection (row 0..laneCount, col 0..maxPlantColumns). */
+export interface MapGridCorner {
+  row: number;
+  col: number;
+  x: number;
+  y: number;
+}
+
+/** Per-lane seed (PVZ brain) — lane is lost if insects reach it. */
+export interface MapLaneSeedAnchor {
+  lane: number;
+  x: number;
+  y: number;
+}
+
+/**
+ * Flexible lane grid authored against a fixed reference resolution (default 800×600).
+ * Corner points form the cell mesh; seeds mark per-lane loss conditions.
+ * Plant/insect column zones are defined on missions / game rules, not here.
+ */
+export interface MapGridLayout {
+  referenceWidth: number;
+  referenceHeight: number;
+  corners: MapGridCorner[];
+  seeds?: MapLaneSeedAnchor[];
+  /** Per-cell surface type (ground, water, bridge). Missing cells = ground. */
+  cellTypes?: MapGridCellType[];
+  /** @deprecated Migrated to `corners` */
+  cells?: MapGridCellAnchor[];
 }
 
 /** Village / story map template */
@@ -10,14 +62,18 @@ export interface MapTemplateDefinition {
   displayName: string;
   tier: number;
   laneCount: number;
+  /** Total cell columns per lane on the grid mesh (corner lines = gridColumns + 1). */
+  gridColumns: number;
   lanes: MapLaneConfig[];
-  /** Client background / tileset — paths relative to Assets/Resources/gfx */
+  /** Client background / tileset — paths relative to Assets/Resources */
   client: {
     backgroundImage: string;
     /** Background variant index (0=day, 1=night, …) */
     backgroundType?: number;
     tileset?: string;
     parallaxLayers?: string[];
+    /** Optional per-cell anchors aligned to the background art */
+    gridLayout?: MapGridLayout;
   };
   /** Server topology only */
   server: {
@@ -31,6 +87,7 @@ export interface ServerMapExport {
   id: string;
   tier: number;
   laneCount: number;
+  gridColumns: number;
   lanes: MapLaneConfig[];
   server: MapTemplateDefinition['server'];
 }
@@ -40,6 +97,7 @@ export interface ClientMapExport {
   displayName: string;
   tier: number;
   laneCount: number;
+  gridColumns: number;
   lanes: MapLaneConfig[];
   corePosition: MapTemplateDefinition['server']['corePosition'];
   client: MapTemplateDefinition['client'];

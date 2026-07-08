@@ -40,6 +40,34 @@ export interface PlantStatCurve {
 
 import type { GfxRectCrop, GfxAnimationSlot } from './gfx';
 
+/** Normalized spawn point on the plant sprite (0–1 from bottom-left of displayed bounds). */
+export interface PlantBulletSpawnPoint {
+  /** 0 = left edge, 1 = right edge of plant width */
+  x: number;
+  /** 0 = bottom edge, 1 = top edge of plant height */
+  y: number;
+}
+
+export const DEFAULT_PLANT_BULLET_SPAWN: PlantBulletSpawnPoint = { x: 0.75, y: 0.5 };
+
+export function plantSupportsBullets(role: PlantRole): boolean {
+  return role === 'shooter' || role === 'splash';
+}
+
+export function resolveBulletSpawn(client: PlantClientAssets): PlantBulletSpawnPoint {
+  const spawn = client.bulletSpawn;
+  if (!spawn) return DEFAULT_PLANT_BULLET_SPAWN;
+  return {
+    x: clampSpawnCoord(spawn.x, DEFAULT_PLANT_BULLET_SPAWN.x),
+    y: clampSpawnCoord(spawn.y, DEFAULT_PLANT_BULLET_SPAWN.y),
+  };
+}
+
+function clampSpawnCoord(value: number, fallback: number): number {
+  if (!Number.isFinite(value)) return fallback;
+  return Math.min(1, Math.max(0, value));
+}
+
 export interface PlantClientAssets {
   /** PascalCase unit folder under Plants/, e.g. CherryBomb */
   folder: string;
@@ -49,6 +77,8 @@ export interface PlantClientAssets {
   die?: string;
   /** Bullet folder under Bullets/, e.g. PeaNormal */
   bullet?: string;
+  /** Where projectiles emit from, as % of plant width/height (bottom-left origin). */
+  bulletSpawn?: PlantBulletSpawnPoint;
   extraAnimations?: GfxAnimationSlot[];
   crop?: GfxRectCrop;
   scale?: number;
