@@ -34,6 +34,7 @@ export interface MapGridCorner {
 }
 
 /** Per-lane seed (PVZ brain) — lane is lost if insects reach it. */
+/** @deprecated Not authored in the map editor; Unity uses default mower anchors. */
 export interface MapLaneSeedAnchor {
   lane: number;
   x: number;
@@ -41,14 +42,18 @@ export interface MapLaneSeedAnchor {
 }
 
 /**
- * Flexible lane grid authored against a fixed reference resolution (default 800×600).
- * Corner points form the cell mesh; seeds mark per-lane loss conditions.
+ * Lane grid authored in normalized coordinates (0–1) relative to the map background image.
+ * `referenceWidth` × `referenceHeight` must match the background image pixel size.
+ * Corner points form the cell mesh.
  * Plant/insect column zones are defined on missions / game rules, not here.
  */
 export interface MapGridLayout {
+  /** Background image width in pixels — all normalized X coords are relative to this. */
   referenceWidth: number;
+  /** Background image height in pixels — all normalized Y coords are relative to this. */
   referenceHeight: number;
   corners: MapGridCorner[];
+  /** @deprecated Not authored in the map editor */
   seeds?: MapLaneSeedAnchor[];
   /** Per-cell surface type (ground, water, bridge). Missing cells = ground. */
   cellTypes?: MapGridCellType[];
