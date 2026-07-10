@@ -48,6 +48,26 @@ export interface GfxClipPreviewInfo {
   prefix?: string;
 }
 
+/** Spine skeleton preview metadata for a unit animations folder. */
+export interface GfxSpinePreviewInfo {
+  kind: 'spine';
+  skeletonPath: string;
+  atlasPath: string;
+  texturePath: string;
+  animationNames: string[];
+  spineVersion?: string;
+  /** Skeleton bounds from JSON (for preview aspect ratio). */
+  boundsWidth: number;
+  boundsHeight: number;
+}
+
+/** Spine assets loaded for editor preview (skeleton JSON + atlas text + texture data URL). */
+export interface GfxSpineAssets {
+  skeletonJson: Record<string, unknown>;
+  atlasText: string;
+  textureDataUrl: string;
+}
+
 /** Parent folder grouping clips for one unit, e.g. Plants/Peashooter or Plants/Chomper */
 export function getGfxEntityFolder(clip: GfxClipEntry): string {
   const parts = clip.directory.split('/').filter(Boolean);
@@ -78,7 +98,7 @@ export function relatedGfxClipKeys(baseKey: string, clips: Record<string, GfxCli
 }
 
 export interface CreateGfxClipRequest {
-  /** Animation name — subfolder under sprites/animations/ */
+  /** Animation name — subfolder under sprites/animations/ (Bullets only) */
   animationName: string;
   /** Resource category: Plants | Insects | Bullets */
   category: 'Plants' | 'Insects' | 'Bullets';

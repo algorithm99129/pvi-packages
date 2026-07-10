@@ -37,7 +37,7 @@ import type { GfxRectCrop, GfxAnimationSlot } from './gfx';
 export interface InsectClientAssets {
   /** PascalCase unit folder under Insects/, e.g. NormalZombie */
   folder: string;
-  /** Walk animation name (= subfolder under sprites/animations/) */
+  /** Walk Spine animation name (from skeleton.json) */
   walk: string;
   attack?: string;
   die?: string;

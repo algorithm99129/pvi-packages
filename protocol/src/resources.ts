@@ -27,10 +27,32 @@ export function unitAttributePath(category: ResourceCategory, folderName: string
   return `${unitResourceDir(category, folderName)}/attribute.json`;
 }
 
-export function unitCardResourcePath(category: ResourceCategory, folderName: string): string {
-  return `${unitResourceDir(category, folderName)}/sprites/card`;
+/** Seed-packet / list icon at unit root. */
+export function unitAvatarPath(category: ResourceCategory, folderName: string): string {
+  return `${unitResourceDir(category, folderName)}/avatar`;
 }
 
+/** @deprecated Use unitAvatarPath */
+export function unitCardResourcePath(category: ResourceCategory, folderName: string): string {
+  return unitAvatarPath(category, folderName);
+}
+
+/** Basename for Spine skeleton files at unit root. */
+export const SPINE_SKELETON_BASENAME = 'skeleton';
+
+export function unitSpineSkeletonJsonPath(category: ResourceCategory, folderName: string): string {
+  return `${unitResourceDir(category, folderName)}/${SPINE_SKELETON_BASENAME}.json`;
+}
+
+export function unitSpineAtlasPath(category: ResourceCategory, folderName: string): string {
+  return `${unitResourceDir(category, folderName)}/${SPINE_SKELETON_BASENAME}.atlas`;
+}
+
+export function unitSpineTexturePath(category: ResourceCategory, folderName: string): string {
+  return `${unitResourceDir(category, folderName)}/${SPINE_SKELETON_BASENAME}.png`;
+}
+
+/** Legacy frame-clip animations (Bullets, Screen). */
 export function unitAnimationsRoot(category: ResourceCategory, folderName: string): string {
   return `${unitResourceDir(category, folderName)}/sprites/animations`;
 }

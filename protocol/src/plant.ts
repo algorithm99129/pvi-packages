@@ -74,7 +74,7 @@ function clampSpawnCoord(value: number, fallback: number): number {
 export interface PlantClientAssets {
   /** PascalCase unit folder under Plants/, e.g. CherryBomb */
   folder: string;
-  /** Idle animation name (= subfolder under sprites/animations/) */
+  /** Idle Spine animation name (from skeleton.json) */
   idle: string;
   /** Emerging / arming animation (PotatoMineInit). */
   init?: string;
