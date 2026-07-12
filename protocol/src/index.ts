@@ -17,3 +17,4 @@ export * from './export-paths';
 export * from './ai';
 export * from './gallery';
 export * from './branding';
+export * from './user';
