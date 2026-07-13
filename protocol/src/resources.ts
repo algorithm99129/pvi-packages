@@ -45,7 +45,16 @@ export function unitSpineSkeletonJsonPath(category: ResourceCategory, folderName
 }
 
 export function unitSpineAtlasPath(category: ResourceCategory, folderName: string): string {
-  return `${unitResourceDir(category, folderName)}/${SPINE_SKELETON_BASENAME}.atlas`;
+  return `${unitResourceDir(category, folderName)}/${SPINE_SKELETON_BASENAME}.atlas.txt`;
+}
+
+/** Atlas file candidates — Unity Spine exports use `.atlas.txt`; legacy `.atlas` is supported. */
+export function unitSpineAtlasCandidates(category: ResourceCategory, folderName: string): string[] {
+  const dir = unitResourceDir(category, folderName);
+  return [
+    `${dir}/${SPINE_SKELETON_BASENAME}.atlas.txt`,
+    `${dir}/${SPINE_SKELETON_BASENAME}.atlas`,
+  ];
 }
 
 export function unitSpineTexturePath(category: ResourceCategory, folderName: string): string {

@@ -1,4 +1,5 @@
 import type { EntityId } from './index';
+import type { WalletResources } from './wallet';
 
 export type PlantRole =
   | 'shooter'
@@ -23,8 +24,31 @@ export interface PlantDefinition {
   client: PlantClientAssets;
   /** Server-only rules */
   server: PlantServerConfig;
+  /** Leveling and upgrade costs (formula-driven). */
+  upgrade?: PlantUpgradeConfig;
   /** Optional combat behavior overrides (see resolvePlantBehavior). */
   behavior?: PlantBehaviorConfig;
+}
+
+/** Per-plant upgrade tuning — costs evaluated via logic.json formulas. */
+export interface PlantUpgradeConfig {
+  maxLevel: number;
+  /** Formula id for stat at level (inputs: base, perLevel, level). */
+  statFormulaId: string;
+  /** Formula id for next-level upgrade cost per resource (inputs: base, level). */
+  costFormulaId: string;
+  baseUpgradeCost: WalletResources;
+}
+
+export const DEFAULT_PLANT_UPGRADE: PlantUpgradeConfig = {
+  maxLevel: 20,
+  statFormulaId: 'plant_stat_at_level',
+  costFormulaId: 'plant_upgrade_resource_cost',
+  baseUpgradeCost: { coin: 100, gem: 0, leaf: 2 },
+};
+
+export function resolvePlantUpgrade(plant: Pick<PlantDefinition, 'upgrade'>): PlantUpgradeConfig {
+  return plant.upgrade ?? DEFAULT_PLANT_UPGRADE;
 }
 
 export interface PlantStatCurve {
@@ -108,6 +132,7 @@ export interface ServerPlantExport {
   rarity: PlantDefinition['rarity'];
   stats: PlantStatCurve;
   server: PlantServerConfig;
+  upgrade?: PlantUpgradeConfig;
 }
 
 /** Exported to Unity client — includes asset paths */

@@ -33,6 +33,7 @@ export const SERVER_EXPORT_PATHS = {
   missions: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.missions}/missions.json`,
   maps: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.maps}/maps.json`,
   balanceVersion: `${SERVER_RESOURCES_DIR}/balance-version.json`,
+  logic: `${SERVER_RESOURCES_DIR}/Systems/logic.json`,
 } as const;
 
 /** @deprecated Use SERVER_RESOURCES_DIR */

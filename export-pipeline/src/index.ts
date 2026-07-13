@@ -35,6 +35,7 @@ export function toServerPlant(plant: PlantDefinition): ServerPlantExport {
     rarity: plant.rarity,
     stats: plant.stats,
     server: plant.server,
+    upgrade: plant.upgrade ?? undefined,
   };
 }
 
