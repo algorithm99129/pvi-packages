@@ -18,6 +18,7 @@ export * from './ai';
 export * from './gallery';
 export * from './branding';
 export * from './user';
+export * from './auth';
 export * from './wallet';
 export * from './formula';
 export * from './player';

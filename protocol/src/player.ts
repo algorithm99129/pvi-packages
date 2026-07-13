@@ -1,8 +1,14 @@
 import type { EntityId } from './index';
+import type { ServerMapExport } from './map';
+import type { ServerMissionExport } from './mission';
 import type { PlantRole } from './plant';
+import type { UserProfile } from './user';
 import type { WalletResources } from './wallet';
 
 export type MissionProgressStatus = 'locked' | 'available' | 'completed';
+
+/** Difficulty the player chose when completing a mission. */
+export type MissionDifficulty = 'easy' | 'medium' | 'hard';
 
 export interface UserPlantProgress {
   plantId: EntityId;
@@ -14,13 +20,26 @@ export interface UserMissionProgress {
   missionId: EntityId;
   status: MissionProgressStatus;
   stars: number;
+  /** Difficulty cleared on the most recent successful run. */
+  triedLevel?: MissionDifficulty;
   completedAt?: string;
+}
+
+/** Request body for POST /api/player/missions/complete */
+export interface MissionCompleteRequest {
+  missionId: EntityId;
+  triedLevel: MissionDifficulty;
 }
 
 export interface UserGameState {
   wallet: WalletResources;
   plants: UserPlantProgress[];
   missions: UserMissionProgress[];
+}
+
+/** Authenticated player profile — account info plus wallet. */
+export interface PlayerProfile extends UserProfile {
+  wallet: WalletResources;
 }
 
 /** Plants unlocked when a new account is created (chapter 1 seed chooser). */
@@ -53,4 +72,10 @@ export interface UserPlantView {
 export interface UpgradePlantResult {
   plant: UserPlantView;
   wallet: WalletResources;
+}
+
+/** Full mission definition plus the authenticated player's progress. */
+export interface MissionDetailView extends ServerMissionExport {
+  progress: UserMissionProgress;
+  map: ServerMapExport;
 }
