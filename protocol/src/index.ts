@@ -22,3 +22,4 @@ export * from './auth';
 export * from './wallet';
 export * from './formula';
 export * from './player';
+export * from './garden';
