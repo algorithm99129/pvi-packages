@@ -35,14 +35,14 @@ function indexById<T extends { id: string }>(items: T[]): Map<string, T> {
 export function mergePlant(client: ClientPlantExport, server?: ServerPlantExport): PlantDefinition {
   return {
     id: client.id,
-    displayName: client.displayName,
-    description: client.description,
+    displayName: server?.displayName ?? client.displayName,
+    description: server?.description ?? client.description,
     role: server?.role ?? client.role,
     rarity: server?.rarity ?? client.rarity,
     stats: server?.stats ?? client.stats,
-    client: client.client,
+    client: server?.client ?? client.client,
     server: server?.server ?? DEFAULT_PLANT_SERVER,
-    behavior: client.behavior,
+    behavior: server?.behavior ?? client.behavior,
     upgrade: server?.upgrade,
   };
 }
@@ -50,12 +50,12 @@ export function mergePlant(client: ClientPlantExport, server?: ServerPlantExport
 export function mergeInsect(client: ClientInsectExport, server?: ServerInsectExport): InsectDefinition {
   return {
     id: client.id,
-    displayName: client.displayName,
-    description: client.description,
+    displayName: server?.displayName ?? client.displayName,
+    description: server?.description ?? client.description,
     archetype: server?.archetype ?? client.archetype,
     rarity: server?.rarity ?? client.rarity,
     stats: server?.stats ?? client.stats,
-    client: client.client,
+    client: server?.client ?? client.client,
     server: server?.server ?? DEFAULT_INSECT_SERVER,
   };
 }

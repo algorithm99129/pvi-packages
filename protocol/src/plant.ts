@@ -125,11 +125,15 @@ export interface PlantServerConfig {
   validTerrain: Array<'ground' | 'water' | 'pot'>;
 }
 
-/** Exported to server — no graphics */
+/** Exported to server / API — balance + display/gfx refs for runtime catalog */
 export interface ServerPlantExport {
   id: EntityId;
+  displayName: string;
+  description: string;
   role: PlantRole;
   rarity: PlantDefinition['rarity'];
+  client: PlantClientAssets;
+  behavior?: PlantBehaviorConfig;
   stats: PlantStatCurve;
   server: PlantServerConfig;
   upgrade?: PlantUpgradeConfig;

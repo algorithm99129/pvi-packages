@@ -31,8 +31,12 @@ export * from './merge';
 export function toServerPlant(plant: PlantDefinition): ServerPlantExport {
   return {
     id: plant.id,
+    displayName: plant.displayName,
+    description: plant.description,
     role: plant.role,
     rarity: plant.rarity,
+    client: plant.client,
+    behavior: plant.behavior,
     stats: plant.stats,
     server: plant.server,
     upgrade: plant.upgrade ?? undefined,
@@ -55,8 +59,11 @@ export function toClientPlant(plant: PlantDefinition): ClientPlantExport {
 export function toServerInsect(insect: InsectDefinition): ServerInsectExport {
   return {
     id: insect.id,
+    displayName: insect.displayName,
+    description: insect.description,
     archetype: insect.archetype,
     rarity: insect.rarity,
+    client: insect.client,
     stats: insect.stats,
     server: insect.server,
   };

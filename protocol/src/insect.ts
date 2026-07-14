@@ -60,8 +60,11 @@ export interface InsectServerConfig {
 
 export interface ServerInsectExport {
   id: EntityId;
+  displayName: string;
+  description: string;
   archetype: InsectArchetype;
   rarity: InsectDefinition['rarity'];
+  client: InsectClientAssets;
   stats: InsectStatCurve;
   server: InsectServerConfig;
 }
