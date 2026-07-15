@@ -214,7 +214,7 @@ export interface PlantClientAssets {
   aim?: string;
   attack?: string;
   die?: string;
-  /** Bullet folder under Bullets/, e.g. PeaNormal */
+  /** Bullet folder under Bullets/, e.g. Pea */
   bullet?: string;
   /**
    * @deprecated Prefer `bulletShots`. Kept in sync with `bulletShots[0].spawn` for older readers.

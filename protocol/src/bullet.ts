@@ -8,22 +8,22 @@ export type BulletHitMode = 'single' | 'area';
 /** Static sprite vs Spine skeleton for a bullet status. */
 export type BulletStatusKind = 'image' | 'spine';
 
+export type BulletStatusName = 'flying' | 'explode';
+
 export interface BulletStatusPresentation {
   kind: BulletStatusKind;
   /**
-   * image → Resources path without extension, e.g. Bullets/PeaNormal/flying
-   * spine → animation name inside that status’s unit folder skeleton
+   * image → ignored at resolve time; always Bullets/{folder}/flying|explode
+   * spine → animation name inside Bullets/{folder}/ skeleton
    */
-  asset: string;
+  asset?: string;
 }
 
 export interface BulletClientAssets {
-  /** PascalCase unit folder under Bullets/, e.g. PeaNormal */
+  /** PascalCase unit folder under Bullets/, e.g. Pea */
   folder: string;
   flying: BulletStatusPresentation;
   explode?: BulletStatusPresentation;
-  /** When explode art lives in another Bullets/ unit (legacy PeaNormalExplode). */
-  explodeFolder?: string;
 }
 
 export interface BulletStats {
@@ -52,18 +52,30 @@ export const DEFAULT_BULLET_AREA_RADIUS_CELLS = 1;
 export const DEFAULT_BULLET_SPEED = 3.5;
 export const DEFAULT_BULLET_DAMAGE_PER_LEVEL = 2;
 
-export function defaultFlyingImagePath(folder: string): string {
-  return `Bullets/${folder}/flying`;
+/** Fixed image basename for each status under Bullets/{folder}/. */
+export function bulletStatusImageName(status: BulletStatusName): string {
+  return status;
 }
 
+/** Resources path without extension: Bullets/{folder}/flying|explode */
+export function bulletStatusImagePath(folder: string, status: BulletStatusName): string {
+  return `Bullets/${folder}/${bulletStatusImageName(status)}`;
+}
+
+/** @deprecated Use bulletStatusImagePath(folder, 'flying') */
+export function defaultFlyingImagePath(folder: string): string {
+  return bulletStatusImagePath(folder, 'flying');
+}
+
+/** @deprecated Use bulletStatusImagePath(folder, 'explode') */
 export function defaultExplodeImagePath(folder: string): string {
-  return `Bullets/${folder}/explode`;
+  return bulletStatusImagePath(folder, 'explode');
 }
 
 export function defaultBulletClientAssets(folder: string): BulletClientAssets {
   return {
     folder,
-    flying: { kind: 'image', asset: defaultFlyingImagePath(folder) },
+    flying: { kind: 'image' },
   };
 }
 
@@ -74,6 +86,24 @@ export function defaultBulletStats(): BulletStats {
     speed: DEFAULT_BULLET_SPEED,
     hitMode: 'single',
   };
+}
+
+/** Resolved presentation: image path or spine anim name under the bullet folder. */
+export function resolveBulletStatusAsset(
+  client: Pick<BulletClientAssets, 'folder'>,
+  status: BulletStatusName,
+  presentation: BulletStatusPresentation | undefined,
+): { kind: BulletStatusKind; asset: string } | undefined {
+  if (!presentation) return undefined;
+  const kind: BulletStatusKind = presentation.kind === 'spine' ? 'spine' : 'image';
+  if (kind === 'image') {
+    return { kind: 'image', asset: bulletStatusImagePath(client.folder, status) };
+  }
+  const asset =
+    typeof presentation.asset === 'string' && presentation.asset.length > 0
+      ? presentation.asset
+      : client.folder;
+  return { kind: 'spine', asset };
 }
 
 /** Create a new combat bullet with sensible defaults. */
@@ -87,7 +117,7 @@ export function createBulletDefinition(
   const folder =
     partial?.client?.folder ??
     partial?.folder ??
-    (partial?.displayName ? toPascal(partial.displayName) : 'PeaNormal');
+    (partial?.displayName ? toPascal(partial.displayName) : 'Pea');
   const id = partial?.id && partial.id.length > 0 ? partial.id : toSnake(folder);
   const client = normalizeBulletClient(
     (partial?.client ?? { ...defaultBulletClientAssets(folder) }) as Partial<BulletClientAssets> &
@@ -116,17 +146,26 @@ export function normalizeBulletDefinition(raw: unknown): BulletDefinition | null
 
   const nestedClient =
     row.client && typeof row.client === 'object' ? (row.client as Record<string, unknown>) : null;
-  const folder =
+  let folder =
     (typeof nestedClient?.folder === 'string' && nestedClient.folder) ||
     (typeof row.folder === 'string' && row.folder) ||
     toPascal(id);
+  // Legacy rename: PeaNormal → Pea
+  if (folder === 'PeaNormal') folder = 'Pea';
 
   const statsRaw =
     row.stats && typeof row.stats === 'object' ? (row.stats as Partial<BulletStats>) : undefined;
 
+  const resolvedId = id === 'pea_normal' ? 'pea' : id;
+
   return createBulletDefinition({
-    id,
-    displayName: typeof row.displayName === 'string' ? row.displayName : folder,
+    id: resolvedId,
+    displayName:
+      typeof row.displayName === 'string'
+        ? row.displayName === 'PeaNormal'
+          ? 'Pea'
+          : row.displayName
+        : folder,
     description: typeof row.description === 'string' ? row.description : undefined,
     client: {
       folder,
@@ -149,9 +188,10 @@ export function resolveBulletByRef(
   ref: string | undefined | null,
 ): BulletDefinition | undefined {
   if (!ref) return undefined;
-  const exact = bullets.find((b) => b.client.folder === ref || b.id === ref);
+  const normalized = ref === 'PeaNormal' || ref === 'pea_normal' ? 'Pea' : ref;
+  const exact = bullets.find((b) => b.client.folder === normalized || b.id === normalized);
   if (exact) return exact;
-  const lower = ref.toLowerCase();
+  const lower = normalized.toLowerCase();
   return bullets.find(
     (b) => b.client.folder.toLowerCase() === lower || b.id.toLowerCase() === lower,
   );
@@ -187,12 +227,11 @@ export function resolvePlantDamageBase(
   return resolvePlantDamageCurveInputs(plant, bullets).base;
 }
 
-/** Unit folder used for a status (explode may live in explodeFolder). */
+/** @deprecated Always the primary bullet folder (flying + explode share it). */
 export function bulletStatusUnitFolder(
   client: BulletClientAssets,
-  status: 'flying' | 'explode',
+  _status: BulletStatusName,
 ): string {
-  if (status === 'explode' && client.explodeFolder) return client.explodeFolder;
   return client.folder;
 }
 
@@ -202,6 +241,7 @@ type LegacyBulletClientFields = {
   animKind?: string;
   explodeAnimKind?: string;
   explodeFlying?: string;
+  explodeFolder?: string;
   /** Legacy flat string flying (clip / idle name). */
   flying?: string | BulletStatusPresentation;
   explode?: string | BulletStatusPresentation;
@@ -211,83 +251,68 @@ function normalizeBulletClient(
   client: Partial<BulletClientAssets> & LegacyBulletClientFields,
   fallbackFolder: string,
 ): BulletClientAssets {
-  const folder = client.folder && client.folder.length > 0 ? client.folder : fallbackFolder;
-  const explodeFolder =
-    typeof client.explodeFolder === 'string' && client.explodeFolder.length > 0
-      ? client.explodeFolder
-      : client.animLayout === 'split'
-        ? `${folder}Explode`
-        : undefined;
+  let folder = client.folder && client.folder.length > 0 ? client.folder : fallbackFolder;
+  if (folder === 'PeaNormal') folder = 'Pea';
 
   const flying = normalizeStatusPresentation(client.flying, {
+    status: 'flying',
+    folder,
     legacyKind: client.animKind,
-    imageDefault: defaultFlyingImagePath(folder),
-    spineFallbackName: folder,
   });
 
   const explodeRaw =
     client.explode ??
     (typeof client.explodeFlying === 'string' ? client.explodeFlying : undefined);
-  const explodeUnit = explodeFolder ?? folder;
+  const hadLegacySplit =
+    client.animLayout === 'split' ||
+    (typeof client.explodeFolder === 'string' && client.explodeFolder.length > 0);
+
   const explode =
     explodeRaw !== undefined
       ? normalizeStatusPresentation(explodeRaw, {
+          status: 'explode',
+          folder,
           legacyKind: client.explodeAnimKind ?? client.animKind,
-          imageDefault: defaultExplodeImagePath(explodeUnit),
-          spineFallbackName: typeof explodeRaw === 'string' ? explodeRaw : explodeUnit,
         })
-      : client.animLayout === 'split' || explodeFolder
-        ? {
-            kind: legacyKindToStatus(client.explodeAnimKind ?? client.animKind),
-            asset:
-              legacyKindToStatus(client.explodeAnimKind ?? client.animKind) === 'spine'
-                ? (typeof client.explodeFlying === 'string' && client.explodeFlying) || explodeUnit
-                : defaultExplodeImagePath(explodeUnit),
-          }
+      : hadLegacySplit
+        ? normalizeStatusPresentation(undefined, {
+            status: 'explode',
+            folder,
+            legacyKind: client.explodeAnimKind ?? client.animKind,
+          })
         : undefined;
 
   const next: BulletClientAssets = { folder, flying };
   if (explode) next.explode = explode;
-  if (explodeFolder) next.explodeFolder = explodeFolder;
   return next;
 }
 
 function normalizeStatusPresentation(
   value: string | BulletStatusPresentation | undefined,
   opts: {
+    status: BulletStatusName;
+    folder: string;
     legacyKind?: string;
-    imageDefault: string;
-    spineFallbackName: string;
   },
 ): BulletStatusPresentation {
-  if (value && typeof value === 'object' && 'kind' in value && 'asset' in value) {
+  if (value && typeof value === 'object' && 'kind' in value) {
     const kind: BulletStatusKind = value.kind === 'spine' ? 'spine' : 'image';
+    if (kind === 'image') return { kind: 'image' };
     const asset =
-      typeof value.asset === 'string' && value.asset.length > 0
-        ? value.asset
-        : kind === 'spine'
-          ? opts.spineFallbackName
-          : opts.imageDefault;
-    return { kind, asset };
+      typeof value.asset === 'string' && value.asset.length > 0 ? value.asset : opts.folder;
+    return { kind: 'spine', asset };
   }
 
   const kind = legacyKindToStatus(opts.legacyKind);
-  if (typeof value === 'string' && value.length > 0) {
-    if (kind === 'spine') return { kind: 'spine', asset: value };
-    // Legacy frames clip name → conventional image path (not the clip folder name).
-    if (value.includes('/')) return { kind: 'image', asset: value };
-    return { kind: 'image', asset: opts.imageDefault };
+  if (kind === 'image') return { kind: 'image' };
+  if (typeof value === 'string' && value.length > 0 && !value.includes('/')) {
+    return { kind: 'spine', asset: value };
   }
-
-  return {
-    kind,
-    asset: kind === 'spine' ? opts.spineFallbackName : opts.imageDefault,
-  };
+  return { kind: 'spine', asset: opts.folder };
 }
 
 function legacyKindToStatus(kind?: string): BulletStatusKind {
   if (kind === 'spine') return 'spine';
-  // frames | image | missing → image
   return 'image';
 }
 

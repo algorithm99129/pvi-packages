@@ -40,14 +40,15 @@ function indexById<T extends { id: string }>(items: T[]): Map<string, T> {
 }
 
 export function mergeBullet(client: ClientBulletExport, server?: ServerBulletExport): BulletDefinition {
+  // Prefer client presentation/combat when both sides exist — editor writes client first.
   const merged = normalizeBulletDefinition({
-    ...client,
     ...server,
+    ...client,
     id: client.id || server?.id,
-    displayName: server?.displayName ?? client.displayName,
-    description: server?.description ?? client.description,
-    client: server?.client ?? client.client,
-    stats: server?.stats ?? client.stats,
+    displayName: client.displayName ?? server?.displayName,
+    description: client.description ?? server?.description,
+    client: client.client ?? server?.client,
+    stats: client.stats ?? server?.stats,
   });
   if (!merged) {
     throw new Error(`Invalid bullet definition: ${client.id ?? server?.id}`);
