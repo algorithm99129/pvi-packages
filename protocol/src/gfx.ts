@@ -107,6 +107,18 @@ export interface CreateGfxClipRequest {
   frameFilePaths: string[];
 }
 
+/** Import Spine skeleton trio into a unit folder root as skeleton.json / .atlas.txt / .png. */
+export interface ImportGfxSpineRequest {
+  category: 'Plants' | 'Insects' | 'Bullets';
+  unitFolder: string;
+  /** Absolute path to spine *.json */
+  skeletonJsonPath: string;
+  /** Absolute path to *.atlas or *.atlas.txt */
+  atlasPath: string;
+  /** Absolute path to atlas texture (usually *.png) */
+  texturePath: string;
+}
+
 /** @deprecated Legacy manifest-based clip directory */
 export function animationClipDirectory(entityFolder: string, animationName: string): string {
   const entity = entityFolder.replace(/\\/g, '/').replace(/\/$/, '');

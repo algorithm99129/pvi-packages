@@ -1,4 +1,6 @@
 import type {
+  BulletDefinition,
+  ClientBulletExport,
   ClientInsectExport,
   ClientMapExport,
   ClientMissionExport,
@@ -9,12 +11,17 @@ import type {
   MissionDefinition,
   PlantDefinition,
   PlantServerConfig,
+  ServerBulletExport,
   ServerInsectExport,
   ServerMapExport,
   ServerMissionExport,
   ServerPlantExport,
 } from '@garden-siege/protocol';
-import { defaultInsectClientAssets, defaultPlantClientAssets } from '@garden-siege/protocol';
+import {
+  defaultInsectClientAssets,
+  defaultPlantClientAssets,
+  normalizeBulletDefinition,
+} from '@garden-siege/protocol';
 import type { GameDataBundle } from './index';
 
 const DEFAULT_PLANT_SERVER: PlantServerConfig = {
@@ -30,6 +37,22 @@ const DEFAULT_INSECT_SERVER: InsectServerConfig = {
 
 function indexById<T extends { id: string }>(items: T[]): Map<string, T> {
   return new Map(items.filter((item) => item.id).map((item) => [item.id, item]));
+}
+
+export function mergeBullet(client: ClientBulletExport, server?: ServerBulletExport): BulletDefinition {
+  const merged = normalizeBulletDefinition({
+    ...client,
+    ...server,
+    id: client.id || server?.id,
+    displayName: server?.displayName ?? client.displayName,
+    description: server?.description ?? client.description,
+    client: server?.client ?? client.client,
+    stats: server?.stats ?? client.stats,
+  });
+  if (!merged) {
+    throw new Error(`Invalid bullet definition: ${client.id ?? server?.id}`);
+  }
+  return merged;
 }
 
 export function mergePlant(client: ClientPlantExport, server?: ServerPlantExport): PlantDefinition {
@@ -108,6 +131,8 @@ export function mergeGameDataBundle(parts: {
   serverPlants: ServerPlantExport[];
   clientInsects: ClientInsectExport[];
   serverInsects: ServerInsectExport[];
+  clientBullets?: ClientBulletExport[];
+  serverBullets?: ServerBulletExport[];
   clientMissions: ClientMissionExport[];
   serverMissions: ServerMissionExport[];
   clientMaps: ClientMapExport[];
@@ -115,11 +140,13 @@ export function mergeGameDataBundle(parts: {
 }): GameDataBundle {
   const serverPlants = indexById(parts.serverPlants);
   const serverInsects = indexById(parts.serverInsects);
+  const serverBullets = indexById(parts.serverBullets ?? []);
   const serverMissions = indexById(parts.serverMissions);
   const serverMaps = indexById(parts.serverMaps);
 
   const clientPlantIds = new Set(parts.clientPlants.map((p) => p.id));
   const clientInsectIds = new Set(parts.clientInsects.map((p) => p.id));
+  const clientBulletIds = new Set((parts.clientBullets ?? []).map((p) => p.id));
   const clientMissionIds = new Set(parts.clientMissions.map((p) => p.id));
   const clientMapIds = new Set(parts.clientMaps.map((p) => p.id));
 
@@ -161,6 +188,19 @@ export function mergeGameDataBundle(parts: {
           server,
         ),
       ),
+  ];
+
+  const clientBullets = (parts.clientBullets ?? [])
+    .map((raw) => normalizeBulletDefinition(raw))
+    .filter((b): b is BulletDefinition => Boolean(b));
+  const serverOnlyBullets = (parts.serverBullets ?? [])
+    .filter((server) => !clientBulletIds.has(server.id))
+    .map((raw) => normalizeBulletDefinition(raw))
+    .filter((b): b is BulletDefinition => Boolean(b));
+
+  const bullets = [
+    ...clientBullets.map((client) => mergeBullet(client, serverBullets.get(client.id))),
+    ...serverOnlyBullets,
   ];
 
   const missions = [
@@ -208,5 +248,5 @@ export function mergeGameDataBundle(parts: {
       ),
   ];
 
-  return { plants, insects, missions, maps };
+  return { plants, insects, bullets, missions, maps };
 }

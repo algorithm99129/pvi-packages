@@ -9,7 +9,10 @@ import type {
   PlantUpgradeConfig,
 } from './plant';
 
-/** Combat stats after formula evaluation (server-authoritative). */
+/**
+ * Combat stats after formula evaluation (server-authoritative).
+ * For shooters, `damage` is derived from the referenced bullet's damage curve.
+ */
 export interface ResolvedPlantCombatStats {
   health: number;
   damage: number;

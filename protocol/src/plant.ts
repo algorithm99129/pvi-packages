@@ -53,12 +53,17 @@ export function resolvePlantUpgrade(plant: Pick<PlantDefinition, 'upgrade'>): Pl
 
 export interface PlantStatCurve {
   baseHealth: number;
+  /**
+   * Contact / explode / melee damage for non-shooters.
+   * Shooters inherit damage from the referenced bullet at resolve time — this field is ignored then.
+   */
   baseDamage: number;
   attackIntervalMs: number;
   range: number;
   /** level → multiplier or milestone overrides */
   levelScaling: {
     healthPerLevel: number;
+    /** Used for non-shooters; shooters use bullet.stats.damagePerLevel. */
     damagePerLevel: number;
     milestones?: Record<number, { trait?: string; bonusDamage?: number; pierce?: number }>;
   };
@@ -67,7 +72,7 @@ export interface PlantStatCurve {
 import type { GfxRectCrop, GfxAnimationSlot } from './gfx';
 import type { PlantBehaviorConfig } from './plant-behavior';
 
-/** Normalized spawn point on the plant sprite (0–1 from bottom-left of displayed bounds). */
+/** Normalized point on the plant sprite (0–1 from bottom-left of displayed bounds). */
 export interface PlantBulletSpawnPoint {
   /** 0 = left edge, 1 = right edge of plant width */
   x: number;
@@ -75,23 +80,127 @@ export interface PlantBulletSpawnPoint {
   y: number;
 }
 
+/** How a projectile leaves the plant. */
+export type BulletTrajectory = 'linear' | 'curved';
+
+/**
+ * One projectile in a volley. Direction 0° = right (lane-forward), increasing CCW.
+ * Curved shots bake a target at fire time (editor previews the authored relative target).
+ */
+export interface PlantBulletShot {
+  /** Stable id for editor list selection. */
+  id: string;
+  spawn: PlantBulletSpawnPoint;
+  /** Degrees; 0 = right / forward along the lane, CCW positive. */
+  directionDeg: number;
+  trajectory: BulletTrajectory;
+  /**
+   * Curved only: end point in plant-normalized space (may extend past 0–1 into the lane).
+   * Combat resolves a world aiming point then bakes equivalent local target at fire.
+   */
+  target?: PlantBulletSpawnPoint;
+  /** Curved only: arc height as a fraction of horizontal span (default 0.35). */
+  arcHeight?: number;
+  /** Delay after volley start (ms) for Repeater-style stagger. */
+  delayMs?: number;
+}
+
 export const DEFAULT_PLANT_BULLET_SPAWN: PlantBulletSpawnPoint = { x: 0.75, y: 0.5 };
+export const DEFAULT_BULLET_ARC_HEIGHT = 0.35;
 
 export function plantSupportsBullets(role: PlantRole): boolean {
   return role === 'shooter';
 }
 
 export function resolveBulletSpawn(client: PlantClientAssets): PlantBulletSpawnPoint {
-  const spawn = client.bulletSpawn;
-  if (!spawn) return DEFAULT_PLANT_BULLET_SPAWN;
+  const shots = resolveBulletShots(client);
+  return shots[0]?.spawn ?? DEFAULT_PLANT_BULLET_SPAWN;
+}
+
+/** Build a new shot with sensible defaults (optionally cloning spawn from an existing shot). */
+export function createBulletShot(
+  partial?: Partial<PlantBulletShot>,
+  idFactory: () => string = () => `shot_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+): PlantBulletShot {
+  const spawn = sanitizePoint(partial?.spawn ?? DEFAULT_PLANT_BULLET_SPAWN, DEFAULT_PLANT_BULLET_SPAWN);
+  const trajectory = partial?.trajectory === 'curved' ? 'curved' : 'linear';
+  const shot: PlantBulletShot = {
+    id: partial?.id && partial.id.length > 0 ? partial.id : idFactory(),
+    spawn,
+    directionDeg: Number.isFinite(partial?.directionDeg) ? (partial!.directionDeg as number) : 0,
+    trajectory,
+    delayMs: Math.max(0, Math.floor(partial?.delayMs ?? 0)),
+  };
+  if (trajectory === 'curved') {
+    shot.target = sanitizePoint(
+      partial?.target ?? { x: spawn.x + 0.85, y: Math.max(0, spawn.y - 0.05) },
+      { x: spawn.x + 0.85, y: Math.max(0, spawn.y - 0.05) },
+      true,
+    );
+    shot.arcHeight =
+      Number.isFinite(partial?.arcHeight) && (partial!.arcHeight as number) >= 0
+        ? (partial!.arcHeight as number)
+        : DEFAULT_BULLET_ARC_HEIGHT;
+  }
+  return shot;
+}
+
+/**
+ * Resolve the authored volley. Migrates legacy `bulletSpawn` into one linear shot when
+ * `bulletShots` is missing/empty.
+ */
+export function resolveBulletShots(client: PlantClientAssets): PlantBulletShot[] {
+  if (client.bulletShots && client.bulletShots.length > 0) {
+    return client.bulletShots.map((s) =>
+      createBulletShot(s, () => s.id || `shot_${Math.random().toString(36).slice(2, 9)}`),
+    );
+  }
+  if (client.bulletSpawn) {
+    return [
+      createBulletShot({
+        id: 'legacy_spawn',
+        spawn: {
+          x: clampCoord(client.bulletSpawn.x, DEFAULT_PLANT_BULLET_SPAWN.x),
+          y: clampCoord(client.bulletSpawn.y, DEFAULT_PLANT_BULLET_SPAWN.y),
+        },
+        directionDeg: 0,
+        trajectory: 'linear',
+        delayMs: 0,
+      }),
+    ];
+  }
+  return [createBulletShot({ id: 'default_spawn' })];
+}
+
+/** Persist shots and keep deprecated `bulletSpawn` mirrored to the first shot for older readers. */
+export function withBulletShots(
+  client: PlantClientAssets,
+  shots: PlantBulletShot[],
+): PlantClientAssets {
+  const normalized = shots.map((s) => createBulletShot(s, () => s.id));
+  const first = normalized[0];
   return {
-    x: clampSpawnCoord(spawn.x, DEFAULT_PLANT_BULLET_SPAWN.x),
-    y: clampSpawnCoord(spawn.y, DEFAULT_PLANT_BULLET_SPAWN.y),
+    ...client,
+    bulletShots: normalized,
+    bulletSpawn: first ? { ...first.spawn } : undefined,
   };
 }
 
-function clampSpawnCoord(value: number, fallback: number): number {
+function sanitizePoint(
+  point: PlantBulletSpawnPoint | undefined,
+  fallback: PlantBulletSpawnPoint,
+  allowOutside = false,
+): PlantBulletSpawnPoint {
+  if (!point) return { ...fallback };
+  return {
+    x: clampCoord(point.x, fallback.x, allowOutside),
+    y: clampCoord(point.y, fallback.y, allowOutside),
+  };
+}
+
+function clampCoord(value: number, fallback: number, allowOutside = false): number {
   if (!Number.isFinite(value)) return fallback;
+  if (allowOutside) return Math.min(2.5, Math.max(-0.25, value));
   return Math.min(1, Math.max(0, value));
 }
 
@@ -108,8 +217,12 @@ export interface PlantClientAssets {
   die?: string;
   /** Bullet folder under Bullets/, e.g. PeaNormal */
   bullet?: string;
-  /** Where projectiles emit from, as % of plant width/height (bottom-left origin). */
+  /**
+   * @deprecated Prefer `bulletShots`. Kept in sync with `bulletShots[0].spawn` for older readers.
+   */
   bulletSpawn?: PlantBulletSpawnPoint;
+  /** Projectiles emitted in one attack volley. */
+  bulletShots?: PlantBulletShot[];
   extraAnimations?: GfxAnimationSlot[];
   crop?: GfxRectCrop;
   /** Fraction of grid cell width (0–1). Default 0.8. Height follows sprite aspect ratio. */

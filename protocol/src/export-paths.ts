@@ -30,6 +30,8 @@ export const SERVER_EXPORT_PATHS = {
   plantsDir: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.plants}`,
   insects: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.insects}/insects.json`,
   insectsDir: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.insects}`,
+  bullets: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.bullets}/bullets.json`,
+  bulletsDir: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.bullets}`,
   missions: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.missions}/missions.json`,
   maps: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.maps}/maps.json`,
   balanceVersion: `${SERVER_RESOURCES_DIR}/balance-version.json`,

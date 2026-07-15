@@ -8,6 +8,7 @@ export * from './resources';
 export * from './gfx';
 export * from './plant';
 export * from './plant-behavior';
+export * from './bullet';
 export * from './unit-sizing';
 export * from './insect';
 export * from './mission';
