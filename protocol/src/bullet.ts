@@ -5,40 +5,25 @@ import { plantShootsBullets } from './plant-behavior';
 /** Single target on impact vs all enemies in a cell radius. */
 export type BulletHitMode = 'single' | 'area';
 
-/**
- * shared — flying + explode clips live on the primary bullet unit
- * split — explode uses a separate Bullets/ folder (legacy PeaNormalExplode)
- */
-export type BulletAnimLayout = 'shared' | 'split';
+/** Static sprite vs Spine skeleton for a bullet status. */
+export type BulletStatusKind = 'image' | 'spine';
 
-/** Image frame flipbook vs Spine skeleton at the unit root. */
-export type BulletAnimKind = 'frames' | 'spine';
+export interface BulletStatusPresentation {
+  kind: BulletStatusKind;
+  /**
+   * image → Resources path without extension, e.g. Bullets/PeaNormal/flying
+   * spine → animation name inside that status’s unit folder skeleton
+   */
+  asset: string;
+}
 
 export interface BulletClientAssets {
   /** PascalCase unit folder under Bullets/, e.g. PeaNormal */
   folder: string;
-  animLayout: BulletAnimLayout;
-  /**
-   * Primary unit presentation backend.
-   * frames = sprites/animations/{clip}/; spine = skeleton.json + atlas + texture.
-   * Defaults to frames for back-compat.
-   */
-  animKind?: BulletAnimKind;
-  /**
-   * Split layout only: explode unit backend. Omit → same as animKind.
-   */
-  explodeAnimKind?: BulletAnimKind;
-  /**
-   * frames: clip folder under sprites/animations/
-   * spine: animation name inside skeleton.json
-   */
-  flying: string;
-  /** Shared layout: explode clip/anim on the primary unit. */
-  explode?: string;
-  /** Split layout: separate explode unit folder. */
+  flying: BulletStatusPresentation;
+  explode?: BulletStatusPresentation;
+  /** When explode art lives in another Bullets/ unit (legacy PeaNormalExplode). */
   explodeFolder?: string;
-  /** Split layout: clip/anim name inside explodeFolder. */
-  explodeFlying?: string;
 }
 
 export interface BulletStats {
@@ -67,12 +52,18 @@ export const DEFAULT_BULLET_AREA_RADIUS_CELLS = 1;
 export const DEFAULT_BULLET_SPEED = 3.5;
 export const DEFAULT_BULLET_DAMAGE_PER_LEVEL = 2;
 
+export function defaultFlyingImagePath(folder: string): string {
+  return `Bullets/${folder}/flying`;
+}
+
+export function defaultExplodeImagePath(folder: string): string {
+  return `Bullets/${folder}/explode`;
+}
+
 export function defaultBulletClientAssets(folder: string): BulletClientAssets {
   return {
     folder,
-    animLayout: 'shared',
-    animKind: 'frames',
-    flying: folder,
+    flying: { kind: 'image', asset: defaultFlyingImagePath(folder) },
   };
 }
 
@@ -89,7 +80,7 @@ export function defaultBulletStats(): BulletStats {
 export function createBulletDefinition(
   partial?: Omit<Partial<BulletDefinition>, 'client' | 'stats'> & {
     folder?: string;
-    client?: Partial<BulletClientAssets>;
+    client?: Partial<BulletClientAssets> & LegacyBulletClientFields;
     stats?: Partial<BulletStats>;
   },
 ): BulletDefinition {
@@ -98,7 +89,11 @@ export function createBulletDefinition(
     partial?.folder ??
     (partial?.displayName ? toPascal(partial.displayName) : 'PeaNormal');
   const id = partial?.id && partial.id.length > 0 ? partial.id : toSnake(folder);
-  const client = normalizeBulletClient(partial?.client ?? { ...defaultBulletClientAssets(folder) }, folder);
+  const client = normalizeBulletClient(
+    (partial?.client ?? { ...defaultBulletClientAssets(folder) }) as Partial<BulletClientAssets> &
+      LegacyBulletClientFields,
+    folder,
+  );
   const stats = normalizeBulletStats(partial?.stats);
   return {
     id,
@@ -111,7 +106,7 @@ export function createBulletDefinition(
 
 /**
  * Normalize legacy attribute / bullets.json rows
- * (`{ id, folder, displayName, idle }`) into a full BulletDefinition.
+ * (`{ id, folder, displayName, idle }` or flat animKind/frames) into a full BulletDefinition.
  */
 export function normalizeBulletDefinition(raw: unknown): BulletDefinition | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -125,36 +120,6 @@ export function normalizeBulletDefinition(raw: unknown): BulletDefinition | null
     (typeof nestedClient?.folder === 'string' && nestedClient.folder) ||
     (typeof row.folder === 'string' && row.folder) ||
     toPascal(id);
-  const legacyIdle =
-    (typeof nestedClient?.flying === 'string' && nestedClient.flying) ||
-    (typeof nestedClient?.idle === 'string' && nestedClient.idle) ||
-    (typeof row.idle === 'string' && row.idle) ||
-    folder;
-
-  const clientPartial: Partial<BulletClientAssets> = nestedClient
-    ? {
-        folder,
-        animLayout: nestedClient.animLayout === 'split' ? 'split' : 'shared',
-        animKind: nestedClient.animKind === 'spine' ? 'spine' : 'frames',
-        explodeAnimKind:
-          nestedClient.explodeAnimKind === 'spine'
-            ? 'spine'
-            : nestedClient.explodeAnimKind === 'frames'
-              ? 'frames'
-              : undefined,
-        flying: typeof nestedClient.flying === 'string' ? nestedClient.flying : legacyIdle,
-        explode: typeof nestedClient.explode === 'string' ? nestedClient.explode : undefined,
-        explodeFolder:
-          typeof nestedClient.explodeFolder === 'string' ? nestedClient.explodeFolder : undefined,
-        explodeFlying:
-          typeof nestedClient.explodeFlying === 'string' ? nestedClient.explodeFlying : undefined,
-      }
-    : {
-        folder,
-        animLayout: 'shared',
-        animKind: 'frames',
-        flying: legacyIdle,
-      };
 
   const statsRaw =
     row.stats && typeof row.stats === 'object' ? (row.stats as Partial<BulletStats>) : undefined;
@@ -163,7 +128,17 @@ export function normalizeBulletDefinition(raw: unknown): BulletDefinition | null
     id,
     displayName: typeof row.displayName === 'string' ? row.displayName : folder,
     description: typeof row.description === 'string' ? row.description : undefined,
-    client: clientPartial as BulletClientAssets,
+    client: {
+      folder,
+      ...(nestedClient ?? {
+        flying:
+          typeof row.idle === 'string'
+            ? row.idle
+            : typeof row.flying === 'string'
+              ? row.flying
+              : undefined,
+      }),
+    } as Partial<BulletClientAssets> & LegacyBulletClientFields,
     stats: statsRaw,
   });
 }
@@ -212,26 +187,108 @@ export function resolvePlantDamageBase(
   return resolvePlantDamageCurveInputs(plant, bullets).base;
 }
 
+/** Unit folder used for a status (explode may live in explodeFolder). */
+export function bulletStatusUnitFolder(
+  client: BulletClientAssets,
+  status: 'flying' | 'explode',
+): string {
+  if (status === 'explode' && client.explodeFolder) return client.explodeFolder;
+  return client.folder;
+}
+
+/** @deprecated Legacy flat client fields accepted only during normalize. */
+type LegacyBulletClientFields = {
+  animLayout?: string;
+  animKind?: string;
+  explodeAnimKind?: string;
+  explodeFlying?: string;
+  /** Legacy flat string flying (clip / idle name). */
+  flying?: string | BulletStatusPresentation;
+  explode?: string | BulletStatusPresentation;
+};
+
 function normalizeBulletClient(
-  client: Partial<BulletClientAssets>,
+  client: Partial<BulletClientAssets> & LegacyBulletClientFields,
   fallbackFolder: string,
 ): BulletClientAssets {
   const folder = client.folder && client.folder.length > 0 ? client.folder : fallbackFolder;
-  const animLayout: BulletAnimLayout = client.animLayout === 'split' ? 'split' : 'shared';
-  const animKind: BulletAnimKind = client.animKind === 'spine' ? 'spine' : 'frames';
-  const flying = client.flying && client.flying.length > 0 ? client.flying : folder;
-  const next: BulletClientAssets = { folder, animLayout, animKind, flying };
-  if (animLayout === 'shared') {
-    if (client.explode) next.explode = client.explode;
-  } else {
-    if (client.explodeFolder) next.explodeFolder = client.explodeFolder;
-    if (client.explodeFlying) next.explodeFlying = client.explodeFlying;
-    else if (client.explode) next.explodeFlying = client.explode;
-    if (client.explodeAnimKind === 'spine' || client.explodeAnimKind === 'frames') {
-      next.explodeAnimKind = client.explodeAnimKind;
-    }
-  }
+  const explodeFolder =
+    typeof client.explodeFolder === 'string' && client.explodeFolder.length > 0
+      ? client.explodeFolder
+      : client.animLayout === 'split'
+        ? `${folder}Explode`
+        : undefined;
+
+  const flying = normalizeStatusPresentation(client.flying, {
+    legacyKind: client.animKind,
+    imageDefault: defaultFlyingImagePath(folder),
+    spineFallbackName: folder,
+  });
+
+  const explodeRaw =
+    client.explode ??
+    (typeof client.explodeFlying === 'string' ? client.explodeFlying : undefined);
+  const explodeUnit = explodeFolder ?? folder;
+  const explode =
+    explodeRaw !== undefined
+      ? normalizeStatusPresentation(explodeRaw, {
+          legacyKind: client.explodeAnimKind ?? client.animKind,
+          imageDefault: defaultExplodeImagePath(explodeUnit),
+          spineFallbackName: typeof explodeRaw === 'string' ? explodeRaw : explodeUnit,
+        })
+      : client.animLayout === 'split' || explodeFolder
+        ? {
+            kind: legacyKindToStatus(client.explodeAnimKind ?? client.animKind),
+            asset:
+              legacyKindToStatus(client.explodeAnimKind ?? client.animKind) === 'spine'
+                ? (typeof client.explodeFlying === 'string' && client.explodeFlying) || explodeUnit
+                : defaultExplodeImagePath(explodeUnit),
+          }
+        : undefined;
+
+  const next: BulletClientAssets = { folder, flying };
+  if (explode) next.explode = explode;
+  if (explodeFolder) next.explodeFolder = explodeFolder;
   return next;
+}
+
+function normalizeStatusPresentation(
+  value: string | BulletStatusPresentation | undefined,
+  opts: {
+    legacyKind?: string;
+    imageDefault: string;
+    spineFallbackName: string;
+  },
+): BulletStatusPresentation {
+  if (value && typeof value === 'object' && 'kind' in value && 'asset' in value) {
+    const kind: BulletStatusKind = value.kind === 'spine' ? 'spine' : 'image';
+    const asset =
+      typeof value.asset === 'string' && value.asset.length > 0
+        ? value.asset
+        : kind === 'spine'
+          ? opts.spineFallbackName
+          : opts.imageDefault;
+    return { kind, asset };
+  }
+
+  const kind = legacyKindToStatus(opts.legacyKind);
+  if (typeof value === 'string' && value.length > 0) {
+    if (kind === 'spine') return { kind: 'spine', asset: value };
+    // Legacy frames clip name → conventional image path (not the clip folder name).
+    if (value.includes('/')) return { kind: 'image', asset: value };
+    return { kind: 'image', asset: opts.imageDefault };
+  }
+
+  return {
+    kind,
+    asset: kind === 'spine' ? opts.spineFallbackName : opts.imageDefault,
+  };
+}
+
+function legacyKindToStatus(kind?: string): BulletStatusKind {
+  if (kind === 'spine') return 'spine';
+  // frames | image | missing → image
+  return 'image';
 }
 
 function normalizeBulletStats(stats?: Partial<BulletStats>): BulletStats {

@@ -85,7 +85,7 @@ export type BulletTrajectory = 'linear' | 'curved';
 
 /**
  * One projectile in a volley. Direction 0° = right (lane-forward), increasing CCW.
- * Curved shots bake a target at fire time (editor previews the authored relative target).
+ * Curved shots bake an aiming point at fire time from the enemy — do not author `target` into plant JSON.
  */
 export interface PlantBulletShot {
   /** Stable id for editor list selection. */
@@ -95,8 +95,7 @@ export interface PlantBulletShot {
   directionDeg: number;
   trajectory: BulletTrajectory;
   /**
-   * Curved only: end point in plant-normalized space (may extend past 0–1 into the lane).
-   * Combat resolves a world aiming point then bakes equivalent local target at fire.
+   * @deprecated Not persisted. Combat bakes aim at fire; editor keeps a preview Aim in UI state only.
    */
   target?: PlantBulletSpawnPoint;
   /** Curved only: arc height as a fraction of horizontal span (default 0.35). */
@@ -132,11 +131,6 @@ export function createBulletShot(
     delayMs: Math.max(0, Math.floor(partial?.delayMs ?? 0)),
   };
   if (trajectory === 'curved') {
-    shot.target = sanitizePoint(
-      partial?.target ?? { x: spawn.x + 0.85, y: Math.max(0, spawn.y - 0.05) },
-      { x: spawn.x + 0.85, y: Math.max(0, spawn.y - 0.05) },
-      true,
-    );
     shot.arcHeight =
       Number.isFinite(partial?.arcHeight) && (partial!.arcHeight as number) >= 0
         ? (partial!.arcHeight as number)
@@ -177,7 +171,12 @@ export function withBulletShots(
   client: PlantClientAssets,
   shots: PlantBulletShot[],
 ): PlantClientAssets {
-  const normalized = shots.map((s) => createBulletShot(s, () => s.id));
+  const normalized = shots.map((s) => {
+    const next = createBulletShot(s, () => s.id);
+    // Never persist preview aim points — combat bakes from the enemy at fire.
+    delete next.target;
+    return next;
+  });
   const first = normalized[0];
   return {
     ...client,
