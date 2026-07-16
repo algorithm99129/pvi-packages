@@ -71,6 +71,8 @@ export interface PlantStatCurve {
 
 import type { GfxRectCrop, GfxAnimationSlot } from './gfx';
 import type { PlantBehaviorConfig } from './plant-behavior';
+import type { EntityStateGraph } from './entity-state-graph';
+import { mirrorPlantClipsFromGraph } from './entity-state-graph';
 
 /** Normalized point on the plant sprite (0–1 from bottom-left of displayed bounds). */
 export interface PlantBulletSpawnPoint {
@@ -206,14 +208,24 @@ function clampCoord(value: number, fallback: number, allowOutside = false): numb
 export interface PlantClientAssets {
   /** PascalCase unit folder under Plants/, e.g. CherryBomb */
   folder: string;
-  /** Idle Spine animation name (from skeleton.json) */
+  /**
+   * @deprecated Prefer `stateGraph`. Mirrored from the graph entry / idle node for older readers.
+   */
   idle: string;
-  /** Emerging / arming animation (PotatoMineInit). */
+  /** @deprecated Prefer stateGraph init node. */
   init?: string;
-  /** Aim wind-up animation (SquashAim). */
+  /** @deprecated Prefer stateGraph aim node. */
   aim?: string;
+  /** @deprecated Prefer stateGraph attack node. */
   attack?: string;
+  /** @deprecated Prefer stateGraph.die.spineAnim. */
   die?: string;
+  /**
+   * Status graph — primary authoring for gameplay statuses, conditions, and
+   * predefined engine actions. Spine clips are optional per status.
+   * Die is configured on the graph (not edged); HP≤0 always enters die.
+   */
+  stateGraph?: EntityStateGraph;
   /** Bullet folder under Bullets/, e.g. Pea */
   bullet?: string;
   /**
@@ -228,6 +240,23 @@ export interface PlantClientAssets {
   cellWidthFill?: number;
   /** Extra multiplier applied after cell-width fitting. */
   scale?: number;
+}
+
+/** Persist graph and keep legacy idle/attack/… fields mirrored. */
+export function withPlantStateGraph(
+  client: PlantClientAssets,
+  graph: EntityStateGraph,
+): PlantClientAssets {
+  const clips = mirrorPlantClipsFromGraph(graph);
+  return {
+    ...client,
+    stateGraph: graph,
+    idle: clips.idle || client.idle || client.folder,
+    init: clips.init,
+    aim: clips.aim,
+    attack: clips.attack,
+    die: clips.die,
+  };
 }
 
 export interface PlantServerConfig {

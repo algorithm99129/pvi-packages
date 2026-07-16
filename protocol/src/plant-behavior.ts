@@ -26,10 +26,16 @@ export interface PlantBehaviorConfig {
   aimBeforeAttack?: boolean;
   /** Screen FX key override for explosions. */
   explodeGfx?: string;
+  /** Chomper: seconds spent in digest before returning to idle. */
+  digestSeconds?: number;
+  /** Sunflower family: seconds between produce pulses. */
+  produceIntervalSeconds?: number;
+  /** Scaredy-shroom: column distance that triggers hide (closer than attack range). */
+  hideProximityColumns?: number;
 }
 
 const INSTANT_EXPLODE_IDS = new Set(['cherry_bomb', 'jalapeno', 'ice_shroom']);
-const PRODUCER_IDS = new Set(['sun_flower', 'sun_shroom']);
+const PRODUCER_IDS = new Set(['sun_flower', 'sun_shroom', 'twin_sunflower']);
 
 export const DEFAULT_PLANT_BEHAVIOR: PlantBehaviorConfig = { kind: 'shooter' };
 
@@ -76,7 +82,7 @@ function inferPlantBehavior(input: {
   }
 
   if (PRODUCER_IDS.has(id)) {
-    return { kind: 'producer' };
+    return { kind: 'producer', produceIntervalSeconds: 24 };
   }
 
   if (role === 'blocker') {
@@ -98,7 +104,7 @@ function inferPlantBehavior(input: {
         kind: 'chomper',
         triggerColumnRange: 1.05,
         removeOnTrigger: false,
-        prepareSeconds: 42,
+        digestSeconds: 42,
       };
     }
 
@@ -111,6 +117,9 @@ function inferPlantBehavior(input: {
   }
 
   if (role === 'shooter' || role === 'splash') {
+    if (id === 'scaredy_shroom') {
+      return { kind: 'shooter', hideProximityColumns: 1.5 };
+    }
     return { kind: 'shooter' };
   }
 
