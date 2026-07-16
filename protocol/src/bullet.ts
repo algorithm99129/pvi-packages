@@ -1,6 +1,7 @@
 import type { EntityId } from './index';
 import type { PlantDefinition } from './plant';
 import { plantShootsBullets } from './plant-behavior';
+import { DEFAULT_BULLET_CELL_WIDTH_FILL, resolveCellWidthFill } from './unit-sizing';
 
 /** Single target on impact vs all enemies in a cell radius. */
 export type BulletHitMode = 'single' | 'area';
@@ -24,6 +25,10 @@ export interface BulletClientAssets {
   folder: string;
   flying: BulletStatusPresentation;
   explode?: BulletStatusPresentation;
+  /** Fraction of grid cell width (0–1). Default 0.4. Height follows sprite aspect. */
+  cellWidthFill?: number;
+  /** Extra multiplier applied after cell-width fitting. */
+  scale?: number;
 }
 
 export interface BulletStats {
@@ -76,6 +81,8 @@ export function defaultBulletClientAssets(folder: string): BulletClientAssets {
   return {
     folder,
     flying: { kind: 'image' },
+    cellWidthFill: DEFAULT_BULLET_CELL_WIDTH_FILL,
+    scale: 1,
   };
 }
 
@@ -284,6 +291,10 @@ function normalizeBulletClient(
 
   const next: BulletClientAssets = { folder, flying };
   if (explode) next.explode = explode;
+  next.cellWidthFill = resolveCellWidthFill(client.cellWidthFill, DEFAULT_BULLET_CELL_WIDTH_FILL);
+  const scale =
+    client.scale != null && Number.isFinite(client.scale) && client.scale > 0 ? client.scale : 1;
+  next.scale = scale;
   return next;
 }
 
