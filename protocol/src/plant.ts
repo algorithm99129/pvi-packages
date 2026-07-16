@@ -104,6 +104,11 @@ export interface PlantBulletShot {
   arcHeight?: number;
   /** Delay after volley start (ms) for Repeater-style stagger. */
   delayMs?: number;
+  /**
+   * Relative lane offset for parallel multi-lane volleys (e.g. Threepeater: -1, 0, +1).
+   * 0 = shooter's lane. Combat skips shots that land off the map.
+   */
+  laneOffset?: number;
 }
 
 export const DEFAULT_PLANT_BULLET_SPAWN: PlantBulletSpawnPoint = { x: 0.75, y: 0.5 };
@@ -132,6 +137,9 @@ export function createBulletShot(
     trajectory,
     delayMs: Math.max(0, Math.floor(partial?.delayMs ?? 0)),
   };
+  if (Number.isFinite(partial?.laneOffset) && (partial!.laneOffset as number) !== 0) {
+    shot.laneOffset = Math.trunc(partial!.laneOffset as number);
+  }
   if (trajectory === 'curved') {
     shot.arcHeight =
       Number.isFinite(partial?.arcHeight) && (partial!.arcHeight as number) >= 0
