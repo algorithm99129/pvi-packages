@@ -45,6 +45,8 @@ export interface BulletDefinition {
   id: EntityId;
   displayName: string;
   description?: string;
+  /** JSON schema generation; missing = legacy (0). */
+  schemaVersion?: number;
   client: BulletClientAssets;
   stats: BulletStats;
 }

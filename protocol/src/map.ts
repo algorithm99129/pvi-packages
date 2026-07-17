@@ -65,6 +65,8 @@ export interface MapGridLayout {
 export interface MapTemplateDefinition {
   id: string;
   displayName: string;
+  /** JSON schema generation; missing = legacy (0). */
+  schemaVersion?: number;
   tier: number;
   laneCount: number;
   /** Total cell columns per lane on the grid mesh (corner lines = gridColumns + 1). */
@@ -90,6 +92,7 @@ export interface MapTemplateDefinition {
 
 export interface ServerMapExport {
   id: string;
+  schemaVersion?: number;
   tier: number;
   laneCount: number;
   gridColumns: number;
@@ -100,6 +103,7 @@ export interface ServerMapExport {
 export interface ClientMapExport {
   id: string;
   displayName: string;
+  schemaVersion?: number;
   tier: number;
   laneCount: number;
   gridColumns: number;

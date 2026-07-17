@@ -151,6 +151,8 @@ export interface MissionDefinition {
   order: number;
   displayName: string;
   description: string;
+  /** JSON schema generation; missing = legacy (0). */
+  schemaVersion?: number;
   /** Defender (plants) or attacker (insects) mission. */
   side: MissionSide;
   mapTemplateId: string;
@@ -177,6 +179,7 @@ export interface ServerMissionExport {
   id: string;
   chapterId: string;
   order: number;
+  schemaVersion?: number;
   side: MissionSide;
   mapTemplateId: string;
   rules?: MissionRules;
@@ -193,6 +196,7 @@ export interface ClientMissionExport {
   order: number;
   displayName: string;
   description: string;
+  schemaVersion?: number;
   side: MissionSide;
   mapTemplateId: string;
   rules?: MissionRules;

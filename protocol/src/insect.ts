@@ -15,6 +15,8 @@ export interface InsectDefinition {
   archetype: InsectArchetype;
   rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
   description: string;
+  /** JSON schema generation; missing = legacy (0). */
+  schemaVersion?: number;
   stats: InsectStatCurve;
   client: InsectClientAssets;
   server: InsectServerConfig;
@@ -87,6 +89,7 @@ export interface ServerInsectExport {
   description: string;
   archetype: InsectArchetype;
   rarity: InsectDefinition['rarity'];
+  schemaVersion?: number;
   client: InsectClientAssets;
   stats: InsectStatCurve;
   server: InsectServerConfig;
@@ -98,6 +101,7 @@ export interface ClientInsectExport {
   archetype: InsectArchetype;
   rarity: InsectDefinition['rarity'];
   description: string;
+  schemaVersion?: number;
   client: InsectClientAssets;
   stats: InsectStatCurve;
 }

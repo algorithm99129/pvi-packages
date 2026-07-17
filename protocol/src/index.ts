@@ -26,3 +26,6 @@ export * from './formula';
 export * from './player';
 export * from './garden';
 export * from './catalog';
+export * from './deep-merge';
+export * from './schema-version';
+export * from './migrations';

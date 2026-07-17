@@ -18,6 +18,11 @@ export interface PlantDefinition {
   role: PlantRole;
   rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
   description: string;
+  /**
+   * JSON schema generation for this definition. Missing = legacy (0).
+   * Migrators bump this when loading/saving through the editor.
+   */
+  schemaVersion?: number;
   /** Combat stats per level — server authoritative */
   stats: PlantStatCurve;
   /** Client-only presentation */
@@ -281,6 +286,7 @@ export interface ServerPlantExport {
   description: string;
   role: PlantRole;
   rarity: PlantDefinition['rarity'];
+  schemaVersion?: number;
   client: PlantClientAssets;
   behavior?: PlantBehaviorConfig;
   stats: PlantStatCurve;
@@ -295,6 +301,7 @@ export interface ClientPlantExport {
   role: PlantRole;
   rarity: PlantDefinition['rarity'];
   description: string;
+  schemaVersion?: number;
   client: PlantClientAssets;
   /** Combat stats needed for local sim preview in editor */
   stats: PlantStatCurve;

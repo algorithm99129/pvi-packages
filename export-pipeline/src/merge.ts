@@ -20,6 +20,12 @@ import type {
 import {
   defaultInsectClientAssets,
   defaultPlantClientAssets,
+  mergePreferPrimary,
+  migrateBulletDefinition,
+  migrateInsectDefinition,
+  migrateMapDefinition,
+  migrateMissionDefinition,
+  migratePlantDefinition,
   normalizeBulletDefinition,
 } from '@garden-siege/protocol';
 import type { GameDataBundle } from './index';
@@ -47,47 +53,54 @@ export function mergeBullet(client: ClientBulletExport, server?: ServerBulletExp
     id: client.id || server?.id,
     displayName: client.displayName ?? server?.displayName,
     description: client.description ?? server?.description,
-    client: client.client ?? server?.client,
-    stats: client.stats ?? server?.stats,
+    client: mergePreferPrimary(client.client, server?.client) ?? client.client,
+    stats: mergePreferPrimary(client.stats, server?.stats) ?? client.stats,
+    schemaVersion: client.schemaVersion ?? server?.schemaVersion,
   });
   if (!merged) {
     throw new Error(`Invalid bullet definition: ${client.id ?? server?.id}`);
   }
-  return merged;
+  return migrateBulletDefinition(merged);
 }
 
 export function mergePlant(client: ClientPlantExport, server?: ServerPlantExport): PlantDefinition {
-  return {
+  // Client-first presentation (matches bullets). Deep-merge fills gaps from server
+  // without wiping richer Unity/editor authoring (stateGraph, bulletShots, …).
+  const merged: PlantDefinition = {
     id: client.id,
-    displayName: server?.displayName ?? client.displayName,
-    description: server?.description ?? client.description,
-    role: server?.role ?? client.role,
-    rarity: server?.rarity ?? client.rarity,
-    stats: server?.stats ?? client.stats,
-    client: server?.client ?? client.client,
+    displayName: client.displayName ?? server?.displayName ?? client.id,
+    description: client.description ?? server?.description ?? '',
+    role: client.role ?? server?.role ?? 'shooter',
+    rarity: client.rarity ?? server?.rarity ?? 'common',
+    stats: mergePreferPrimary(client.stats, server?.stats) ?? client.stats,
+    client: mergePreferPrimary(client.client, server?.client) ?? client.client,
     server: server?.server ?? DEFAULT_PLANT_SERVER,
-    behavior: server?.behavior ?? client.behavior,
+    behavior: mergePreferPrimary(client.behavior, server?.behavior),
     upgrade: server?.upgrade,
+    schemaVersion: client.schemaVersion ?? server?.schemaVersion,
   };
+  return migratePlantDefinition(merged);
 }
 
 export function mergeInsect(client: ClientInsectExport, server?: ServerInsectExport): InsectDefinition {
-  return {
+  const merged: InsectDefinition = {
     id: client.id,
-    displayName: server?.displayName ?? client.displayName,
-    description: server?.description ?? client.description,
-    archetype: server?.archetype ?? client.archetype,
-    rarity: server?.rarity ?? client.rarity,
-    stats: server?.stats ?? client.stats,
-    client: server?.client ?? client.client,
+    displayName: client.displayName ?? server?.displayName ?? client.id,
+    description: client.description ?? server?.description ?? '',
+    archetype: client.archetype ?? server?.archetype ?? 'swarm',
+    rarity: client.rarity ?? server?.rarity ?? 'common',
+    stats: mergePreferPrimary(client.stats, server?.stats) ?? client.stats,
+    client: mergePreferPrimary(client.client, server?.client) ?? client.client,
     server: server?.server ?? DEFAULT_INSECT_SERVER,
+    schemaVersion: client.schemaVersion ?? server?.schemaVersion,
   };
+  return migrateInsectDefinition(merged);
 }
 
 export function mergeMission(client: ClientMissionExport, server?: ServerMissionExport): MissionDefinition {
-  const rules = server?.rules ?? client.rules;
+  const rules = mergePreferPrimary(client.rules, server?.rules) ?? server?.rules ?? client.rules;
   const side = client.side ?? server?.side ?? (rules?.mode === 'i_zombie' ? 'attacker' : 'defender');
-  return {
+  const merged: MissionDefinition = {
     id: client.id,
     chapterId: client.chapterId,
     order: client.order,
@@ -96,13 +109,17 @@ export function mergeMission(client: ClientMissionExport, server?: ServerMission
     side,
     mapTemplateId: server?.mapTemplateId ?? client.mapTemplateId,
     rules,
-    presetDefense: server?.presetDefense ?? client.presetDefense,
-    waves: server?.waves ?? client.waves,
+    presetDefense: mergePreferPrimary(client.presetDefense, server?.presetDefense),
+    waves: mergePreferPrimary(client.waves, server?.waves),
     startingSun: client.startingSun,
     availablePlants: client.availablePlants,
-    starCriteria: server?.starCriteria ?? client.starCriteria,
+    starCriteria: mergePreferPrimary(client.starCriteria, server?.starCriteria) ??
+      server?.starCriteria ??
+      client.starCriteria,
     rewards: server?.rewards ?? { firstClear: {} },
+    schemaVersion: client.schemaVersion ?? server?.schemaVersion,
   };
+  return migrateMissionDefinition(merged);
 }
 
 export function mergeMap(client: ClientMapExport, server?: ServerMapExport): MapTemplateDefinition {
@@ -111,20 +128,22 @@ export function mergeMap(client: ClientMapExport, server?: ServerMapExport): Map
     ...(server?.lanes ?? []).map((lane) => lane.plantColumns ?? 0),
     0,
   );
-  return {
+  const merged: MapTemplateDefinition = {
     id: client.id,
     displayName: client.displayName,
-    tier: server?.tier ?? client.tier,
-    laneCount: server?.laneCount ?? client.laneCount,
+    tier: client.tier ?? server?.tier ?? 1,
+    laneCount: client.laneCount ?? server?.laneCount ?? 5,
     gridColumns: client.gridColumns ?? server?.gridColumns ?? (legacyColumns > 0 ? legacyColumns : 9),
-    lanes: server?.lanes ?? client.lanes,
+    lanes: mergePreferPrimary(client.lanes, server?.lanes) ?? client.lanes ?? server?.lanes ?? [],
     client: client.client,
     server: server?.server ?? {
       corePosition: client.corePosition ?? { lane: 0, column: 0 },
       maxVillageLevel: 6,
       minVillageLevel: 1,
     },
+    schemaVersion: client.schemaVersion ?? server?.schemaVersion,
   };
+  return migrateMapDefinition(merged);
 }
 
 export function mergeGameDataBundle(parts: {
@@ -201,7 +220,7 @@ export function mergeGameDataBundle(parts: {
 
   const bullets = [
     ...clientBullets.map((client) => mergeBullet(client, serverBullets.get(client.id))),
-    ...serverOnlyBullets,
+    ...serverOnlyBullets.map((b) => migrateBulletDefinition(b)),
   ];
 
   const missions = [
