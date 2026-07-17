@@ -1,4 +1,5 @@
 import type { EntityId } from './index';
+import type { WalletResources } from './wallet';
 
 export type InsectArchetype =
   | 'swarm'
@@ -20,6 +21,30 @@ export interface InsectDefinition {
   stats: InsectStatCurve;
   client: InsectClientAssets;
   server: InsectServerConfig;
+  /** Leveling and upgrade costs (formula-driven). */
+  upgrade?: InsectUpgradeConfig;
+}
+
+/** Per-insect upgrade tuning — costs evaluated via logic.json formulas. */
+export interface InsectUpgradeConfig {
+  maxLevel: number;
+  /** Formula id for stat at level (inputs: base, perLevel, level). */
+  statFormulaId: string;
+  /** Formula id for next-level upgrade cost per resource (inputs: base, level). */
+  costFormulaId: string;
+  baseUpgradeCost: WalletResources;
+}
+
+/** MVP: reuse plant formulas until nectar/chitin economy lands. */
+export const DEFAULT_INSECT_UPGRADE: InsectUpgradeConfig = {
+  maxLevel: 20,
+  statFormulaId: 'plant_stat_at_level',
+  costFormulaId: 'plant_upgrade_resource_cost',
+  baseUpgradeCost: { coin: 100, gem: 0, leaf: 2 },
+};
+
+export function resolveInsectUpgrade(insect: Pick<InsectDefinition, 'upgrade'>): InsectUpgradeConfig {
+  return insect.upgrade ?? DEFAULT_INSECT_UPGRADE;
 }
 
 export interface InsectStatCurve {
@@ -93,6 +118,7 @@ export interface ServerInsectExport {
   client: InsectClientAssets;
   stats: InsectStatCurve;
   server: InsectServerConfig;
+  upgrade?: InsectUpgradeConfig;
 }
 
 export interface ClientInsectExport {

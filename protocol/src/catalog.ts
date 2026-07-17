@@ -1,5 +1,11 @@
 import type { EntityId } from './index';
-import type { InsectArchetype, InsectClientAssets, InsectStatCurve, InsectServerConfig } from './insect';
+import type {
+  InsectArchetype,
+  InsectClientAssets,
+  InsectStatCurve,
+  InsectServerConfig,
+  InsectUpgradeConfig,
+} from './insect';
 import type { PlantBehaviorConfig } from './plant-behavior';
 import type {
   PlantClientAssets,
@@ -59,6 +65,7 @@ export interface CatalogInsect {
   rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
   client: InsectClientAssets;
   server: InsectServerConfig;
+  upgrade?: InsectUpgradeConfig;
   stats: InsectStatCurve;
   resolvedStats: ResolvedInsectCombatStats;
   resolvedLevel: number;

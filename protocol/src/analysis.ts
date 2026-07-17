@@ -9,6 +9,8 @@ export interface AnalysisUserSummary {
   wallet: { coin: number; gem: number; leaf: number };
   plantCount: number;
   unlockedPlantCount: number;
+  insectCount: number;
+  unlockedInsectCount: number;
   missionCount: number;
   completedMissionCount: number;
   gardenLevel: number;
@@ -20,6 +22,7 @@ export interface AnalysisUserSummary {
 
 export interface AnalysisUserDetail extends AnalysisUserSummary {
   plants: Array<{ plantId: string; level: number; unlocked: boolean }>;
+  insects: Array<{ insectId: string; level: number; unlocked: boolean }>;
   missions: Array<{
     missionId: string;
     status: 'locked' | 'available' | 'completed';
