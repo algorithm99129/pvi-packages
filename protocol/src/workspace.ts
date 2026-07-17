@@ -1,5 +1,6 @@
 /** Electron editor persisted workspace — client & server directory paths */
 import { DEFAULT_GALLERY_DIRECTORY } from './gallery';
+import { DEFAULT_MONGODB_URI } from './analysis';
 
 export interface EditorWorkspaceConfig {
   version: 1;
@@ -10,7 +11,14 @@ export interface EditorWorkspaceConfig {
   serverDirectory: string;
   /** Absolute or repo-relative folder for AI-generated images (default: gallery at repo root) */
   galleryDirectory?: string;
-  /** Nest API base URL for runtime catalog (plants/insects with resolved stats). */
+  /**
+   * MongoDB connection URI for player/user analysis (same DB as the Nest API).
+   * Editor reads this directly — no HTTP API required.
+   */
+  mongodbUri?: string;
+  /**
+   * @deprecated Balance/catalog is loaded from local Resources/. Kept for old workspace files.
+   */
   apiBaseUrl?: string;
   lastOpenedAt?: string;
 }
@@ -21,5 +29,5 @@ export const DEFAULT_WORKSPACE: EditorWorkspaceConfig = {
   clientDirectory: 'apps/client',
   serverDirectory: 'apps/api',
   galleryDirectory: DEFAULT_GALLERY_DIRECTORY,
-  apiBaseUrl: 'http://localhost:3000/api',
+  mongodbUri: DEFAULT_MONGODB_URI,
 };
