@@ -63,10 +63,10 @@ export const STARTER_PLANT_IDS: EntityId[] = [
 
 /** Insects unlocked when a new account is created (chapter-1 attack roster). */
 export const STARTER_INSECT_IDS: EntityId[] = [
-  'normal_zombie',
-  'conehead_zombie',
-  'buckethead_zombie',
-  'flag_zombie',
+  'worker_beetle',
+  'horn_beetle',
+  'bucket_weevil',
+  'banner_wasp',
 ];
 
 export interface UserPlantView {

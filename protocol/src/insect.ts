@@ -66,8 +66,22 @@ import type { GfxRectCrop, GfxAnimationSlot } from './gfx';
 import type { EntityStateGraph } from './entity-state-graph';
 import { mirrorInsectClipsFromGraph } from './entity-state-graph';
 
+/** Legacy PvZ zombie entity ids → Garden Siege insect ids (saved progress / old content). */
+export const LEGACY_INSECT_ID_ALIASES: Record<string, string> = {
+  normal_zombie: 'worker_beetle',
+  conehead_zombie: 'horn_beetle',
+  buckethead_zombie: 'bucket_weevil',
+  flag_zombie: 'banner_wasp',
+  newspaper_zombie: 'ledger_roach',
+};
+
+/** Resolve a possibly-legacy insect id to the canonical catalog id. */
+export function resolveInsectId(id: string): string {
+  return LEGACY_INSECT_ID_ALIASES[id] ?? id;
+}
+
 export interface InsectClientAssets {
-  /** PascalCase unit folder under Insects/, e.g. NormalZombie */
+  /** PascalCase unit folder under Insects/, e.g. WorkerBeetle */
   folder: string;
   /**
    * @deprecated Prefer `stateGraph`. Mirrored from the walk / entry node.

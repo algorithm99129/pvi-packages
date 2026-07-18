@@ -176,11 +176,11 @@ export const PYTHON_PLANT_IDLE = GFX_PLANT_IDLE;
 
 /** Template insect gfx name → walk animation clip key */
 export const GFX_INSECT_WALK: Record<string, string> = {
-  Zombie: 'Zombie',
-  FlagZombie: 'FlagZombie',
-  ConeheadZombie: 'ConeheadZombie',
-  BucketheadZombie: 'BucketheadZombie',
-  NewspaperZombie: 'NewspaperZombie',
+  WorkerBeetle: 'WorkerBeetle',
+  HornBeetle: 'HornBeetle',
+  BucketWeevil: 'BucketWeevil',
+  BannerWasp: 'BannerWasp',
+  LedgerRoach: 'LedgerRoach',
 };
 
 /** @deprecated Use GFX_INSECT_WALK */
@@ -208,7 +208,7 @@ export function defaultPlantClientAssets(plantGfxName: string): {
   };
 }
 
-export function defaultInsectClientAssets(zombieGfxName: string): {
+export function defaultInsectClientAssets(insectGfxName: string): {
   folder: string;
   walk: string;
   attack: string;
@@ -217,13 +217,16 @@ export function defaultInsectClientAssets(zombieGfxName: string): {
   cropWidth: number;
   scale: number;
 } {
-  const walk = GFX_INSECT_WALK[zombieGfxName] ?? 'Zombie';
-  const folder = zombieGfxName === 'Zombie' ? 'NormalZombie' : zombieGfxName;
+  const folder =
+    insectGfxName === 'Zombie' || insectGfxName === 'NormalZombie'
+      ? 'WorkerBeetle'
+      : insectGfxName;
+  const walk = GFX_INSECT_WALK[folder] ?? folder;
   return {
     folder,
     walk,
     attack: `${walk}Attack`,
-    die: walk === 'NewspaperZombie' ? 'NewspaperZombieDie' : 'ZombieDie',
+    die: walk === 'LedgerRoach' ? 'LedgerRoachDie' : `${walk}Die`,
     cropX: 62,
     cropWidth: 90,
     scale: 1,
