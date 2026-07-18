@@ -35,6 +35,12 @@ export interface PlantDefinition {
   behavior?: PlantBehaviorConfig;
 }
 
+/** Max plant level (roster upgrades). Matches DEFAULT_PLANT_UPGRADE.maxLevel. */
+export const PLANT_MAX_LEVEL = 20;
+
+/** Stars shown on plant/insect cards (UI), mapped from level. */
+export const UNIT_CARD_MAX_STARS = 5;
+
 /** Per-plant upgrade tuning — costs evaluated via logic.json formulas. */
 export interface PlantUpgradeConfig {
   maxLevel: number;
@@ -46,7 +52,7 @@ export interface PlantUpgradeConfig {
 }
 
 export const DEFAULT_PLANT_UPGRADE: PlantUpgradeConfig = {
-  maxLevel: 20,
+  maxLevel: PLANT_MAX_LEVEL,
   statFormulaId: 'plant_stat_at_level',
   costFormulaId: 'plant_upgrade_resource_cost',
   baseUpgradeCost: { coin: 100, gem: 0, leaf: 2 },

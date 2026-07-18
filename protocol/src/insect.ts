@@ -25,6 +25,9 @@ export interface InsectDefinition {
   upgrade?: InsectUpgradeConfig;
 }
 
+/** Max insect level (roster upgrades). Matches DEFAULT_INSECT_UPGRADE.maxLevel. */
+export const INSECT_MAX_LEVEL = 20;
+
 /** Per-insect upgrade tuning — costs evaluated via logic.json formulas. */
 export interface InsectUpgradeConfig {
   maxLevel: number;
@@ -37,7 +40,7 @@ export interface InsectUpgradeConfig {
 
 /** MVP: reuse plant formulas until nectar/chitin economy lands. */
 export const DEFAULT_INSECT_UPGRADE: InsectUpgradeConfig = {
-  maxLevel: 20,
+  maxLevel: INSECT_MAX_LEVEL,
   statFormulaId: 'plant_stat_at_level',
   costFormulaId: 'plant_upgrade_resource_cost',
   baseUpgradeCost: { coin: 100, gem: 0, leaf: 2 },
