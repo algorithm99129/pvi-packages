@@ -9,12 +9,12 @@ export type BulletHitMode = 'single' | 'area';
 /** Static sprite vs Spine skeleton for a bullet status. */
 export type BulletStatusKind = 'image' | 'spine';
 
-export type BulletStatusName = 'flying' | 'explode';
+export type BulletStatusName = 'flying';
 
 export interface BulletStatusPresentation {
   kind: BulletStatusKind;
   /**
-   * image → ignored at resolve time; always Bullets/{folder}/flying|explode
+   * image → ignored at resolve time; always Bullets/{folder}/flying
    * spine → animation name inside Bullets/{folder}/ skeleton
    */
   asset?: string;
@@ -24,7 +24,6 @@ export interface BulletClientAssets {
   /** PascalCase unit folder under Bullets/, e.g. Pea */
   folder: string;
   flying: BulletStatusPresentation;
-  explode?: BulletStatusPresentation;
   /** Fraction of grid cell width (0–1). Default 0.4. Height follows sprite aspect. */
   cellWidthFill?: number;
   /** Extra multiplier applied after cell-width fitting. */
@@ -64,7 +63,7 @@ export function bulletStatusImageName(status: BulletStatusName): string {
   return status;
 }
 
-/** Resources path without extension: Bullets/{folder}/flying|explode */
+/** Resources path without extension: Bullets/{folder}/flying */
 export function bulletStatusImagePath(folder: string, status: BulletStatusName): string {
   return `Bullets/${folder}/${bulletStatusImageName(status)}`;
 }
@@ -72,11 +71,6 @@ export function bulletStatusImagePath(folder: string, status: BulletStatusName):
 /** @deprecated Use bulletStatusImagePath(folder, 'flying') */
 export function defaultFlyingImagePath(folder: string): string {
   return bulletStatusImagePath(folder, 'flying');
-}
-
-/** @deprecated Use bulletStatusImagePath(folder, 'explode') */
-export function defaultExplodeImagePath(folder: string): string {
-  return bulletStatusImagePath(folder, 'explode');
 }
 
 export function defaultBulletClientAssets(folder: string): BulletClientAssets {
@@ -236,7 +230,7 @@ export function resolvePlantDamageBase(
   return resolvePlantDamageCurveInputs(plant, bullets).base;
 }
 
-/** @deprecated Always the primary bullet folder (flying + explode share it). */
+/** @deprecated Always the primary bullet folder. */
 export function bulletStatusUnitFolder(
   client: BulletClientAssets,
   _status: BulletStatusName,
@@ -253,6 +247,7 @@ type LegacyBulletClientFields = {
   explodeFolder?: string;
   /** Legacy flat string flying (clip / idle name). */
   flying?: string | BulletStatusPresentation;
+  /** Ignored — hit FX moved to runtime Cartoon FX. */
   explode?: string | BulletStatusPresentation;
 };
 
@@ -269,30 +264,7 @@ function normalizeBulletClient(
     legacyKind: client.animKind,
   });
 
-  const explodeRaw =
-    client.explode ??
-    (typeof client.explodeFlying === 'string' ? client.explodeFlying : undefined);
-  const hadLegacySplit =
-    client.animLayout === 'split' ||
-    (typeof client.explodeFolder === 'string' && client.explodeFolder.length > 0);
-
-  const explode =
-    explodeRaw !== undefined
-      ? normalizeStatusPresentation(explodeRaw, {
-          status: 'explode',
-          folder,
-          legacyKind: client.explodeAnimKind ?? client.animKind,
-        })
-      : hadLegacySplit
-        ? normalizeStatusPresentation(undefined, {
-            status: 'explode',
-            folder,
-            legacyKind: client.explodeAnimKind ?? client.animKind,
-          })
-        : undefined;
-
   const next: BulletClientAssets = { folder, flying };
-  if (explode) next.explode = explode;
   next.cellWidthFill = resolveCellWidthFill(client.cellWidthFill, DEFAULT_BULLET_CELL_WIDTH_FILL);
   const scale =
     client.scale != null && Number.isFinite(client.scale) && client.scale > 0 ? client.scale : 1;

@@ -6,7 +6,7 @@ type Loose = Record<string, unknown>;
 
 /**
  * v0 → v1: run additive bullet normalize (fills missing cellWidthFill/scale)
- * without dropping authored flying/explode presentation.
+ * without dropping authored flying presentation.
  */
 function bulletV0ToV1(raw: Loose): Loose {
   const normalized = normalizeBulletDefinition(raw);
