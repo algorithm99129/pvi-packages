@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+**/dist/
+*.tsbuildinfo
+
+# Logs / OS
+*.log
+.DS_Store
+Thumbs.db
