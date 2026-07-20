@@ -31,8 +31,13 @@ export interface PlantDefinition {
   server: PlantServerConfig;
   /** Leveling and upgrade costs (formula-driven). */
   upgrade?: PlantUpgradeConfig;
-  /** Optional combat behavior overrides (see resolvePlantBehavior). */
+  /**
+   * Optional combat behavior overrides (legacy — prefer status graph + extraAttributes).
+   * @deprecated Prefer extraAttributes + state graph.
+   */
   behavior?: PlantBehaviorConfig;
+  /** Per-unit knobs addressable as `extra.<key>` in the status graph. */
+  extraAttributes?: ExtraAttributes;
 }
 
 /** Max plant level (roster upgrades). Matches DEFAULT_PLANT_UPGRADE.maxLevel. */
@@ -82,6 +87,7 @@ export interface PlantStatCurve {
 
 import type { GfxRectCrop, GfxAnimationSlot } from './gfx';
 import type { PlantBehaviorConfig } from './plant-behavior';
+import type { ExtraAttributes } from './extra-attributes';
 import type { EntityStateGraph } from './entity-state-graph';
 import { mirrorPlantClipsFromGraph } from './entity-state-graph';
 
@@ -295,6 +301,7 @@ export interface ServerPlantExport {
   schemaVersion?: number;
   client: PlantClientAssets;
   behavior?: PlantBehaviorConfig;
+  extraAttributes?: ExtraAttributes;
   stats: PlantStatCurve;
   server: PlantServerConfig;
   upgrade?: PlantUpgradeConfig;
@@ -312,4 +319,5 @@ export interface ClientPlantExport {
   /** Combat stats needed for local sim preview in editor */
   stats: PlantStatCurve;
   behavior?: PlantBehaviorConfig;
+  extraAttributes?: ExtraAttributes;
 }

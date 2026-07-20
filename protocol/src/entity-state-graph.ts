@@ -17,6 +17,14 @@
  * set, then despawns).
  */
 
+import {
+  BUILTIN_DURATION_ATTRIBUTE_OPTIONS,
+  LEGACY_BEHAVIOR_DURATION_OPTIONS,
+  getExtraNumber,
+  parseExtraPath,
+  type ExtraAttributes,
+} from './extra-attributes';
+
 export type EntityGraphKind = 'plant' | 'insect';
 
 /** Built-in plant statuses (nodes pick from this set). */
@@ -138,37 +146,14 @@ export const DURATION_ATTRIBUTE_OPTIONS: ReadonlyArray<{
   /** If true, runtime divides by 1000 (milliseconds → seconds). */
   fromMs?: boolean;
 }> = [
-  {
-    path: 'behavior.digestSeconds',
-    label: 'behavior.digestSeconds',
-    hint: 'Chomper digest duration (seconds)',
-    kind: 'plant',
-  },
-  {
-    path: 'behavior.prepareSeconds',
-    label: 'behavior.prepareSeconds',
-    hint: 'Arming / prepare duration (Potato Mine, etc.)',
-    kind: 'plant',
-  },
-  {
-    path: 'behavior.detonateDelaySeconds',
-    label: 'behavior.detonateDelaySeconds',
-    hint: 'Delay before instant explode (Cherry Bomb)',
-    kind: 'plant',
-  },
-  {
-    path: 'behavior.produceIntervalSeconds',
-    label: 'behavior.produceIntervalSeconds',
-    hint: 'Sun / resource production interval (Sunflower family)',
-    kind: 'plant',
-  },
-  {
-    path: 'stats.attackIntervalMs',
-    label: 'stats.attackIntervalMs',
-    hint: 'Attack interval converted from milliseconds to seconds',
-    kind: 'both',
-    fromMs: true,
-  },
+  ...BUILTIN_DURATION_ATTRIBUTE_OPTIONS,
+  ...LEGACY_BEHAVIOR_DURATION_OPTIONS.map(({ path, label, hint, kind, fromMs }) => ({
+    path,
+    label,
+    hint,
+    kind,
+    fromMs,
+  })),
 ];
 export function literalDuration(seconds: number): StateDurationValue {
   return { kind: 'literal', seconds: Math.max(0, seconds) };
@@ -204,6 +189,7 @@ export function resolveStateDuration(
   ctx: {
     stats?: { attackIntervalMs?: number };
     behavior?: Record<string, unknown> | null;
+    extraAttributes?: ExtraAttributes | null;
     constants?: Readonly<Record<string, unknown>>;
   },
 ): number {
@@ -217,14 +203,41 @@ export function resolveStateDuration(
   const path = value.path.trim();
   const meta = DURATION_ATTRIBUTE_OPTIONS.find((o) => o.path === path);
   let raw: unknown;
+
   if (path === 'stats.attackIntervalMs') {
     raw = ctx.stats?.attackIntervalMs;
-  } else if (path.startsWith('behavior.') && ctx.behavior) {
-    raw = ctx.behavior[path.slice('behavior.'.length)];
+  } else {
+    const extraKey = parseExtraPath(path);
+    if (extraKey) {
+      raw = getExtraNumber(ctx.extraAttributes, extraKey);
+    } else if (path.startsWith('behavior.')) {
+      const legacyKey = path.slice('behavior.'.length);
+      // Prefer matching extra attribute when present.
+      const fromExtra = getExtraNumber(ctx.extraAttributes, legacyKey);
+      if (fromExtra !== undefined) raw = fromExtra;
+      else if (ctx.behavior) raw = ctx.behavior[legacyKey];
+    }
   }
+
   const n = Number(raw);
-  if (!Number.isFinite(n)) return 0;
-  return Math.max(0, meta?.fromMs ? n / 1000 : n);
+  if (!Number.isFinite(n)) {
+    // Classic Chomper digest — never treat a missing digest as "already done".
+    if (
+      path === 'extra.digestSeconds' ||
+      path === 'behavior.digestSeconds'
+    ) {
+      return 42;
+    }
+    return 0;
+  }
+  const seconds = Math.max(0, meta?.fromMs ? n / 1000 : n);
+  if (
+    seconds <= 0 &&
+    (path === 'extra.digestSeconds' || path === 'behavior.digestSeconds')
+  ) {
+    return 42;
+  }
+  return seconds;
 }
 
 
@@ -767,7 +780,7 @@ export function createChomperStateGraph(opts?: {
   attackAnim?: string;
   digestAnim?: string;
   dieAnim?: string;
-  /** @deprecated Prefer behavior.digestSeconds on the plant; edge uses attribute by default. */
+  /** @deprecated Prefer extra.digestSeconds on the plant; edge uses attribute by default. */
   digestSeconds?: number;
 }): EntityStateGraph {
   const idleId = createStateNodeId();
@@ -776,7 +789,7 @@ export function createChomperStateGraph(opts?: {
   const digestDuration: StateDurationValue =
     opts?.digestSeconds !== undefined
       ? literalDuration(opts.digestSeconds)
-      : attributeDuration('behavior.digestSeconds');
+      : attributeDuration('extra.digestSeconds');
   return {
     version: 1,
     entryNodeId: idleId,
@@ -942,7 +955,7 @@ export function createProducerStateGraph(opts?: {
         to: produceId,
         conditions: cond({
           type: 'after_seconds',
-          value: attributeDuration('behavior.produceIntervalSeconds'),
+          value: attributeDuration('extra.produceIntervalSeconds'),
         }),
       },
       {

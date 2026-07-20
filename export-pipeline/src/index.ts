@@ -50,6 +50,7 @@ export function toServerPlant(plant: PlantDefinition): ServerPlantExport {
     schemaVersion: plant.schemaVersion,
     client: plant.client,
     behavior: plant.behavior,
+    extraAttributes: plant.extraAttributes,
     stats: plant.stats,
     server: plant.server,
     upgrade: plant.upgrade ?? undefined,
@@ -67,6 +68,7 @@ export function toClientPlant(plant: PlantDefinition): ClientPlantExport {
     client: plant.client,
     stats: plant.stats,
     behavior: plant.behavior,
+    extraAttributes: plant.extraAttributes,
   };
 }
 
@@ -81,6 +83,8 @@ export function toServerInsect(insect: InsectDefinition): ServerInsectExport {
     client: insect.client,
     stats: insect.stats,
     server: insect.server,
+    upgrade: insect.upgrade,
+    extraAttributes: insect.extraAttributes,
   };
 }
 
@@ -94,6 +98,7 @@ export function toClientInsect(insect: InsectDefinition): ClientInsectExport {
     schemaVersion: insect.schemaVersion,
     client: insect.client,
     stats: insect.stats,
+    extraAttributes: insect.extraAttributes,
   };
 }
 

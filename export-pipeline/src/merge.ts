@@ -76,6 +76,7 @@ export function mergePlant(client: ClientPlantExport, server?: ServerPlantExport
     client: mergePreferPrimary(client.client, server?.client) ?? client.client,
     server: server?.server ?? DEFAULT_PLANT_SERVER,
     behavior: mergePreferPrimary(client.behavior, server?.behavior),
+    extraAttributes: mergePreferPrimary(client.extraAttributes, server?.extraAttributes),
     upgrade: server?.upgrade,
     schemaVersion: client.schemaVersion ?? server?.schemaVersion,
   };
@@ -92,6 +93,7 @@ export function mergeInsect(client: ClientInsectExport, server?: ServerInsectExp
     stats: mergePreferPrimary(client.stats, server?.stats) ?? client.stats,
     client: mergePreferPrimary(client.client, server?.client) ?? client.client,
     server: server?.server ?? DEFAULT_INSECT_SERVER,
+    extraAttributes: mergePreferPrimary(client.extraAttributes, server?.extraAttributes),
     schemaVersion: client.schemaVersion ?? server?.schemaVersion,
   };
   return migrateInsectDefinition(merged);

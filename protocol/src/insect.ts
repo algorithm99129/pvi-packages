@@ -23,6 +23,8 @@ export interface InsectDefinition {
   server: InsectServerConfig;
   /** Leveling and upgrade costs (formula-driven). */
   upgrade?: InsectUpgradeConfig;
+  /** Per-unit knobs addressable as `extra.<key>` in the status graph. */
+  extraAttributes?: ExtraAttributes;
 }
 
 /** Max insect level (roster upgrades). Matches DEFAULT_INSECT_UPGRADE.maxLevel. */
@@ -63,6 +65,7 @@ export interface InsectStatCurve {
 }
 
 import type { GfxRectCrop, GfxAnimationSlot } from './gfx';
+import type { ExtraAttributes } from './extra-attributes';
 import type { EntityStateGraph } from './entity-state-graph';
 import { mirrorInsectClipsFromGraph } from './entity-state-graph';
 
@@ -136,6 +139,7 @@ export interface ServerInsectExport {
   stats: InsectStatCurve;
   server: InsectServerConfig;
   upgrade?: InsectUpgradeConfig;
+  extraAttributes?: ExtraAttributes;
 }
 
 export interface ClientInsectExport {
@@ -147,4 +151,5 @@ export interface ClientInsectExport {
   schemaVersion?: number;
   client: InsectClientAssets;
   stats: InsectStatCurve;
+  extraAttributes?: ExtraAttributes;
 }
