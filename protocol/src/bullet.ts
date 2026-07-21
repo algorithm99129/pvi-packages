@@ -1,5 +1,6 @@
 import type { EntityId } from './index';
 import type { PlantDefinition } from './plant';
+import { primaryBulletRef } from './plant';
 import { plantShootsBullets } from './plant-behavior';
 import { DEFAULT_BULLET_CELL_WIDTH_FILL, resolveCellWidthFill } from './unit-sizing';
 
@@ -262,14 +263,14 @@ export function resolveBulletByRef(
 
 /**
  * Damage curve inputs for catalog / player resolve.
- * Shooters inherit from the referenced bullet; other plants use plant stats.
+ * Shooters inherit from the primary (highest-weight) bullet; other plants use plant stats.
  */
 export function resolvePlantDamageCurveInputs(
   plant: Pick<PlantDefinition, 'id' | 'role' | 'client' | 'behavior' | 'stats'>,
   bullets: BulletDefinition[],
 ): { base: number; perLevel: number } {
   if (plantShootsBullets(plant)) {
-    const bullet = resolveBulletByRef(bullets, plant.client.bullet);
+    const bullet = resolveBulletByRef(bullets, primaryBulletRef(plant.client));
     if (bullet) {
       return {
         base: bullet.stats.baseDamage,

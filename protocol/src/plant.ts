@@ -131,8 +131,101 @@ export interface PlantBulletShot {
 export const DEFAULT_PLANT_BULLET_SPAWN: PlantBulletSpawnPoint = { x: 0.75, y: 0.5 };
 export const DEFAULT_BULLET_ARC_HEIGHT = 0.35;
 
+/**
+ * One entry in a plant's projectile pool.
+ * Each shot rolls among choices using relative weights (chance = weight / sum).
+ */
+export interface PlantBulletChoice {
+  /** Bullet folder or id (same refs as legacy `client.bullet`). */
+  bullet: string;
+  /** Relative weight; must be > 0. Equal weights → equal chance. */
+  weight: number;
+}
+
 export function plantSupportsBullets(role: PlantRole): boolean {
   return role === 'shooter';
+}
+
+function normalizeBulletChoice(raw: Partial<PlantBulletChoice> | undefined): PlantBulletChoice | null {
+  if (!raw) return null;
+  const bullet = typeof raw.bullet === 'string' ? raw.bullet.trim() : '';
+  if (!bullet) return null;
+  const weight =
+    Number.isFinite(raw.weight) && (raw.weight as number) > 0 ? (raw.weight as number) : 1;
+  return { bullet, weight };
+}
+
+/**
+ * Authoritative projectile pool. Migrates legacy single `bullet` into one choice.
+ */
+export function resolveBulletChoices(client: PlantClientAssets): PlantBulletChoice[] {
+  if (client.bulletChoices && client.bulletChoices.length > 0) {
+    const cleaned = client.bulletChoices
+      .map((c) => normalizeBulletChoice(c))
+      .filter((c): c is PlantBulletChoice => c != null);
+    if (cleaned.length > 0) return cleaned;
+  }
+  if (client.bullet && client.bullet.trim().length > 0) {
+    return [{ bullet: client.bullet.trim(), weight: 1 }];
+  }
+  return [];
+}
+
+/** Highest-weight choice (ties → first) — used for damage preview / legacy `bullet`. */
+export function primaryBulletRef(client: PlantClientAssets): string | undefined {
+  const choices = resolveBulletChoices(client);
+  if (choices.length === 0) return undefined;
+  let best = choices[0];
+  for (let i = 1; i < choices.length; i++) {
+    if (choices[i].weight > best.weight) best = choices[i];
+  }
+  return best.bullet;
+}
+
+/** Persist choices and mirror `bullet` to the primary entry for older readers. */
+export function withBulletChoices(
+  client: PlantClientAssets,
+  choices: PlantBulletChoice[],
+): PlantClientAssets {
+  const normalized = choices
+    .map((c) => normalizeBulletChoice(c))
+    .filter((c): c is PlantBulletChoice => c != null);
+  const primary =
+    normalized.length === 0
+      ? undefined
+      : normalized.reduce((best, c) => (c.weight > best.weight ? c : best), normalized[0]);
+  return {
+    ...client,
+    bulletChoices: normalized.length > 0 ? normalized : undefined,
+    bullet: primary?.bullet,
+  };
+}
+
+/**
+ * Weighted pick. `random01` in [0, 1) — pass a seeded RNG in tests.
+ */
+export function pickBulletChoice(
+  choices: PlantBulletChoice[],
+  random01: number = Math.random(),
+): PlantBulletChoice | undefined {
+  if (choices.length === 0) return undefined;
+  if (choices.length === 1) return choices[0];
+  const total = choices.reduce((sum, c) => sum + c.weight, 0);
+  if (!(total > 0)) return choices[0];
+  let r = Math.min(0.999999, Math.max(0, random01)) * total;
+  for (const c of choices) {
+    r -= c.weight;
+    if (r <= 0) return c;
+  }
+  return choices[choices.length - 1];
+}
+
+/** Display chance 0–100 for a choice index. */
+export function bulletChoiceChancePercent(choices: PlantBulletChoice[], index: number): number {
+  if (!choices[index]) return 0;
+  const total = choices.reduce((sum, c) => sum + c.weight, 0);
+  if (!(total > 0)) return 0;
+  return (choices[index].weight / total) * 100;
 }
 
 export function resolveBulletSpawn(client: PlantClientAssets): PlantBulletSpawnPoint {
@@ -251,8 +344,15 @@ export interface PlantClientAssets {
    * Die is configured on the graph (not edged); HP≤0 always enters die.
    */
   stateGraph?: EntityStateGraph;
-  /** Bullet folder under Bullets/, e.g. Pea */
+  /** Bullet folder under Bullets/, e.g. Pea.
+   * @deprecated Prefer `bulletChoices`. Mirrored from the highest-weight choice.
+   */
   bullet?: string;
+  /**
+   * Weighted projectile pool. Each volley shot rolls among these by weight.
+   * When empty, falls back to legacy `bullet`.
+   */
+  bulletChoices?: PlantBulletChoice[];
   /**
    * @deprecated Prefer `bulletShots`. Kept in sync with `bulletShots[0].spawn` for older readers.
    */
