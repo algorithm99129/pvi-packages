@@ -38,6 +38,66 @@ export interface BulletStats {
   hitMode: BulletHitMode;
   /** Area only: blast radius in grid cells around impact. */
   areaRadiusCells?: number;
+  /**
+   * Combat debuffs applied to each hit target (PvZ-style chill / butter / freeze).
+   * Distinct from BulletStatusPresentation (flying art).
+   */
+  onHitStatuses?: BulletOnHitStatus[];
+}
+
+/** Applied by projectiles on impact — not unit status-graph statuses. */
+export type BulletOnHitStatusKind = 'slow' | 'freeze' | 'stun';
+
+export interface BulletOnHitStatus {
+  kind: BulletOnHitStatusKind;
+  /** Seconds; re-applying refreshes the timer. */
+  durationSeconds: number;
+  /**
+   * Movement multiplier while active.
+   * Defaults: slow 0.5, freeze/stun 0.
+   */
+  speedScale?: number;
+  /**
+   * When true, target cannot attack / chew / fire.
+   * Defaults: freeze & stun true, slow false.
+   */
+  blockActions?: boolean;
+}
+
+/** Common PvZ presets for the editor. */
+export const BULLET_ON_HIT_PRESETS: ReadonlyArray<{
+  id: string;
+  label: string;
+  hint: string;
+  status: BulletOnHitStatus;
+}> = [
+  {
+    id: 'snow_pea_chill',
+    label: 'Snow Pea chill',
+    hint: 'Halve walk speed for 10s',
+    status: { kind: 'slow', durationSeconds: 10, speedScale: 0.5, blockActions: false },
+  },
+  {
+    id: 'ice_shroom_freeze',
+    label: 'Ice freeze',
+    hint: 'Stop moving and acting for 5s',
+    status: { kind: 'freeze', durationSeconds: 5, speedScale: 0, blockActions: true },
+  },
+  {
+    id: 'butter_stun',
+    label: 'Butter stun',
+    hint: 'Stun in place for 4s',
+    status: { kind: 'stun', durationSeconds: 4, speedScale: 0, blockActions: true },
+  },
+];
+
+export function defaultOnHitSpeedScale(kind: BulletOnHitStatusKind): number {
+  if (kind === 'slow') return 0.5;
+  return 0;
+}
+
+export function defaultOnHitBlockActions(kind: BulletOnHitStatusKind): boolean {
+  return kind === 'freeze' || kind === 'stun';
 }
 
 export interface BulletDefinition {
@@ -317,7 +377,33 @@ function normalizeBulletStats(stats?: Partial<BulletStats>): BulletStats {
         ? (stats!.areaRadiusCells as number)
         : DEFAULT_BULLET_AREA_RADIUS_CELLS;
   }
+  const onHit = normalizeOnHitStatuses(stats?.onHitStatuses);
+  if (onHit) next.onHitStatuses = onHit;
   return next;
+}
+
+function normalizeOnHitStatuses(raw: unknown): BulletOnHitStatus[] | undefined {
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  const out: BulletOnHitStatus[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const row = item as Record<string, unknown>;
+    const kind =
+      row.kind === 'slow' || row.kind === 'freeze' || row.kind === 'stun' ? row.kind : null;
+    if (!kind) continue;
+    const duration = Number(row.durationSeconds);
+    if (!Number.isFinite(duration) || duration <= 0) continue;
+    const status: BulletOnHitStatus = {
+      kind,
+      durationSeconds: duration,
+    };
+    if (row.speedScale !== undefined && Number.isFinite(Number(row.speedScale))) {
+      status.speedScale = Math.max(0, Math.min(1, Number(row.speedScale)));
+    }
+    if (typeof row.blockActions === 'boolean') status.blockActions = row.blockActions;
+    out.push(status);
+  }
+  return out.length > 0 ? out : undefined;
 }
 
 function toPascal(value: string): string {
