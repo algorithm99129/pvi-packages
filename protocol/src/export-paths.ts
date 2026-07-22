@@ -13,6 +13,8 @@ export const CLIENT_EXPORT_PATHS = {
   bulletsDir: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.bullets}`,
   missions: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.missions}/missions.json`,
   maps: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.maps}/maps.json`,
+  avatars: `${CLIENT_RESOURCES_ROOT}/Avatars/avatars.json`,
+  avatarsDir: `${CLIENT_RESOURCES_ROOT}/Avatars`,
   branding: `${CLIENT_RESOURCES_ROOT}/branding.json`,
   balanceVersion: `${CLIENT_RESOURCES_ROOT}/balance-version.json`,
   /** Unity Resources root for path resolution */
@@ -34,6 +36,8 @@ export const SERVER_EXPORT_PATHS = {
   bulletsDir: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.bullets}`,
   missions: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.missions}/missions.json`,
   maps: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.maps}/maps.json`,
+  avatars: `${SERVER_RESOURCES_DIR}/Avatars/avatars.json`,
+  avatarsDir: `${SERVER_RESOURCES_DIR}/Avatars`,
   balanceVersion: `${SERVER_RESOURCES_DIR}/balance-version.json`,
   logic: `${SERVER_RESOURCES_DIR}/Systems/logic.json`,
 } as const;
@@ -59,6 +63,7 @@ const LEGACY_DATA_AGGREGATES: Record<string, string> = {
   insects: `${RESOURCE_CATEGORIES.insects}/insects`,
   missions: `${RESOURCE_CATEGORIES.missions}/missions`,
   maps: `${RESOURCE_CATEGORIES.maps}/maps`,
+  avatars: 'Avatars/avatars',
 };
 
 /**
@@ -100,7 +105,8 @@ export function normalizeClientMediaPath(relativePath: string): string {
     normalized.startsWith('Bullets/') ||
     normalized.startsWith('Missions/') ||
     normalized.startsWith('Maps/') ||
-    normalized.startsWith('Screen/')
+    normalized.startsWith('Screen/') ||
+    normalized.startsWith('Avatars/')
   ) {
     return normalized;
   }

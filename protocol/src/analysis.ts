@@ -6,6 +6,7 @@ export interface AnalysisUserSummary {
   id: string;
   email: string;
   displayName: string;
+  avatarId?: string;
   wallet: { coin: number; gem: number; leaf: number };
   plantCount: number;
   unlockedPlantCount: number;

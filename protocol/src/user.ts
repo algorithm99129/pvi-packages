@@ -10,6 +10,8 @@ export interface UserProfile {
   id: string;
   email: string;
   displayName: string;
+  /** Selected avatar id from Resources/Avatars catalog. */
+  avatarId: string;
   createdAt: string;
   updatedAt: string;
 }
