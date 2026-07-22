@@ -65,6 +65,7 @@ export interface InsectStatCurve {
 }
 
 import type { GfxRectCrop, GfxAnimationSlot } from './gfx';
+import type { UnitCellAnchor } from './unit-sizing';
 import type { ExtraAttributes } from './extra-attributes';
 import type { EntityStateGraph } from './entity-state-graph';
 import { mirrorInsectClipsFromGraph } from './entity-state-graph';
@@ -100,9 +101,19 @@ export interface InsectClientAssets {
   cropX?: number;
   cropWidth?: number;
   crop?: GfxRectCrop;
-  /** Fraction of grid cell width (0–1). Default 0.9. Height follows sprite aspect ratio. */
+  /**
+   * Art placement inside one grid cell (0–1 anchors, bottom-left origin).
+   * Prefer this over legacy `cellWidthFill` / `scale`.
+   */
+  cellAnchor?: UnitCellAnchor;
+  /**
+   * @deprecated Prefer `cellAnchor`. Fraction of grid cell width (0–1).
+   * Kept in sync with `cellAnchor.maxX - cellAnchor.minX` when the editor saves.
+   */
   cellWidthFill?: number;
-  /** Extra multiplier applied after cell-width fitting. */
+  /**
+   * @deprecated Prefer `cellAnchor`. Extra multiplier after cell-width fitting.
+   */
   scale?: number;
 }
 

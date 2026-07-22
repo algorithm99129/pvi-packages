@@ -46,6 +46,7 @@ export function clientPresentationScore(client: unknown): number {
   if (client.bulletSpawn != null) score += 1;
   if (typeof client.idle === 'string' && client.idle.length > 0) score += 1;
   if (typeof client.walk === 'string' && client.walk.length > 0) score += 1;
+  if (client.cellAnchor != null) score += 2;
   if (client.cellWidthFill != null) score += 1;
   return score;
 }

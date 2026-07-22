@@ -90,6 +90,7 @@ import type { PlantBehaviorConfig } from './plant-behavior';
 import type { ExtraAttributes } from './extra-attributes';
 import type { EntityStateGraph } from './entity-state-graph';
 import { mirrorPlantClipsFromGraph } from './entity-state-graph';
+import type { UnitCellAnchor } from './unit-sizing';
 
 /** Normalized point on the plant sprite (0–1 from bottom-left of displayed bounds). */
 export interface PlantBulletSpawnPoint {
@@ -361,9 +362,19 @@ export interface PlantClientAssets {
   bulletShots?: PlantBulletShot[];
   extraAnimations?: GfxAnimationSlot[];
   crop?: GfxRectCrop;
-  /** Fraction of grid cell width (0–1). Default 0.8. Height follows sprite aspect ratio. */
+  /**
+   * Art placement inside one grid cell (0–1 anchors, bottom-left origin).
+   * Prefer this over legacy `cellWidthFill` / `scale`.
+   */
+  cellAnchor?: UnitCellAnchor;
+  /**
+   * @deprecated Prefer `cellAnchor`. Fraction of grid cell width (0–1).
+   * Kept in sync with `cellAnchor.maxX - cellAnchor.minX` when the editor saves.
+   */
   cellWidthFill?: number;
-  /** Extra multiplier applied after cell-width fitting. */
+  /**
+   * @deprecated Prefer `cellAnchor`. Extra multiplier after cell-width fitting.
+   */
   scale?: number;
 }
 
