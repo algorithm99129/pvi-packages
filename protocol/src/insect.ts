@@ -1,5 +1,6 @@
 import type { EntityId } from './index';
 import type { WalletResources } from './wallet';
+import type { EquipmentHitbox } from './equipment';
 
 export type InsectArchetype =
   | 'swarm'
@@ -115,6 +116,14 @@ export interface InsectClientAssets {
    * @deprecated Prefer `cellAnchor`. Extra multiplier after cell-width fitting.
    */
   scale?: number;
+  /** Optional equipment catalog id (helmet, door, …). */
+  equipmentId?: EntityId;
+  /**
+   * Per-insect equipment AABB (cell-width fractions, local to insect root).
+   * Same catalog piece can sit differently on each insect — edit on the insect page.
+   * Runtime falls back to the equipment catalog default when omitted.
+   */
+  equipmentHitbox?: EquipmentHitbox;
 }
 
 /** Persist graph and keep legacy walk/attack/die fields mirrored. */

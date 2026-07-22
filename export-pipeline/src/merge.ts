@@ -1,10 +1,12 @@
 import type {
   BulletDefinition,
   ClientBulletExport,
+  ClientEquipmentExport,
   ClientInsectExport,
   ClientMapExport,
   ClientMissionExport,
   ClientPlantExport,
+  EquipmentDefinition,
   InsectDefinition,
   InsectServerConfig,
   MapTemplateDefinition,
@@ -12,6 +14,7 @@ import type {
   PlantDefinition,
   PlantServerConfig,
   ServerBulletExport,
+  ServerEquipmentExport,
   ServerInsectExport,
   ServerMapExport,
   ServerMissionExport,
@@ -27,6 +30,7 @@ import {
   migrateMissionDefinition,
   migratePlantDefinition,
   normalizeBulletDefinition,
+  normalizeEquipmentDefinition,
 } from '@garden-siege/protocol';
 import type { GameDataBundle } from './index';
 
@@ -148,6 +152,27 @@ export function mergeMap(client: ClientMapExport, server?: ServerMapExport): Map
   return migrateMapDefinition(merged);
 }
 
+export function mergeEquipment(
+  client: ClientEquipmentExport,
+  server?: ServerEquipmentExport,
+): EquipmentDefinition {
+  const merged = normalizeEquipmentDefinition({
+    ...server,
+    ...client,
+    id: client.id || server?.id,
+    displayName: client.displayName ?? server?.displayName,
+    description: client.description ?? server?.description,
+    onDestroyStatus: client.onDestroyStatus ?? server?.onDestroyStatus,
+    client: mergePreferPrimary(client.client, server?.client) ?? client.client,
+    stats: mergePreferPrimary(client.stats, server?.stats) ?? client.stats,
+    schemaVersion: client.schemaVersion ?? server?.schemaVersion,
+  });
+  if (!merged) {
+    throw new Error(`Invalid equipment definition: ${client.id ?? server?.id}`);
+  }
+  return merged;
+}
+
 export function mergeGameDataBundle(parts: {
   clientPlants: ClientPlantExport[];
   serverPlants: ServerPlantExport[];
@@ -155,6 +180,8 @@ export function mergeGameDataBundle(parts: {
   serverInsects: ServerInsectExport[];
   clientBullets?: ClientBulletExport[];
   serverBullets?: ServerBulletExport[];
+  clientEquipment?: ClientEquipmentExport[];
+  serverEquipment?: ServerEquipmentExport[];
   clientMissions: ClientMissionExport[];
   serverMissions: ServerMissionExport[];
   clientMaps: ClientMapExport[];
@@ -163,12 +190,14 @@ export function mergeGameDataBundle(parts: {
   const serverPlants = indexById(parts.serverPlants);
   const serverInsects = indexById(parts.serverInsects);
   const serverBullets = indexById(parts.serverBullets ?? []);
+  const serverEquipment = indexById(parts.serverEquipment ?? []);
   const serverMissions = indexById(parts.serverMissions);
   const serverMaps = indexById(parts.serverMaps);
 
   const clientPlantIds = new Set(parts.clientPlants.map((p) => p.id));
   const clientInsectIds = new Set(parts.clientInsects.map((p) => p.id));
   const clientBulletIds = new Set((parts.clientBullets ?? []).map((p) => p.id));
+  const clientEquipmentIds = new Set((parts.clientEquipment ?? []).map((p) => p.id));
   const clientMissionIds = new Set(parts.clientMissions.map((p) => p.id));
   const clientMapIds = new Set(parts.clientMaps.map((p) => p.id));
 
@@ -225,6 +254,19 @@ export function mergeGameDataBundle(parts: {
     ...serverOnlyBullets.map((b) => migrateBulletDefinition(b)),
   ];
 
+  const clientEquipment = (parts.clientEquipment ?? [])
+    .map((raw) => normalizeEquipmentDefinition(raw))
+    .filter((e): e is EquipmentDefinition => Boolean(e));
+  const serverOnlyEquipment = (parts.serverEquipment ?? [])
+    .filter((server) => !clientEquipmentIds.has(server.id))
+    .map((raw) => normalizeEquipmentDefinition(raw))
+    .filter((e): e is EquipmentDefinition => Boolean(e));
+
+  const equipment = [
+    ...clientEquipment.map((client) => mergeEquipment(client, serverEquipment.get(client.id))),
+    ...serverOnlyEquipment,
+  ];
+
   const missions = [
     ...parts.clientMissions.map((client) => mergeMission(client, serverMissions.get(client.id))),
     ...parts.serverMissions
@@ -270,5 +312,5 @@ export function mergeGameDataBundle(parts: {
       ),
   ];
 
-  return { plants, insects, bullets, missions, maps };
+  return { plants, insects, bullets, equipment, missions, maps };
 }

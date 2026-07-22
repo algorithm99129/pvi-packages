@@ -11,6 +11,7 @@ export * from './plant-behavior';
 export * from './extra-attributes';
 export * from './entity-state-graph';
 export * from './bullet';
+export * from './equipment';
 export * from './unit-sizing';
 export * from './insect';
 export * from './mission';

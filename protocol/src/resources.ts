@@ -1,10 +1,18 @@
 /** Resource category folders under Assets/Resources (client) or Resources (server). */
-export type ResourceCategory = 'Plants' | 'Insects' | 'Bullets' | 'Missions' | 'Maps' | 'Screen';
+export type ResourceCategory =
+  | 'Plants'
+  | 'Insects'
+  | 'Bullets'
+  | 'Equipment'
+  | 'Missions'
+  | 'Maps'
+  | 'Screen';
 
 export const RESOURCE_CATEGORIES = {
   plants: 'Plants',
   insects: 'Insects',
   bullets: 'Bullets',
+  equipment: 'Equipment',
   missions: 'Missions',
   maps: 'Maps',
   screen: 'Screen',

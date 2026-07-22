@@ -11,6 +11,8 @@ export const CLIENT_EXPORT_PATHS = {
   insectsDir: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.insects}`,
   bullets: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.bullets}/bullets.json`,
   bulletsDir: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.bullets}`,
+  equipment: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.equipment}/equipment.json`,
+  equipmentDir: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.equipment}`,
   missions: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.missions}/missions.json`,
   maps: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.maps}/maps.json`,
   avatars: `${CLIENT_RESOURCES_ROOT}/Avatars/avatars.json`,
@@ -34,6 +36,8 @@ export const SERVER_EXPORT_PATHS = {
   insectsDir: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.insects}`,
   bullets: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.bullets}/bullets.json`,
   bulletsDir: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.bullets}`,
+  equipment: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.equipment}/equipment.json`,
+  equipmentDir: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.equipment}`,
   missions: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.missions}/missions.json`,
   maps: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.maps}/maps.json`,
   avatars: `${SERVER_RESOURCES_DIR}/Avatars/avatars.json`,
@@ -64,6 +68,7 @@ const LEGACY_DATA_AGGREGATES: Record<string, string> = {
   missions: `${RESOURCE_CATEGORIES.missions}/missions`,
   maps: `${RESOURCE_CATEGORIES.maps}/maps`,
   avatars: 'Avatars/avatars',
+  equipment: `${RESOURCE_CATEGORIES.equipment}/equipment`,
 };
 
 /**
@@ -103,6 +108,7 @@ export function normalizeClientMediaPath(relativePath: string): string {
     normalized.startsWith('Plants/') ||
     normalized.startsWith('Insects/') ||
     normalized.startsWith('Bullets/') ||
+    normalized.startsWith('Equipment/') ||
     normalized.startsWith('Missions/') ||
     normalized.startsWith('Maps/') ||
     normalized.startsWith('Screen/') ||
