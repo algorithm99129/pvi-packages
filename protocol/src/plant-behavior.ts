@@ -25,7 +25,11 @@ export interface PlantBehaviorConfig {
   removeOnTrigger?: boolean;
   /** Play aim clip before attack (Squash). */
   aimBeforeAttack?: boolean;
-  /** Screen FX key override for explosions. */
+  /**
+   * Explode VFX style fallback when the graph action omits `vfxStyle`.
+   * Use {@link ExplodeVfxStyle} ids: boom | fire | lane_fire | ice
+   * (legacy Boom / JalapenoExplode / IceShroomSnow still accepted).
+   */
   explodeGfx?: string;
   /** Chomper: seconds spent in digest before returning to idle. */
   digestSeconds?: number;
@@ -78,7 +82,8 @@ function inferPlantBehavior(input: {
       triggerLaneRange: id === 'jalapeno' ? 0 : 1,
       triggerColumnRange: id === 'jalapeno' ? 9 : 1.5,
       removeOnTrigger: true,
-      explodeGfx: id === 'jalapeno' ? 'JalapenoExplode' : id === 'ice_shroom' ? 'IceShroomSnow' : 'Boom',
+      explodeGfx:
+        id === 'jalapeno' ? 'lane_fire' : id === 'ice_shroom' ? 'ice' : id === 'cherry_bomb' ? 'fire' : 'boom',
     };
   }
 

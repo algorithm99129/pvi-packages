@@ -409,6 +409,57 @@ export interface StateAction {
   splashColumnRange?: StateDurationValue;
   /** squash_crush: splash lane radius around impact. */
   splashLaneRange?: StateDurationValue;
+  /**
+   * explode: visual style (point boom, fire, lane fire sweep, ice).
+   * Prefer this over hardcoding by plant id in the client.
+   */
+  vfxStyle?: ExplodeVfxStyle;
+}
+
+/** Visual styles for the `explode` action (and behavior.explodeGfx fallback). */
+export type ExplodeVfxStyle = 'boom' | 'fire' | 'lane_fire' | 'ice';
+
+export const EXPLODE_VFX_STYLE_OPTIONS: ReadonlyArray<{
+  id: ExplodeVfxStyle;
+  label: string;
+  hint: string;
+}> = [
+  {
+    id: 'boom',
+    label: 'Boom',
+    hint: 'Single blast at the plant',
+  },
+  {
+    id: 'fire',
+    label: 'Fire blast',
+    hint: 'Fire explosion at the plant (Cherry Bomb)',
+  },
+  {
+    id: 'lane_fire',
+    label: 'Lane fire',
+    hint: 'Fire sweeps across the whole lane (Jalapeno)',
+  },
+  {
+    id: 'ice',
+    label: 'Ice blast',
+    hint: 'Ice burst at the plant',
+  },
+];
+
+const EXPLODE_VFX_STYLE_SET = new Set<string>(EXPLODE_VFX_STYLE_OPTIONS.map((o) => o.id));
+
+/** Normalize authored / legacy explode GFX keys to a known style id. */
+export function normalizeExplodeVfxStyle(raw: unknown): ExplodeVfxStyle | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const s = raw.trim();
+  if (!s) return undefined;
+  const lower = s.toLowerCase().replace(/-/g, '_');
+  if (EXPLODE_VFX_STYLE_SET.has(lower)) return lower as ExplodeVfxStyle;
+  if (lower === 'jalapenoexplode' || lower === 'jalapeno' || lower === 'lanefire') return 'lane_fire';
+  if (lower === 'fireexplosion' || lower === 'cherry' || lower === 'cherry_bomb') return 'fire';
+  if (lower === 'iceshroomsnow' || lower === 'ice_shroom' || lower === 'freeze') return 'ice';
+  if (lower === 'explosion' || lower === 'default') return 'boom';
+  return undefined;
 }
 
 /** Inspector fields for actions that take graph-configurable numbers. */
@@ -491,10 +542,12 @@ export function actionParamFieldsFor(type: StateActionKind) {
 /** Seed default attribute-bound params when adding an action in the editor. */
 export function defaultActionParams(type: StateActionKind): Partial<StateAction> {
   const fields = actionParamFieldsFor(type);
-  if (fields.length === 0) return {};
   const out: Partial<StateAction> = {};
   for (const f of fields) {
     (out as Record<string, StateDurationValue>)[f.key] = attributeDuration(f.defaultAttribute);
+  }
+  if (type === 'explode') {
+    out.vfxStyle = 'boom';
   }
   return out;
 }
@@ -873,6 +926,8 @@ export function createInstantExplodeStateGraph(opts?: {
   delaySeconds?: number;
   /** When true, delay reads extra.detonateDelaySeconds instead of a literal. */
   delayFromExtra?: boolean;
+  /** Explode visual style (default boom). */
+  vfxStyle?: ExplodeVfxStyle;
 }): EntityStateGraph {
   const idleId = createStateNodeId();
   const attackId = createStateNodeId();
@@ -902,6 +957,7 @@ export function createInstantExplodeStateGraph(opts?: {
             when: 'after_anim',
             columnRange: attributeDuration('extra.triggerColumnRange'),
             laneRange: attributeDuration('extra.triggerLaneRange'),
+            vfxStyle: opts?.vfxStyle ?? 'boom',
           },
           { type: 'despawn', when: 'after_anim' },
         ],
@@ -2386,6 +2442,10 @@ function normalizeAction(raw: unknown): StateAction | null {
       const parsed = normalizeDurationValue(a[key]);
       if (parsed) (action as unknown as Record<string, StateDurationValue>)[key] = parsed;
     }
+  }
+  if (type === 'explode') {
+    const style = normalizeExplodeVfxStyle(a.vfxStyle ?? a.explodeGfx);
+    if (style) action.vfxStyle = style;
   }
   return action;
 }
