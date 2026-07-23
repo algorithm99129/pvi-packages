@@ -46,6 +46,16 @@ export const PLANT_MAX_LEVEL = 20;
 /** Stars shown on plant/insect cards (UI), mapped from level. */
 export const UNIT_CARD_MAX_STARS = 5;
 
+/**
+ * Levels 1–5 show no stars. Levels 6–20 map evenly onto 1–5 stars
+ * (6–8 → 1★ … 18–20 → 5★).
+ */
+export function unitCardStarsFromLevel(level: number): number {
+  const clamped = Math.max(1, Math.min(PLANT_MAX_LEVEL, Math.floor(Number(level)) || 1));
+  if (clamped <= 5) return 0;
+  return Math.min(UNIT_CARD_MAX_STARS, Math.ceil((clamped - 5) / 3));
+}
+
 /** Per-plant upgrade tuning — costs evaluated via logic.json formulas. */
 export interface PlantUpgradeConfig {
   maxLevel: number;
