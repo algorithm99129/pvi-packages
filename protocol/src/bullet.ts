@@ -5,7 +5,7 @@ import { plantShootsBullets } from './plant-behavior';
 import { DEFAULT_BULLET_CELL_WIDTH_FILL, resolveCellWidthFill } from './unit-sizing';
 
 /** Single target on impact vs all enemies in a cell radius. */
-export type BulletHitMode = 'single' | 'area';
+export type BulletHitMode = 'single' | 'area' | 'pierce';
 
 /** Static sprite vs Spine skeleton for a bullet status. */
 export type BulletStatusKind = 'image' | 'spine';
@@ -363,7 +363,8 @@ function legacyKindToStatus(kind?: string): BulletStatusKind {
 }
 
 function normalizeBulletStats(stats?: Partial<BulletStats>): BulletStats {
-  const hitMode: BulletHitMode = stats?.hitMode === 'area' ? 'area' : 'single';
+  const hitMode: BulletHitMode =
+    stats?.hitMode === 'area' || stats?.hitMode === 'pierce' ? stats.hitMode : 'single';
   const next: BulletStats = {
     baseDamage: Number.isFinite(stats?.baseDamage) ? Math.max(0, stats!.baseDamage!) : 20,
     damagePerLevel: Number.isFinite(stats?.damagePerLevel)

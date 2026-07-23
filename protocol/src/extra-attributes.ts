@@ -61,9 +61,30 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
   {
     key: 'triggerColumnRange',
     label: 'Trigger column range',
-    hint: 'Melee / trap contact range in columns',
+    hint: 'Melee / trap / explode column radius',
     type: 'number',
     defaultValue: 1,
+  },
+  {
+    key: 'triggerLaneRange',
+    label: 'Trigger lane range',
+    hint: 'Explode lane radius (0 = same lane only; 1 = ±1 lane). Jalapeno uses 0 + wide columns',
+    type: 'number',
+    defaultValue: 1,
+  },
+  {
+    key: 'splashColumnRange',
+    label: 'Splash column range',
+    hint: 'Extra crush/splash radius around Squash impact (near the primary target)',
+    type: 'number',
+    defaultValue: 0.55,
+  },
+  {
+    key: 'splashLaneRange',
+    label: 'Splash lane range',
+    hint: 'Lane radius for Squash splash (0 = same lane)',
+    type: 'number',
+    defaultValue: 0,
   },
   {
     key: 'magnetHoldSeconds',
@@ -71,6 +92,20 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     hint: 'How long Magnet-shroom holds stolen metal before it can pull again',
     type: 'number',
     defaultValue: 15,
+  },
+  {
+    key: 'freezeDurationSeconds',
+    label: 'Freeze duration seconds',
+    hint: 'How long Ice-shroom keeps insects fully frozen',
+    type: 'number',
+    defaultValue: 4,
+  },
+  {
+    key: 'chillDurationSeconds',
+    label: 'Chill duration seconds',
+    hint: 'Slow leftover after Ice-shroom freeze thaws',
+    type: 'number',
+    defaultValue: 10,
   },
 ];
 

@@ -358,6 +358,7 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
 export type StateActionKind =
   | 'fire_bullet'
   | 'deal_contact_damage'
+  | 'deal_area_damage'
   | 'squash_crush'
   | 'chomp_devour'
   | 'explode'
@@ -381,6 +382,11 @@ export type StateActionKind =
 
 export type StateActionWhen = 'on_enter' | 'after_anim' | 'on_exit';
 
+/**
+ * Optional numeric params on engine actions.
+ * Prefer `attribute` paths like `extra.triggerColumnRange` so Extra attributes drive combat.
+ * Reuses {@link StateDurationValue} (literal.seconds holds any numeric value, not only time).
+ */
 export interface StateAction {
   type: StateActionKind;
   /**
@@ -391,6 +397,106 @@ export interface StateAction {
    * Default: after_anim if a non-looping spineAnim is set, else on_enter.
    */
   when?: StateActionWhen;
+  /** Explode / area blast: column radius in cells. */
+  columnRange?: StateDurationValue;
+  /** Explode / area blast: lane radius (0 = same lane only). */
+  laneRange?: StateDurationValue;
+  /** apply_freeze: full freeze duration (seconds). */
+  freezeDuration?: StateDurationValue;
+  /** apply_freeze: chill/slow duration after thaw (seconds). */
+  chillDuration?: StateDurationValue;
+  /** squash_crush: splash column radius around impact. */
+  splashColumnRange?: StateDurationValue;
+  /** squash_crush: splash lane radius around impact. */
+  splashLaneRange?: StateDurationValue;
+}
+
+/** Inspector fields for actions that take graph-configurable numbers. */
+export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
+  action: StateActionKind;
+  key:
+    | 'columnRange'
+    | 'laneRange'
+    | 'freezeDuration'
+    | 'chillDuration'
+    | 'splashColumnRange'
+    | 'splashLaneRange';
+  label: string;
+  hint: string;
+  /** Default Extra attribute path when inserting the action. */
+  defaultAttribute: string;
+}> = [
+  {
+    action: 'explode',
+    key: 'columnRange',
+    label: 'Column range',
+    hint: 'Blast radius in columns (Cherry ~1.5, Jalapeno ~12)',
+    defaultAttribute: 'extra.triggerColumnRange',
+  },
+  {
+    action: 'explode',
+    key: 'laneRange',
+    label: 'Lane range',
+    hint: 'Lane radius (0 = same lane only; 1 = ±1 lane)',
+    defaultAttribute: 'extra.triggerLaneRange',
+  },
+  {
+    action: 'deal_area_damage',
+    key: 'columnRange',
+    label: 'Column range',
+    hint: 'Area damage column radius',
+    defaultAttribute: 'extra.triggerColumnRange',
+  },
+  {
+    action: 'deal_area_damage',
+    key: 'laneRange',
+    label: 'Lane range',
+    hint: 'Area damage lane radius',
+    defaultAttribute: 'extra.triggerLaneRange',
+  },
+  {
+    action: 'apply_freeze',
+    key: 'freezeDuration',
+    label: 'Freeze duration',
+    hint: 'Seconds insects stay fully frozen',
+    defaultAttribute: 'extra.freezeDurationSeconds',
+  },
+  {
+    action: 'apply_freeze',
+    key: 'chillDuration',
+    label: 'Chill duration',
+    hint: 'Seconds of slow after freeze thaws',
+    defaultAttribute: 'extra.chillDurationSeconds',
+  },
+  {
+    action: 'squash_crush',
+    key: 'splashColumnRange',
+    label: 'Splash column range',
+    hint: 'Crush splash around the primary target',
+    defaultAttribute: 'extra.splashColumnRange',
+  },
+  {
+    action: 'squash_crush',
+    key: 'splashLaneRange',
+    label: 'Splash lane range',
+    hint: 'Lane radius for squash splash (usually 0)',
+    defaultAttribute: 'extra.splashLaneRange',
+  },
+];
+
+export function actionParamFieldsFor(type: StateActionKind) {
+  return STATE_ACTION_PARAM_FIELDS.filter((f) => f.action === type);
+}
+
+/** Seed default attribute-bound params when adding an action in the editor. */
+export function defaultActionParams(type: StateActionKind): Partial<StateAction> {
+  const fields = actionParamFieldsFor(type);
+  if (fields.length === 0) return {};
+  const out: Partial<StateAction> = {};
+  for (const f of fields) {
+    (out as Record<string, StateDurationValue>)[f.key] = attributeDuration(f.defaultAttribute);
+  }
+  return out;
 }
 
 export const STATE_ACTION_OPTIONS: ReadonlyArray<{
@@ -411,6 +517,12 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     hint: 'Melee hit against current target',
   },
   {
+    type: 'deal_area_damage',
+    label: 'Deal area damage',
+    hint: 'Pierce damage to all enemies in range (Gloom-shroom)',
+    kind: 'plant',
+  },
+  {
     type: 'squash_crush',
     label: 'Squash crush',
     hint: 'Leap / crush target for huge damage (Squash)',
@@ -425,7 +537,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'explode',
     label: 'Explode',
-    hint: 'Area / lane blast from behavior or defaults',
+    hint: 'Area / lane blast — set column/lane range on the action (extra.trigger*)',
   },
   {
     type: 'produce_sun',
@@ -724,7 +836,12 @@ export function createAimAttackStateGraph(opts?: {
         spineAnim: opts?.attackAnim,
         loop: false,
         actions: [
-          { type: 'squash_crush', when: 'after_anim' },
+          {
+            type: 'squash_crush',
+            when: 'after_anim',
+            splashColumnRange: attributeDuration('extra.splashColumnRange'),
+            splashLaneRange: attributeDuration('extra.splashLaneRange'),
+          },
           { type: 'despawn', when: 'after_anim' },
         ],
         position: { x: 500, y: 160 },
@@ -754,10 +871,15 @@ export function createInstantExplodeStateGraph(opts?: {
   attackAnim?: string;
   dieAnim?: string;
   delaySeconds?: number;
+  /** When true, delay reads extra.detonateDelaySeconds instead of a literal. */
+  delayFromExtra?: boolean;
 }): EntityStateGraph {
   const idleId = createStateNodeId();
   const attackId = createStateNodeId();
   const delay = opts?.delaySeconds ?? 0.65;
+  const delayValue = opts?.delayFromExtra
+    ? attributeDuration('extra.detonateDelaySeconds')
+    : literalDuration(delay);
   return {
     version: 1,
     entryNodeId: idleId,
@@ -775,8 +897,67 @@ export function createInstantExplodeStateGraph(opts?: {
         spineAnim: opts?.attackAnim,
         loop: false,
         actions: [
-          { type: 'explode', when: 'after_anim' },
+          {
+            type: 'explode',
+            when: 'after_anim',
+            columnRange: attributeDuration('extra.triggerColumnRange'),
+            laneRange: attributeDuration('extra.triggerLaneRange'),
+          },
           { type: 'despawn', when: 'after_anim' },
+        ],
+        position: { x: 360, y: 160 },
+      },
+    ],
+    edges: [
+      {
+        id: createStateEdgeId(),
+        from: idleId,
+        to: attackId,
+        conditions: cond({ type: 'after_seconds', value: delayValue }),
+      },
+    ],
+    die: { spineAnim: opts?.dieAnim },
+  };
+}
+
+/**
+ * Ice-shroom: brief wind-up, then freeze the board and despawn.
+ * Uses `apply_freeze` (not `explode`) — classic PvZ ice blast.
+ */
+export function createIceShroomStateGraph(opts?: {
+  idleAnim?: string;
+  attackAnim?: string;
+  dieAnim?: string;
+  delaySeconds?: number;
+}): EntityStateGraph {
+  const idleId = createStateNodeId();
+  const attackId = createStateNodeId();
+  const delay = opts?.delaySeconds ?? 0.5;
+  const hasAttackAnim = Boolean(opts?.attackAnim?.trim());
+  return {
+    version: 1,
+    entryNodeId: idleId,
+    nodes: [
+      {
+        id: idleId,
+        status: 'idle',
+        spineAnim: opts?.idleAnim,
+        loop: true,
+        position: { x: 80, y: 160 },
+      },
+      {
+        id: attackId,
+        status: 'attack',
+        spineAnim: opts?.attackAnim ?? opts?.idleAnim,
+        loop: false,
+        actions: [
+          {
+            type: 'apply_freeze',
+            when: hasAttackAnim ? 'after_anim' : 'on_enter',
+            freezeDuration: attributeDuration('extra.freezeDurationSeconds'),
+            chillDuration: attributeDuration('extra.chillDurationSeconds'),
+          },
+          { type: 'despawn', when: hasAttackAnim ? 'after_anim' : 'on_enter' },
         ],
         position: { x: 360, y: 160 },
       },
@@ -1024,7 +1205,7 @@ export function createArmedTrapStateGraph(opts?: {
         spineAnim: opts?.attackAnim,
         loop: false,
         actions: [
-          { type: 'explode', when: 'after_anim' },
+          { type: 'explode', when: 'after_anim', columnRange: attributeDuration('extra.triggerColumnRange'), laneRange: attributeDuration('extra.triggerLaneRange') },
           { type: 'despawn', when: 'after_anim' },
         ],
         position: { x: 520, y: 160 },
@@ -2161,6 +2342,7 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   launch_bullet: 'fire_bullet',
   fire_bullet: 'fire_bullet',
   deal_contact_damage: 'deal_contact_damage',
+  deal_area_damage: 'deal_area_damage',
   squash_crush: 'squash_crush',
   chomp_devour: 'chomp_devour',
   explode: 'explode',
@@ -2185,12 +2367,27 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
 
 function normalizeAction(raw: unknown): StateAction | null {
   if (!raw || typeof raw !== 'object') return null;
-  const a = raw as { type?: string; when?: string };
-  const type = a.type ? ACTION_ALIASES[a.type] : undefined;
+  const a = raw as Record<string, unknown>;
+  const type = typeof a.type === 'string' ? ACTION_ALIASES[a.type] : undefined;
   if (!type) return null;
   const when =
     a.when === 'on_enter' || a.when === 'after_anim' || a.when === 'on_exit' ? a.when : undefined;
-  return when ? { type, when } : { type };
+  const action: StateAction = when ? { type, when } : { type };
+  const paramKeys = [
+    'columnRange',
+    'laneRange',
+    'freezeDuration',
+    'chillDuration',
+    'splashColumnRange',
+    'splashLaneRange',
+  ] as const;
+  for (const key of paramKeys) {
+    if (a[key] != null) {
+      const parsed = normalizeDurationValue(a[key]);
+      if (parsed) (action as unknown as Record<string, StateDurationValue>)[key] = parsed;
+    }
+  }
+  return action;
 }
 
 /** Migrate old single `trigger` field into AND conditions. */
