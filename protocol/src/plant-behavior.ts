@@ -8,7 +8,8 @@ export type PlantBehaviorKind =
   | 'instant_explode'
   | 'armed_trap'
   | 'melee_trap'
-  | 'chomper';
+  | 'chomper'
+  | 'disruptor';
 
 export interface PlantBehaviorConfig {
   kind: PlantBehaviorKind;
@@ -87,6 +88,11 @@ function inferPlantBehavior(input: {
 
   if (role === 'blocker') {
     return { kind: 'blocker' };
+  }
+
+  // Magnet-shroom, Garlic, Hypno-shroom, etc. — not projectile plants.
+  if (role === 'disruptor' || id === 'magnet_shroom') {
+    return { kind: 'disruptor' };
   }
 
   if (client.init) {

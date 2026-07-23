@@ -65,6 +65,13 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     type: 'number',
     defaultValue: 1,
   },
+  {
+    key: 'magnetHoldSeconds',
+    label: 'Magnet hold seconds',
+    hint: 'How long Magnet-shroom holds stolen metal before it can pull again',
+    type: 'number',
+    defaultValue: 15,
+  },
 ];
 
 export function extraPath(key: string): string {

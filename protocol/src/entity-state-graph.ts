@@ -66,7 +66,12 @@ export const PLANT_GRAPH_STATUSES: ReadonlyArray<{
   { id: 'armed', label: 'Armed', hint: 'Ready to trigger', defaultLoop: true },
   { id: 'aim', label: 'Aim', hint: 'Wind-up before attack (Squash)', defaultLoop: false },
   { id: 'attack', label: 'Attack', hint: 'Fire / crush / explode / bite', defaultLoop: false },
-  { id: 'digest', label: 'Digest', hint: 'Post-chomp recovery (Chomper)', defaultLoop: true },
+  {
+    id: 'digest',
+    label: 'Digest / Hold',
+    hint: 'Recovery after chomp, or holding stolen metal (Magnet-shroom)',
+    defaultLoop: true,
+  },
   { id: 'hide', label: 'Hide', hint: 'Withdrawn (Scaredy-shroom)', defaultLoop: true },
   { id: 'produce', label: 'Produce', hint: 'Sun / resource pulse', defaultLoop: false },
   { id: 'die', label: 'Die', hint: 'Special — HP≤0 only; not edged', defaultLoop: false },
@@ -97,6 +102,8 @@ export type StateConditionKind =
   | 'no_enemy_in_range'
   | 'enemy_in_proximity'
   | 'no_enemy_in_proximity'
+  | 'metal_in_range'
+  | 'no_metal_in_range'
   | 'attack_interval_ready'
   | 'anim_ended'
   | 'after_seconds'
@@ -115,6 +122,8 @@ export type StateCondition =
   | { type: 'no_enemy_in_range' }
   | { type: 'enemy_in_proximity' }
   | { type: 'no_enemy_in_proximity' }
+  | { type: 'metal_in_range' }
+  | { type: 'no_metal_in_range' }
   | { type: 'attack_interval_ready' }
   | { type: 'anim_ended' }
   | { type: 'after_seconds'; value: StateDurationValue }
@@ -267,6 +276,16 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
     type: 'no_enemy_in_proximity',
     label: 'No enemy in proximity',
     hint: 'No enemy within hide/scare distance',
+  },
+  {
+    type: 'metal_in_range',
+    label: 'Metal equipment in range',
+    hint: 'An insect with stealable metal armor is within attack range (Magnet-shroom)',
+  },
+  {
+    type: 'no_metal_in_range',
+    label: 'No metal in range',
+    hint: 'No insect with stealable metal armor is within attack range',
   },
   {
     type: 'attack_interval_ready',
@@ -1305,14 +1324,16 @@ export function createHypnoStateGraph(opts?: {
   };
 }
 
-/** Magnet-shroom: steal metal on interval when enemies in range. */
+/** Magnet-shroom: pull metal when in range, then hold before ready again. */
 export function createMagnetStateGraph(opts?: {
   idleAnim?: string;
   attackAnim?: string;
+  holdAnim?: string;
   dieAnim?: string;
 }): EntityStateGraph {
   const idleId = createStateNodeId();
   const attackId = createStateNodeId();
+  const holdId = createStateNodeId();
   const hasAttackAnim = Boolean(opts?.attackAnim?.trim());
   return {
     version: 1,
@@ -1332,9 +1353,16 @@ export function createMagnetStateGraph(opts?: {
         loop: false,
         actions: [
           { type: 'steal_metal', when: hasAttackAnim ? 'after_anim' : 'on_enter' },
-          { type: 'reset_attack_timer', when: hasAttackAnim ? 'after_anim' : 'on_enter' },
         ],
-        position: { x: 360, y: 160 },
+        position: { x: 320, y: 160 },
+      },
+      {
+        id: holdId,
+        status: 'digest',
+        label: 'Hold metal',
+        spineAnim: opts?.holdAnim ?? opts?.idleAnim,
+        loop: true,
+        position: { x: 560, y: 160 },
       },
     ],
     edges: [
@@ -1342,15 +1370,24 @@ export function createMagnetStateGraph(opts?: {
         id: createStateEdgeId(),
         from: idleId,
         to: attackId,
-        conditions: cond({ type: 'enemy_in_range' }, { type: 'attack_interval_ready' }),
+        conditions: cond({ type: 'metal_in_range' }),
       },
       {
         id: createStateEdgeId(),
         from: attackId,
-        to: idleId,
+        to: holdId,
         conditions: hasAttackAnim
           ? cond({ type: 'anim_ended' })
           : cond({ type: 'after_seconds', value: literalDuration(0) }),
+      },
+      {
+        id: createStateEdgeId(),
+        from: holdId,
+        to: idleId,
+        conditions: cond({
+          type: 'after_seconds',
+          value: attributeDuration('extra.magnetHoldSeconds'),
+        }),
       },
     ],
     die: { spineAnim: opts?.dieAnim },
@@ -2197,6 +2234,8 @@ function normalizeCondition(raw: unknown): StateCondition | null {
     case 'no_enemy_in_range':
     case 'enemy_in_proximity':
     case 'no_enemy_in_proximity':
+    case 'metal_in_range':
+    case 'no_metal_in_range':
     case 'attack_interval_ready':
     case 'anim_ended':
     case 'prepare_complete':
@@ -2365,6 +2404,14 @@ export function conditionLabel(condition: StateCondition): string {
       return 'Target in range';
     case 'no_enemy_in_range':
       return 'No target in range';
+    case 'enemy_in_proximity':
+      return 'Enemy in proximity';
+    case 'no_enemy_in_proximity':
+      return 'No enemy in proximity';
+    case 'metal_in_range':
+      return 'Metal in range';
+    case 'no_metal_in_range':
+      return 'No metal in range';
     case 'attack_interval_ready':
       return 'Cooldown elapsed';
     case 'anim_ended':
@@ -2377,6 +2424,18 @@ export function conditionLabel(condition: StateCondition): string {
       return 'Damage received';
     case 'health_below':
       return `Health < ${Math.round(condition.ratio * 100)}%`;
+    case 'armor_broken':
+      return 'Armor broken';
+    case 'being_bitten':
+      return 'Being bitten';
+    case 'player_command':
+      return 'Player command';
+    case 'vault_ready':
+      return 'Vault ready';
+    case 'throw_ready':
+      return 'Throw ready';
+    case 'special_ready':
+      return 'Special ready';
     default:
       return 'Condition';
   }
