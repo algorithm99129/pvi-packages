@@ -35,6 +35,20 @@ export function missionDifficultyCoinMultiplier(difficulty: string | undefined):
   }
 }
 
+/** Client Missions UI coin labels derived from first-clear photosynthesis (→ coin). */
+export function missionClientRewardPreviews(reward: MissionReward | null | undefined): {
+  rewardEasy: number;
+  rewardMedium: number;
+  rewardHard: number;
+} {
+  const baseCoin = missionRewardToWalletDelta(reward).coin;
+  return {
+    rewardEasy: Math.round(baseCoin * missionDifficultyCoinMultiplier('easy')),
+    rewardMedium: Math.round(baseCoin * missionDifficultyCoinMultiplier('medium')),
+    rewardHard: Math.round(baseCoin * missionDifficultyCoinMultiplier('hard')),
+  };
+}
+
 export interface MissionObjective {
   type: 'survive' | 'clear_lanes' | 'protect_core' | 'time_limit' | 'no_lawn_mowers_lost' | 'max_plants';
   value?: number;
@@ -196,7 +210,7 @@ export interface MissionDefinition {
   };
   rewards: {
     firstClear: MissionReward;
-    perStar?: Record<1 | 2 | 3, MissionReward>;
+    perStar?: Partial<Record<1 | 2 | 3, MissionReward>>;
   };
 }
 

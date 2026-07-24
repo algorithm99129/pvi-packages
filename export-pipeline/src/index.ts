@@ -4,6 +4,7 @@ import {
   BALANCE_VERSION,
   CLIENT_EXPORT_PATHS,
   SERVER_EXPORT_PATHS,
+  missionClientRewardPreviews,
   type BulletDefinition,
   type ClientBulletExport,
   type ClientEquipmentExport,
@@ -130,6 +131,7 @@ export function toServerMission(mission: MissionDefinition): ServerMissionExport
 }
 
 export function toClientMission(mission: MissionDefinition): ClientMissionExport {
+  const previews = missionClientRewardPreviews(mission.rewards?.firstClear);
   return {
     id: mission.id,
     chapterId: mission.chapterId,
@@ -145,6 +147,9 @@ export function toClientMission(mission: MissionDefinition): ClientMissionExport
     startingSun: mission.startingSun,
     availablePlants: mission.availablePlants,
     starCriteria: mission.starCriteria,
+    rewardEasy: previews.rewardEasy,
+    rewardMedium: previews.rewardMedium,
+    rewardHard: previews.rewardHard,
   };
 }
 
