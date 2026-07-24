@@ -9,6 +9,32 @@ export interface MissionReward {
   unlockInsectId?: EntityId;
 }
 
+/** Map authored mission reward currencies onto the live wallet (coin/gem/leaf). */
+export function missionRewardToWalletDelta(reward: MissionReward | null | undefined): {
+  coin: number;
+  gem: number;
+  leaf: number;
+} {
+  if (!reward) return { coin: 0, gem: 0, leaf: 0 };
+  return {
+    coin: Math.max(0, Math.floor(reward.photosynthesis ?? 0)),
+    gem: Math.max(0, Math.floor(reward.seeds ?? 0)),
+    leaf: Math.max(0, Math.floor(reward.nectar ?? 0) + Math.floor(reward.chitin ?? 0)),
+  };
+}
+
+/** Difficulty multiplier applied to coin grants on mission complete. */
+export function missionDifficultyCoinMultiplier(difficulty: string | undefined): number {
+  switch (difficulty) {
+    case 'medium':
+      return 1.25;
+    case 'hard':
+      return 1.5;
+    default:
+      return 1;
+  }
+}
+
 export interface MissionObjective {
   type: 'survive' | 'clear_lanes' | 'protect_core' | 'time_limit' | 'no_lawn_mowers_lost' | 'max_plants';
   value?: number;
@@ -205,4 +231,8 @@ export interface ClientMissionExport {
   startingSun?: number;
   availablePlants?: EntityId[];
   starCriteria: MissionDefinition['starCriteria'];
+  /** UI-only coin previews for Easy / Medium / Hard (server pays real rewards). */
+  rewardEasy?: number;
+  rewardMedium?: number;
+  rewardHard?: number;
 }

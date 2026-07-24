@@ -36,6 +36,8 @@ export interface UserMissionProgress {
 export interface MissionCompleteRequest {
   missionId: EntityId;
   triedLevel: MissionDifficulty;
+  /** Stars earned this run (0–3). Server keeps the max with existing progress. */
+  stars?: number;
 }
 
 export interface UserGameState {
@@ -54,11 +56,6 @@ export interface PlayerProfile extends UserProfile {
 export const STARTER_PLANT_IDS: EntityId[] = [
   'sun_flower',
   'peashooter',
-  'potato_mine',
-  'cherry_bomb',
-  'spikeweed',
-  'squash',
-  'repeater_pea',
 ];
 
 /** Insects unlocked when a new account is created (chapter-1 attack roster). */
