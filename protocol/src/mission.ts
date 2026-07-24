@@ -78,6 +78,16 @@ export interface MissionRules {
   conveyorPlantIds?: EntityId[];
   /** Grid column bands on the linked map — required for authored missions. */
   battlefield?: MissionBattlefieldZones;
+  /**
+   * Classic fog siege: translucent fog covers the right side of the lawn
+   * (same map art — typically night). Plantern clears a radius at runtime.
+   */
+  fogEnabled?: boolean;
+  /**
+   * First column index covered by fog (inclusive). Omitted → ~mid lawn
+   * (column 5 on a 9-col grid, classic right-side fog).
+   */
+  fogStartColumn?: number;
 }
 
 /** Inclusive column indices on the shared lane grid (0 = seed / left side). */
