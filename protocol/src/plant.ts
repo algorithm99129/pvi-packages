@@ -416,6 +416,57 @@ export interface PlantServerConfig {
    * Prefer explicit authorship; {@link resolveHitsTravelLayers} fills defaults from role / id.
    */
   hitsTravelLayers?: InsectTravelLayer[];
+  /**
+   * Seed-packet recharge after planting (classic PvZ Fast 7.5 / Slow 30 / Very slow 50).
+   * Prefer explicit authorship; {@link resolvePlantRechargeSeconds} fills defaults.
+   */
+  rechargeSeconds?: number;
+}
+
+/** Classic PvZ seed recharge tiers (seconds). */
+export const PLANT_RECHARGE_FAST = 7.5;
+export const PLANT_RECHARGE_SLOW = 30;
+export const PLANT_RECHARGE_VERY_SLOW = 50;
+
+const VERY_SLOW_PLANT_IDS = new Set([
+  'cherry_bomb',
+  'jalapeno',
+  'ice_shroom',
+  'doom_shroom',
+  'squash',
+]);
+
+const SLOW_PLANT_IDS = new Set([
+  'wall_nut',
+  'tall_nut',
+  'pumpkin',
+  'chomper',
+  'potato_mine',
+  'spikeweed',
+  'spikerock',
+  'torchwood',
+  'garlic',
+  'hypno_shroom',
+  'grave_buster',
+  'coffee_bean',
+]);
+
+/** Resolve seed-packet recharge seconds (authored → id/role defaults → fast). */
+export function resolvePlantRechargeSeconds(plant: {
+  id?: string;
+  role?: PlantRole;
+  server?: Pick<PlantServerConfig, 'rechargeSeconds'>;
+}): number {
+  const authored = plant.server?.rechargeSeconds;
+  if (typeof authored === 'number' && Number.isFinite(authored) && authored > 0)
+    return authored;
+
+  const id = plant.id ?? '';
+  if (VERY_SLOW_PLANT_IDS.has(id)) return PLANT_RECHARGE_VERY_SLOW;
+  if (SLOW_PLANT_IDS.has(id)) return PLANT_RECHARGE_SLOW;
+  if (plant.role === 'splash' || plant.role === 'blocker' || plant.role === 'trap')
+    return PLANT_RECHARGE_SLOW;
+  return PLANT_RECHARGE_FAST;
 }
 
 export const PLANT_HITS_TRAVEL_LAYER_OPTIONS: ReadonlyArray<{

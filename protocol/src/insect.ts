@@ -186,6 +186,28 @@ export interface InsectServerConfig {
    */
   laneBehavior: InsectTravelLayer;
   burrowSkipsPlants?: number;
+  /**
+   * Attacker loadout card recharge after deploying this insect (seconds).
+   * Prefer explicit authorship; {@link resolveInsectRechargeSeconds} fills defaults.
+   */
+  rechargeSeconds?: number;
+}
+
+/** Default insect card recharge (seconds) when not authored. */
+export const INSECT_RECHARGE_DEFAULT = 10;
+
+/** Resolve insect loadout card recharge seconds. */
+export function resolveInsectRechargeSeconds(insect: {
+  id?: string;
+  archetype?: InsectArchetype;
+  server?: Pick<InsectServerConfig, 'rechargeSeconds'>;
+}): number {
+  const authored = insect.server?.rechargeSeconds;
+  if (typeof authored === 'number' && Number.isFinite(authored) && authored > 0)
+    return authored;
+  if (insect.archetype === 'siege' || insect.archetype === 'tank') return 20;
+  if (insect.archetype === 'support') return 15;
+  return INSECT_RECHARGE_DEFAULT;
 }
 
 export interface ServerInsectExport {
