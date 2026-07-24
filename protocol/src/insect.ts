@@ -141,10 +141,50 @@ export function withInsectStateGraph(
   };
 }
 
+export type InsectTravelLayer = 'ground' | 'flying' | 'burrow';
+
+export const INSECT_TRAVEL_LAYER_OPTIONS: ReadonlyArray<{
+  id: InsectTravelLayer;
+  label: string;
+  hint: string;
+}> = [
+  {
+    id: 'ground',
+    label: 'Ground',
+    hint: 'Walks the lane and bites plants (default)',
+  },
+  {
+    id: 'flying',
+    label: 'Air',
+    hint: 'Flies over ground plants until popped (Balloon)',
+  },
+  {
+    id: 'burrow',
+    label: 'Underground',
+    hint: 'Travels underground; untargetable until it surfaces (Digger)',
+  },
+];
+
+const TRAVEL_LAYER_SET = new Set<string>(INSECT_TRAVEL_LAYER_OPTIONS.map((o) => o.id));
+
+/** Normalize authored / legacy travel-layer keys. */
+export function normalizeLaneBehavior(raw: unknown): InsectTravelLayer {
+  if (typeof raw !== 'string') return 'ground';
+  const s = raw.trim().toLowerCase().replace(/-/g, '_');
+  if (TRAVEL_LAYER_SET.has(s)) return s as InsectTravelLayer;
+  if (s === 'air' || s === 'flyer' || s === 'fly') return 'flying';
+  if (s === 'underground' || s === 'under' || s === 'dig' || s === 'digger') return 'burrow';
+  return 'ground';
+}
+
 export interface InsectServerConfig {
   unlockSource: 'story' | 'goal' | 'event' | 'default';
   unlockRef?: string;
-  laneBehavior: 'ground' | 'flying' | 'burrow';
+  /**
+   * How this insect travels the lane (classic PvZ ground / air / underground).
+   * Separate from {@link InsectArchetype} — archetype is roster flavor; this drives combat.
+   */
+  laneBehavior: InsectTravelLayer;
   burrowSkipsPlants?: number;
 }
 

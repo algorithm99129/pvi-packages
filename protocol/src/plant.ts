@@ -1,5 +1,6 @@
 import type { EntityId } from './index';
 import type { WalletResources } from './wallet';
+import type { InsectTravelLayer } from './insect';
 
 export type PlantRole =
   | 'shooter'
@@ -410,6 +411,66 @@ export interface PlantServerConfig {
   unlockRef?: string;
   targetingPriority: 'closest' | 'lowest_hp' | 'flying_first';
   validTerrain: Array<'ground' | 'water' | 'pot'>;
+  /**
+   * Which insect travel layers this plant can damage / target.
+   * Prefer explicit authorship; {@link resolveHitsTravelLayers} fills defaults from role / id.
+   */
+  hitsTravelLayers?: InsectTravelLayer[];
+}
+
+export const PLANT_HITS_TRAVEL_LAYER_OPTIONS: ReadonlyArray<{
+  id: InsectTravelLayer;
+  label: string;
+  hint: string;
+}> = [
+  { id: 'ground', label: 'Ground', hint: 'Walking insects' },
+  { id: 'flying', label: 'Air', hint: 'Balloon / flying insects' },
+  { id: 'burrow', label: 'Underground', hint: 'Burrowed diggers (rare)' },
+];
+
+const ALL_TRAVEL: InsectTravelLayer[] = ['ground', 'flying', 'burrow'];
+const GROUND_ONLY: InsectTravelLayer[] = ['ground'];
+const GROUND_AND_AIR: InsectTravelLayer[] = ['ground', 'flying'];
+
+/** Resolve which travel layers a plant can hit (authored server list → role / id defaults). */
+export function resolveHitsTravelLayers(plant: {
+  id?: string;
+  role?: PlantRole;
+  server?: Pick<PlantServerConfig, 'hitsTravelLayers'>;
+  behavior?: { kind?: string } | null;
+}): InsectTravelLayer[] {
+  const authored = plant.server?.hitsTravelLayers;
+  if (authored && authored.length > 0) {
+    const out: InsectTravelLayer[] = [];
+    const seen = new Set<string>();
+    for (const raw of authored) {
+      const id = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+      if (id !== 'ground' && id !== 'flying' && id !== 'burrow') continue;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out.push(id);
+    }
+    if (out.length > 0) return out;
+  }
+
+  const id = plant.id ?? '';
+  if (id === 'spikeweed' || id === 'spikerock') return [...GROUND_ONLY];
+
+  if (plant.role === 'anti_air') return [...GROUND_AND_AIR];
+
+  if (
+    plant.role === 'splash' ||
+    plant.behavior?.kind === 'instant_explode' ||
+    id === 'cherry_bomb' ||
+    id === 'jalapeno' ||
+    id === 'ice_shroom' ||
+    id === 'doom_shroom' ||
+    id === 'squash'
+  ) {
+    return [...ALL_TRAVEL];
+  }
+
+  return [...GROUND_ONLY];
 }
 
 /** Exported to server / API — balance + display/gfx refs for runtime catalog */
