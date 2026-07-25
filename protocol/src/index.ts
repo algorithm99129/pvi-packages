@@ -29,6 +29,7 @@ export * from './formula';
 export * from './user-xp';
 export * from './player';
 export * from './garden';
+export * from './team';
 export * from './catalog';
 export * from './deep-merge';
 export * from './schema-version';
