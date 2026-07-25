@@ -17,6 +17,10 @@ export interface AnalysisUserSummary {
   gardenLevel: number;
   gardenMapTemplateId: string;
   gardenPlantCount: number;
+  /** Lifetime account XP (user level track). */
+  totalXp?: number;
+  /** Derived account level from totalXp. */
+  userLevel?: number;
   createdAt?: string;
   updatedAt?: string;
 }

@@ -4,6 +4,7 @@ import type { ServerMapExport } from './map';
 import type { ServerMissionExport } from './mission';
 import type { PlantRole } from './plant';
 import type { UserProfile } from './user';
+import type { UserProgression } from './user-xp';
 import type { WalletResources } from './wallet';
 
 export type MissionProgressStatus = 'locked' | 'available' | 'completed';
@@ -47,9 +48,15 @@ export interface UserGameState {
   missions: UserMissionProgress[];
 }
 
-/** Authenticated player profile — account info plus wallet. */
-export interface PlayerProfile extends UserProfile {
+/** Authenticated player profile — account info, wallet, and XP / village progression. */
+export interface PlayerProfile extends UserProfile, UserProgression {
   wallet: WalletResources;
+}
+
+/** Response from POST /api/player/missions/complete */
+export interface MissionCompleteResult extends UserProgression {
+  progress: UserMissionProgress;
+  xpGained: number;
 }
 
 /** Plants unlocked when a new account is created (chapter 1 seed chooser). */
