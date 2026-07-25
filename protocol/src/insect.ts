@@ -56,6 +56,10 @@ export function resolveInsectUpgrade(insect: Pick<InsectDefinition, 'upgrade'>):
 export interface InsectStatCurve {
   baseHealth: number;
   baseDamage: number;
+  /**
+   * Lane move speed in cells per second.
+   * PvZ1 basic zombie ≈ 4.7s/tile → ~0.21. Flag ≈ 0.27, football ≈ 0.40.
+   */
   moveSpeed: number;
   attackIntervalMs: number;
   levelScaling: {

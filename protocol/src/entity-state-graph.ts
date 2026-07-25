@@ -1978,7 +1978,7 @@ export function createInsectEnrageStateGraph(opts?: {
         spineAnim: opts?.enrageAnim ?? opts?.walkAnim,
         loop: true,
         actions: [{ type: 'start_moving', when: 'on_enter' }],
-        modifiers: { moveSpeed: opts?.enrageMoveSpeed ?? 1.4 },
+        modifiers: { moveSpeed: opts?.enrageMoveSpeed ?? 0.55 },
         position: { x: 80, y: 40 },
       },
     ],
