@@ -2,9 +2,11 @@ import type { EntityId } from './index';
 import type { InsectGraphStatus } from './entity-state-graph';
 import { INSECT_GRAPH_STATUSES } from './entity-state-graph';
 
-/** Local AABB relative to insect root, in cell-width fractions. */
+/** Local AABB relative to insect root, in cell-width fractions (both axes). */
 export interface EquipmentHitbox {
+  /** Horizontal offset from insect feet, as a fraction of cell width. */
   offsetX: number;
+  /** Vertical offset from insect feet, as a fraction of cell width (not cell height). */
   offsetY: number;
   width: number;
   height: number;
