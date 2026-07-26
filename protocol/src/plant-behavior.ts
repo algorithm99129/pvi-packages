@@ -1,6 +1,7 @@
 import type { PlantClientAssets, PlantRole } from './plant';
+import type { EntityStateGraph, StateActionKind } from './entity-state-graph';
 
-/** Data-driven plant combat behavior — add new plants via JSON, not code branches. */
+/** Data-driven plant combat behavior — prefer status-graph actions for gameplay. */
 export type PlantBehaviorKind =
   | 'shooter'
   | 'producer'
@@ -54,6 +55,31 @@ export function plantShootsBullets(input: {
   return resolvePlantBehavior(input).kind === 'shooter';
 }
 
+/** True when any status-graph node runs the given engine action. */
+export function graphHasAction(
+  graph: EntityStateGraph | null | undefined,
+  type: StateActionKind,
+): boolean {
+  if (!graph?.nodes?.length) return false;
+  for (const node of graph.nodes) {
+    const actions = node?.actions;
+    if (!actions?.length) continue;
+    for (const action of actions) {
+      if (action?.type === type) return true;
+    }
+  }
+  return false;
+}
+
+/** True when the plant clears fog via status-graph `clear_fog` (Plantern). */
+export function plantClearsFog(input: {
+  id: string;
+  client?: PlantClientAssets | null;
+}): boolean {
+  if (graphHasAction(input.client?.stateGraph, 'clear_fog')) return true;
+  return input.id.trim().toLowerCase() === 'plantern';
+}
+
 /** Merge explicit JSON behavior with conventions from role, id, and animation clips. */
 export function resolvePlantBehavior(input: {
   id: string;
@@ -89,6 +115,11 @@ function inferPlantBehavior(input: {
 
   if (PRODUCER_IDS.has(id)) {
     return { kind: 'producer', produceIntervalSeconds: 24 };
+  }
+
+  // Fog lantern / utility — not a shooter (fog clear is authored on the status graph).
+  if (id === 'plantern' || role === 'utility') {
+    return { kind: 'blocker' };
   }
 
   if (role === 'blocker') {
@@ -127,11 +158,16 @@ function inferPlantBehavior(input: {
     };
   }
 
-  if (role === 'shooter' || role === 'splash') {
+  if (role === 'shooter' || role === 'splash' || role === 'anti_air') {
     if (id === 'scaredy_shroom') {
       return { kind: 'shooter', hideProximityColumns: 1.5 };
     }
     return { kind: 'shooter' };
+  }
+
+  // Support / unknown: not a shooter by default (avoids false bullet UI).
+  if (role === 'support') {
+    return { kind: 'blocker' };
   }
 
   return DEFAULT_PLANT_BEHAVIOR;

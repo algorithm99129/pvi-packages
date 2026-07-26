@@ -59,6 +59,13 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     defaultValue: 1.5,
   },
   {
+    key: 'fogClearRadius',
+    label: 'Fog clear radius',
+    hint: 'Chebyshev cells cleared by clear_fog (Plantern; 1 = 3×3)',
+    type: 'number',
+    defaultValue: 1,
+  },
+  {
     key: 'triggerColumnRange',
     label: 'Trigger column range',
     hint: 'Melee / trap / explode column radius',

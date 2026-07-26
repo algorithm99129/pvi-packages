@@ -363,6 +363,7 @@ export type StateActionKind =
   | 'chomp_devour'
   | 'explode'
   | 'produce_sun'
+  | 'clear_fog'
   | 'despawn'
   | 'reset_attack_timer'
   | 'stop_moving'
@@ -533,6 +534,13 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     hint: 'Lane radius for squash splash (usually 0)',
     defaultAttribute: 'extra.splashLaneRange',
   },
+  {
+    action: 'clear_fog',
+    key: 'columnRange',
+    label: 'Clear radius (cells)',
+    hint: 'Chebyshev fog clear radius (1 = classic Plantern 3×3)',
+    defaultAttribute: 'extra.fogClearRadius',
+  },
 ];
 
 export function actionParamFieldsFor(type: StateActionKind) {
@@ -596,6 +604,12 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     type: 'produce_sun',
     label: 'Produce sun',
     hint: 'Spawn sun / photosynthesis pulse',
+    kind: 'plant',
+  },
+  {
+    type: 'clear_fog',
+    label: 'Clear fog',
+    hint: 'Punch a clear hole in raid fog while this status is active (Plantern)',
     kind: 'plant',
   },
   {
@@ -2403,6 +2417,8 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   chomp_devour: 'chomp_devour',
   explode: 'explode',
   produce_sun: 'produce_sun',
+  clear_fog: 'clear_fog',
+  light_fog: 'clear_fog',
   despawn: 'despawn',
   reset_attack_timer: 'reset_attack_timer',
   stop_moving: 'stop_moving',
