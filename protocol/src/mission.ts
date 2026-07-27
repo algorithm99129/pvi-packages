@@ -211,8 +211,13 @@ export interface MissionDefinition {
   waves?: MissionWave[];
   /** Starting sun for offline PVZ-style battles */
   startingSun?: number;
-  /** Plant ids available in the seed chooser (slot order = array order) */
+  /** Plant ids required in the loadout (slot order = array order). */
   availablePlants?: EntityId[];
+  /**
+   * Max seed packets the player may bring (required + optional picks).
+   * Defaults to 5; must be >= availablePlants.length and <= raid tray max (10).
+   */
+  maxCards?: number;
   starCriteria: {
     oneStar: MissionObjective;
     twoStar: MissionObjective;
@@ -254,6 +259,8 @@ export interface ClientMissionExport {
   waves?: MissionWave[];
   startingSun?: number;
   availablePlants?: EntityId[];
+  /** Max seed packets for pre-raid selection (required + optional). Default 5. */
+  maxCards?: number;
   starCriteria: MissionDefinition['starCriteria'];
   /** UI-only coin previews for Easy / Medium / Hard (server pays real rewards). */
   rewardEasy?: number;

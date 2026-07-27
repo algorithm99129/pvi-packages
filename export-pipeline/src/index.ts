@@ -146,6 +146,7 @@ export function toClientMission(mission: MissionDefinition): ClientMissionExport
     waves: mission.waves,
     startingSun: mission.startingSun,
     availablePlants: mission.availablePlants,
+    maxCards: mission.maxCards,
     starCriteria: mission.starCriteria,
     rewardEasy: previews.rewardEasy,
     rewardMedium: previews.rewardMedium,
