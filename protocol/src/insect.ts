@@ -185,6 +185,11 @@ export interface InsectServerConfig {
   unlockSource: 'story' | 'goal' | 'event' | 'default';
   unlockRef?: string;
   /**
+   * Gem (diamond) cost to unlock from the Insects roster when still locked.
+   * Omitted or `0` = not purchasable with gems (mission / other unlock only).
+   */
+  unlockGemCost?: number;
+  /**
    * How this insect travels the lane (classic PvZ ground / air / underground).
    * Separate from {@link InsectArchetype} — archetype is roster flavor; this drives combat.
    */

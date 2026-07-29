@@ -87,12 +87,17 @@ export interface UserPlantView {
     range: number;
   };
   upgradeCost: WalletResources | null;
+  /** Gem cost to unlock while locked; `null` if already unlocked or not gem-purchasable. */
+  unlockCost: WalletResources | null;
 }
 
 export interface UpgradePlantResult {
   plant: UserPlantView;
   wallet: WalletResources;
 }
+
+/** Same payload shape as upgrade — spent gems and unlocked roster row. */
+export type UnlockPlantResult = UpgradePlantResult;
 
 export interface UserInsectView {
   id: EntityId;
@@ -108,12 +113,16 @@ export interface UserInsectView {
     moveSpeed: number;
   };
   upgradeCost: WalletResources | null;
+  /** Gem cost to unlock while locked; `null` if already unlocked or not gem-purchasable. */
+  unlockCost: WalletResources | null;
 }
 
 export interface UpgradeInsectResult {
   insect: UserInsectView;
   wallet: WalletResources;
 }
+
+export type UnlockInsectResult = UpgradeInsectResult;
 
 /** Full mission definition plus the authenticated player's progress. */
 export interface MissionDetailView extends ServerMissionExport {

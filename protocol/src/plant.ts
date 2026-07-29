@@ -409,6 +409,11 @@ export function withPlantStateGraph(
 export interface PlantServerConfig {
   unlockSource: 'story' | 'goal' | 'event' | 'default';
   unlockRef?: string;
+  /**
+   * Gem (diamond) cost to unlock from the Plants roster when still locked.
+   * Omitted or `0` = not purchasable with gems (mission / other unlock only).
+   */
+  unlockGemCost?: number;
   targetingPriority: 'closest' | 'lowest_hp' | 'flying_first';
   validTerrain: Array<'ground' | 'water' | 'pot'>;
   /**
