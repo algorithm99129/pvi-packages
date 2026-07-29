@@ -270,4 +270,8 @@ export interface ClientMissionExport {
   rewardEasy?: number;
   rewardMedium?: number;
   rewardHard?: number;
+  /** First-clear plant unlock preview (mirrors server rewards.firstClear.unlockPlantId). */
+  unlockPlantId?: EntityId;
+  /** First-clear insect unlock preview (mirrors server rewards.firstClear.unlockInsectId). */
+  unlockInsectId?: EntityId;
 }

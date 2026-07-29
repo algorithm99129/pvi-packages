@@ -124,7 +124,12 @@ export function mergeMission(client: ClientMissionExport, server?: ServerMission
     starCriteria: mergePreferPrimary(client.starCriteria, server?.starCriteria) ??
       server?.starCriteria ??
       client.starCriteria,
-    rewards: server?.rewards ?? { firstClear: {} },
+    rewards: server?.rewards ?? {
+      firstClear: {
+        unlockPlantId: client.unlockPlantId,
+        unlockInsectId: client.unlockInsectId,
+      },
+    },
     schemaVersion: client.schemaVersion ?? server?.schemaVersion,
   };
   return migrateMissionDefinition(merged);

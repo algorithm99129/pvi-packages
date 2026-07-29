@@ -131,7 +131,8 @@ export function toServerMission(mission: MissionDefinition): ServerMissionExport
 }
 
 export function toClientMission(mission: MissionDefinition): ClientMissionExport {
-  const previews = missionClientRewardPreviews(mission.rewards?.firstClear);
+  const firstClear = mission.rewards?.firstClear;
+  const previews = missionClientRewardPreviews(firstClear);
   return {
     id: mission.id,
     chapterId: mission.chapterId,
@@ -152,6 +153,8 @@ export function toClientMission(mission: MissionDefinition): ClientMissionExport
     rewardEasy: previews.rewardEasy,
     rewardMedium: previews.rewardMedium,
     rewardHard: previews.rewardHard,
+    unlockPlantId: firstClear?.unlockPlantId,
+    unlockInsectId: firstClear?.unlockInsectId,
   };
 }
 
