@@ -15,6 +15,7 @@ export * from './equipment';
 export * from './unit-sizing';
 export * from './insect';
 export * from './mission';
+export * from './reward-plan';
 export * from './map';
 export * from './workspace';
 export * from './export-paths';

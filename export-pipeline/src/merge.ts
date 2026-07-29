@@ -7,6 +7,7 @@ import type {
   ClientMissionExport,
   ClientPlantExport,
   EquipmentDefinition,
+  HubRewardPlan,
   InsectDefinition,
   InsectServerConfig,
   MapTemplateDefinition,
@@ -31,6 +32,7 @@ import {
   migratePlantDefinition,
   normalizeBulletDefinition,
   normalizeEquipmentDefinition,
+  normalizeHubRewardPlan,
 } from '@garden-siege/protocol';
 import type { GameDataBundle } from './index';
 
@@ -193,6 +195,7 @@ export function mergeGameDataBundle(parts: {
   serverMissions: ServerMissionExport[];
   clientMaps: ClientMapExport[];
   serverMaps: ServerMapExport[];
+  rewards?: HubRewardPlan | null;
 }): GameDataBundle {
   const serverPlants = indexById(parts.serverPlants);
   const serverInsects = indexById(parts.serverInsects);
@@ -319,5 +322,13 @@ export function mergeGameDataBundle(parts: {
       ),
   ];
 
-  return { plants, insects, bullets, equipment, missions, maps };
+  return {
+    plants,
+    insects,
+    bullets,
+    equipment,
+    missions,
+    maps,
+    rewards: normalizeHubRewardPlan(parts.rewards),
+  };
 }

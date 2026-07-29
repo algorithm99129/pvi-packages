@@ -18,12 +18,15 @@ import {
   type MapTemplateDefinition,
   type MissionDefinition,
   type PlantDefinition,
+  type HubRewardPlan,
   type ServerBulletExport,
   type ServerEquipmentExport,
   type ServerInsectExport,
   type ServerMapExport,
   type ServerMissionExport,
   type ServerPlantExport,
+  createDefaultHubRewardPlan,
+  normalizeHubRewardPlan,
 } from '@garden-siege/protocol';
 
 export interface GameDataBundle {
@@ -33,6 +36,8 @@ export interface GameDataBundle {
   equipment: EquipmentDefinition[];
   missions: MissionDefinition[];
   maps: MapTemplateDefinition[];
+  /** Hub daily / quest / achievement plan (single document). */
+  rewards: HubRewardPlan;
 }
 
 export * from './merge';
@@ -218,6 +223,7 @@ export async function exportGameData(
   const serverMissions = bundle.missions.map(toServerMission);
   const clientMaps = bundle.maps.map(toClientMap);
   const serverMaps = bundle.maps.map(toServerMap);
+  const rewards = normalizeHubRewardPlan(bundle.rewards ?? createDefaultHubRewardPlan());
 
   const balancePayload = { version: BALANCE_VERSION, exportedAt: new Date().toISOString() };
 
@@ -228,6 +234,7 @@ export async function exportGameData(
     join(clientRoot, CLIENT_EXPORT_PATHS.equipment),
     join(clientRoot, CLIENT_EXPORT_PATHS.missions),
     join(clientRoot, CLIENT_EXPORT_PATHS.maps),
+    join(clientRoot, CLIENT_EXPORT_PATHS.rewards),
     join(clientRoot, CLIENT_EXPORT_PATHS.balanceVersion),
   ];
 
@@ -238,6 +245,7 @@ export async function exportGameData(
     join(serverRoot, SERVER_EXPORT_PATHS.equipment),
     join(serverRoot, SERVER_EXPORT_PATHS.missions),
     join(serverRoot, SERVER_EXPORT_PATHS.maps),
+    join(serverRoot, SERVER_EXPORT_PATHS.rewards),
     join(serverRoot, SERVER_EXPORT_PATHS.balanceVersion),
   ];
 
@@ -247,7 +255,8 @@ export async function exportGameData(
   await writeJson(clientFiles[3], clientEquipment);
   await writeJson(clientFiles[4], clientMissions);
   await writeJson(clientFiles[5], clientMaps);
-  await writeJson(clientFiles[6], balancePayload);
+  await writeJson(clientFiles[6], rewards);
+  await writeJson(clientFiles[7], balancePayload);
 
   await writeJson(serverFiles[0], serverPlants);
   await writeJson(serverFiles[1], serverInsects);
@@ -255,7 +264,8 @@ export async function exportGameData(
   await writeJson(serverFiles[3], serverEquipment);
   await writeJson(serverFiles[4], serverMissions);
   await writeJson(serverFiles[5], serverMaps);
-  await writeJson(serverFiles[6], balancePayload);
+  await writeJson(serverFiles[6], rewards);
+  await writeJson(serverFiles[7], balancePayload);
 
   return { clientFiles, serverFiles, balanceVersion: BALANCE_VERSION };
 }
