@@ -119,6 +119,8 @@ export function mergeMission(client: ClientMissionExport, server?: ServerMission
     waves: mergePreferPrimary(client.waves, server?.waves),
     startingSun: client.startingSun,
     availablePlants: client.availablePlants,
+    availableInsects: client.availableInsects,
+    maxCards: client.maxCards,
     starCriteria: mergePreferPrimary(client.starCriteria, server?.starCriteria) ??
       server?.starCriteria ??
       client.starCriteria,

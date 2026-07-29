@@ -57,20 +57,20 @@ export interface PlayerProfile extends UserProfile, UserProgression {
 export interface MissionCompleteResult extends UserProgression {
   progress: UserMissionProgress;
   xpGained: number;
+  /** Plant unlocked by this first clear (classic seed-packet reward). */
+  unlockPlantId?: EntityId;
+  /** Insect unlocked by this first clear, if any. */
+  unlockInsectId?: EntityId;
 }
 
-/** Plants unlocked when a new account is created (chapter 1 seed chooser). */
+/** Plants unlocked when a new account is created (classic: Peashooter only). */
 export const STARTER_PLANT_IDS: EntityId[] = [
-  'sun_flower',
   'peashooter',
 ];
 
-/** Insects unlocked when a new account is created (chapter-1 attack roster). */
+/** Insects unlocked when a new account is created (classic: basic beetle only). */
 export const STARTER_INSECT_IDS: EntityId[] = [
   'worker_beetle',
-  'horn_beetle',
-  'bucket_weevil',
-  'banner_wasp',
 ];
 
 export interface UserPlantView {
