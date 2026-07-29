@@ -426,6 +426,11 @@ export interface PlantServerConfig {
    * Prefer explicit authorship; {@link resolvePlantRechargeSeconds} fills defaults.
    */
   rechargeSeconds?: number;
+  /**
+   * Classic sun packet cost when planting.
+   * Prefer explicit authorship; loadout / raid UI reads this when present.
+   */
+  sunCost?: number;
 }
 
 /** Classic PvZ seed recharge tiers (seconds). */

@@ -140,7 +140,23 @@ function inferPlantBehavior(input: {
     };
   }
 
-  if (role === 'trap' && client.attack) {
+  // Squash / Tangle Kelp / any graph that crushes — not projectile plants.
+  // Tangle Kelp is spine-only (no client.attack clip), so role+attack alone missed it
+  // and incorrectly fell through to shooter / bullet UI.
+  if (
+    id === 'squash' ||
+    id === 'tangle_kelp' ||
+    graphHasAction(client.stateGraph, 'squash_crush')
+  ) {
+    return {
+      kind: 'melee_trap',
+      triggerColumnRange: id === 'tangle_kelp' ? 1 : 1.15,
+      removeOnTrigger: true,
+      aimBeforeAttack: Boolean(client.aim) || id === 'squash',
+    };
+  }
+
+  if (role === 'trap') {
     if (id === 'chomper') {
       return {
         kind: 'chomper',

@@ -411,10 +411,48 @@ export interface StateAction {
   /** squash_crush: splash lane radius around impact. */
   splashLaneRange?: StateDurationValue;
   /**
+   * squash_crush: how the plant reaches the target.
+   * Prefer this over hardcoding by plant id in the client (Squash hop vs Tangle Kelp pull).
+   */
+  crushStyle?: SquashCrushStyle;
+  /**
    * explode: visual style (point boom, fire, lane fire sweep, ice).
    * Prefer this over hardcoding by plant id in the client.
    */
   vfxStyle?: ExplodeVfxStyle;
+}
+
+/** Motion style for the `squash_crush` action. */
+export type SquashCrushStyle = 'hop' | 'pull_under';
+
+export const SQUASH_CRUSH_STYLE_OPTIONS: ReadonlyArray<{
+  id: SquashCrushStyle;
+  label: string;
+  hint: string;
+}> = [
+  {
+    id: 'hop',
+    label: 'Hop (Squash)',
+    hint: 'Leap in an arc onto the target, then crush',
+  },
+  {
+    id: 'pull_under',
+    label: 'Pull under (Tangle Kelp)',
+    hint: 'Drag the target under at the plant cell (water traps)',
+  },
+];
+
+const SQUASH_CRUSH_STYLE_SET = new Set<string>(SQUASH_CRUSH_STYLE_OPTIONS.map((o) => o.id));
+
+/** Normalize authored crush motion keys. */
+export function normalizeSquashCrushStyle(raw: unknown): SquashCrushStyle | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const s = raw.trim().toLowerCase().replace(/-/g, '_');
+  if (!s) return undefined;
+  if (SQUASH_CRUSH_STYLE_SET.has(s)) return s as SquashCrushStyle;
+  if (s === 'kelp' || s === 'pull' || s === 'drown' || s === 'drag') return 'pull_under';
+  if (s === 'jump' || s === 'leap' || s === 'squash') return 'hop';
+  return undefined;
 }
 
 /** Visual styles for the `explode` action (and behavior.explodeGfx fallback). */
@@ -557,6 +595,9 @@ export function defaultActionParams(type: StateActionKind): Partial<StateAction>
   if (type === 'explode') {
     out.vfxStyle = 'boom';
   }
+  if (type === 'squash_crush') {
+    out.crushStyle = 'hop';
+  }
   return out;
 }
 
@@ -586,7 +627,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'squash_crush',
     label: 'Squash crush',
-    hint: 'Leap / crush target for huge damage (Squash)',
+    hint: 'Crush a target — set crush style (hop vs pull under) on the action',
     kind: 'plant',
   },
   {
@@ -906,6 +947,7 @@ export function createAimAttackStateGraph(opts?: {
           {
             type: 'squash_crush',
             when: 'after_anim',
+            crushStyle: 'hop',
             splashColumnRange: attributeDuration('extra.splashColumnRange'),
             splashLaneRange: attributeDuration('extra.splashLaneRange'),
           },
@@ -1715,7 +1757,13 @@ export function createMeleeConsumeStateGraph(opts?: {
         spineAnim: opts?.attackAnim,
         loop: false,
         actions: [
-          { type: 'squash_crush', when: 'after_anim' },
+          {
+            type: 'squash_crush',
+            when: 'after_anim',
+            crushStyle: 'pull_under',
+            splashColumnRange: attributeDuration('extra.splashColumnRange'),
+            splashLaneRange: attributeDuration('extra.splashLaneRange'),
+          },
           { type: 'despawn', when: 'after_anim' },
         ],
         position: { x: 360, y: 160 },
@@ -2462,6 +2510,10 @@ function normalizeAction(raw: unknown): StateAction | null {
   if (type === 'explode') {
     const style = normalizeExplodeVfxStyle(a.vfxStyle ?? a.explodeGfx);
     if (style) action.vfxStyle = style;
+  }
+  if (type === 'squash_crush') {
+    const crush = normalizeSquashCrushStyle(a.crushStyle ?? a.motionStyle ?? a.style);
+    if (crush) action.crushStyle = crush;
   }
   return action;
 }
