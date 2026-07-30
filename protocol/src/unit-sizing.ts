@@ -7,7 +7,11 @@ export const DEFAULT_INSECT_CELL_WIDTH_FILL = 0.9;
 /** Default fraction of grid cell width used to size flying bullet sprites. */
 export const DEFAULT_BULLET_CELL_WIDTH_FILL = 0.4;
 
-/** Normalized art box inside one grid cell (0–1, bottom-left origin). */
+/**
+ * Normalized art box relative to one grid cell (bottom-left origin).
+ * Edges are normally 0–1 inside the cell, but may overflow (e.g. −0.25…1.25)
+ * so tall/wide units can extend past the cell.
+ */
 export interface UnitCellAnchor {
   /** Left edge as a fraction of cell width. */
   minX: number;
@@ -19,15 +23,22 @@ export interface UnitCellAnchor {
   maxY: number;
 }
 
+/** Soft bounds for authored cell-anchor edges (allows overflow past the cell). */
+export const UNIT_CELL_ANCHOR_EDGE_MIN = -0.75;
+export const UNIT_CELL_ANCHOR_EDGE_MAX = 1.75;
+
+/** Soft max for cell-width fill (may exceed 1 when the art overflows the cell). */
+export const UNIT_CELL_WIDTH_FILL_MAX = 2.5;
+
 /** Clamp an authored cell-width fill ratio; falls back when missing or invalid. */
 export function resolveCellWidthFill(value: number | undefined, defaultFill: number): number {
   if (value == null || !Number.isFinite(value) || value <= 0) return defaultFill;
-  return Math.min(1, Math.max(0.05, value));
+  return Math.min(UNIT_CELL_WIDTH_FILL_MAX, Math.max(0.05, value));
 }
 
-function clamp01(value: number, fallback: number): number {
+function clampEdge(value: number, fallback: number): number {
   if (!Number.isFinite(value)) return fallback;
-  return Math.min(1, Math.max(0, value));
+  return Math.min(UNIT_CELL_ANCHOR_EDGE_MAX, Math.max(UNIT_CELL_ANCHOR_EDGE_MIN, value));
 }
 
 /** Build a bottom-centered cell anchor from a legacy width-fill ratio. */
@@ -69,25 +80,25 @@ export function defaultInsectCellAnchor(aspectRatio = 1): UnitCellAnchor {
   );
 }
 
-/** Sanitize / clamp a cell anchor; falls back when missing or invalid. */
+/** Sanitize a cell anchor (soft edge bounds; overflow past 0–1 is allowed). */
 export function resolveUnitCellAnchor(
   value: UnitCellAnchor | undefined,
   fallback: UnitCellAnchor,
 ): UnitCellAnchor {
   if (!value) return { ...fallback };
-  let minX = clamp01(value.minX, fallback.minX);
-  let minY = clamp01(value.minY, fallback.minY);
-  let maxX = clamp01(value.maxX, fallback.maxX);
-  let maxY = clamp01(value.maxY, fallback.maxY);
+  let minX = clampEdge(value.minX, fallback.minX);
+  let minY = clampEdge(value.minY, fallback.minY);
+  let maxX = clampEdge(value.maxX, fallback.maxX);
+  let maxY = clampEdge(value.maxY, fallback.maxY);
   if (maxX - minX < 0.05) {
     const mid = (minX + maxX) / 2;
-    minX = Math.max(0, mid - 0.025);
-    maxX = Math.min(1, mid + 0.025);
+    minX = clampEdge(mid - 0.025, mid - 0.025);
+    maxX = clampEdge(mid + 0.025, mid + 0.025);
   }
   if (maxY - minY < 0.05) {
     const mid = (minY + maxY) / 2;
-    minY = Math.max(0, mid - 0.025);
-    maxY = Math.min(1, mid + 0.025);
+    minY = clampEdge(mid - 0.025, mid - 0.025);
+    maxY = clampEdge(mid + 0.025, mid + 0.025);
   }
   if (maxX < minX) [minX, maxX] = [maxX, minX];
   if (maxY < minY) [minY, maxY] = [maxY, minY];

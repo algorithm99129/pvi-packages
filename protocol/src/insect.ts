@@ -107,7 +107,7 @@ export interface InsectClientAssets {
   cropWidth?: number;
   crop?: GfxRectCrop;
   /**
-   * Art placement inside one grid cell (0–1 anchors, bottom-left origin).
+   * Art placement relative to one grid cell (bottom-left origin; may overflow 0–1).
    * Prefer this over legacy `cellWidthFill` / `scale`.
    */
   cellAnchor?: UnitCellAnchor;
