@@ -63,9 +63,10 @@ export interface MissionCompleteResult extends UserProgression {
   unlockInsectId?: EntityId;
 }
 
-/** Plants unlocked when a new account is created (classic: Peashooter only). */
+/** Plants unlocked when a new account is created (Peashooter + Sunflower). */
 export const STARTER_PLANT_IDS: EntityId[] = [
   'peashooter',
+  'sun_flower',
 ];
 
 /** Insects unlocked when a new account is created (classic: basic beetle only). */
