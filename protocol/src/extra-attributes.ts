@@ -117,14 +117,14 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
   {
     key: 'underwaterClipHeight',
     label: 'Underwater clip height',
-    hint: 'Default fraction clipped below the waterline (0–1). Status modifiers override while active.',
+    hint: 'Wire via status-graph modifiers → Unit attribute (extra.underwaterClipHeight). 0 = above waterline, 1 = fully under.',
     type: 'number',
     defaultValue: 0.55,
   },
   {
     key: 'waterEdgeParticleScale',
     label: 'Water edge particle scale',
-    hint: 'Scale for the waterline ripple particle while submerged',
+    hint: 'Optional scale for the waterline ripple while clipped (read by waterline VFX).',
     type: 'number',
     defaultValue: 1,
   },

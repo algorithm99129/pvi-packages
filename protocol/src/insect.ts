@@ -157,18 +157,18 @@ export const INSECT_WATER_TRAVERSAL_OPTIONS: ReadonlyArray<{
 }> = [
   {
     id: 'none',
-    label: 'None (land only)',
-    hint: 'Cannot enter water lanes — drown if forced (default)',
+    label: 'Land only',
+    hint: 'Cannot enter pool lanes — drown if redirected onto water',
   },
   {
     id: 'surface',
     label: 'Surface',
-    hint: 'Floats on water fully visible (Ducky Tube–style)',
+    hint: 'May enter water fully visible (Ducky Tube–style float)',
   },
   {
     id: 'submerge',
     label: 'Submerge',
-    hint: 'Swims underwater with clip + water-edge FX; surface via status graph to eat',
+    hint: 'May enter water; clip height comes from status graph → extra.underwaterClipHeight',
   },
 ];
 

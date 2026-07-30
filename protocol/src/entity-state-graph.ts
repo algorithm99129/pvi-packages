@@ -757,9 +757,10 @@ export interface StateStatModifiers {
   range?: number;
   /**
    * Fraction of the unit clipped below the waterline (0 = fully above, 1 = fully under).
+   * Prefer `attributeDuration('extra.underwaterClipHeight')` so Extra attributes drive the value.
    * Cleared on status exit. Used by pool / snorkel visuals.
    */
-  underwaterClipHeight?: number;
+  underwaterClipHeight?: StateDurationValue;
 }
 
 export interface EntityStateNode {
@@ -1793,12 +1794,9 @@ export function createSnorkelStateGraph(opts?: {
   swimAnim?: string;
   attackAnim?: string;
   dieAnim?: string;
-  /** Clip height while swimming (0–1). Default 0.55. */
-  swimClipHeight?: number;
 }): EntityStateGraph {
   const swimId = createStateNodeId();
   const attackId = createStateNodeId();
-  const clip = opts?.swimClipHeight ?? 0.55;
   return {
     version: 1,
     entryNodeId: swimId,
@@ -1808,7 +1806,9 @@ export function createSnorkelStateGraph(opts?: {
         status: 'swim',
         spineAnim: opts?.swimAnim,
         loop: true,
-        modifiers: { underwaterClipHeight: clip },
+        modifiers: {
+          underwaterClipHeight: attributeDuration('extra.underwaterClipHeight'),
+        },
         actions: [{ type: 'start_moving', when: 'on_enter' }],
         position: { x: 80, y: 160 },
       },
@@ -1817,7 +1817,8 @@ export function createSnorkelStateGraph(opts?: {
         status: 'attack',
         spineAnim: opts?.attackAnim,
         loop: false,
-        modifiers: { underwaterClipHeight: 0 },
+        // Surface (head up) while biting — literal override of the swim extra.
+        modifiers: { underwaterClipHeight: literalDuration(0) },
         actions: [
           { type: 'stop_moving', when: 'on_enter' },
           { type: 'deal_contact_damage', when: 'after_anim' },
@@ -2680,7 +2681,7 @@ export function normalizeEntityStateGraph(
         typeof n.loop === 'boolean'
           ? n.loop
           : defaultLoopForStatus(kind, n.status as EntityGraphStatus),
-      modifiers: n.modifiers,
+      modifiers: normalizeStatModifiers(n.modifiers),
       actions: Array.isArray(n.actions)
         ? n.actions.map(normalizeAction).filter((a): a is StateAction => Boolean(a))
         : undefined,
@@ -2749,7 +2750,29 @@ export function normalizeEntityStateGraph(
   };
 }
 
+function normalizeStatModifiers(raw: unknown): StateStatModifiers | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const m = raw as Record<string, unknown>;
+  const out: StateStatModifiers = {};
+  if (typeof m.attackIntervalMs === 'number' && Number.isFinite(m.attackIntervalMs)) {
+    out.attackIntervalMs = m.attackIntervalMs;
+  }
+  if (typeof m.moveSpeed === 'number' && Number.isFinite(m.moveSpeed)) {
+    out.moveSpeed = m.moveSpeed;
+  }
+  if (typeof m.range === 'number' && Number.isFinite(m.range)) {
+    out.range = m.range;
+  }
+  if (m.underwaterClipHeight !== undefined && m.underwaterClipHeight !== null) {
+    out.underwaterClipHeight = normalizeDurationValue(m.underwaterClipHeight);
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 function normalizeDurationValue(raw: unknown): StateDurationValue {
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    return literalDuration(raw);
+  }
   if (!raw || typeof raw !== 'object') return literalDuration(0);
   const r = raw as {
     kind?: string;
