@@ -114,6 +114,20 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     type: 'number',
     defaultValue: 10,
   },
+  {
+    key: 'underwaterClipHeight',
+    label: 'Underwater clip height',
+    hint: 'Default fraction clipped below the waterline (0–1). Status modifiers override while active.',
+    type: 'number',
+    defaultValue: 0.55,
+  },
+  {
+    key: 'waterEdgeParticleScale',
+    label: 'Water edge particle scale',
+    hint: 'Scale for the waterline ripple particle while submerged',
+    type: 'number',
+    defaultValue: 1,
+  },
 ];
 
 export function extraPath(key: string): string {

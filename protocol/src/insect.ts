@@ -147,6 +147,44 @@ export function withInsectStateGraph(
 
 export type InsectTravelLayer = 'ground' | 'flying' | 'burrow';
 
+/** How an insect interacts with pool / water lanes (classic PvZ). */
+export type InsectWaterTraversal = 'none' | 'surface' | 'submerge';
+
+export const INSECT_WATER_TRAVERSAL_OPTIONS: ReadonlyArray<{
+  id: InsectWaterTraversal;
+  label: string;
+  hint: string;
+}> = [
+  {
+    id: 'none',
+    label: 'None (land only)',
+    hint: 'Cannot enter water lanes — drown if forced (default)',
+  },
+  {
+    id: 'surface',
+    label: 'Surface',
+    hint: 'Floats on water fully visible (Ducky Tube–style)',
+  },
+  {
+    id: 'submerge',
+    label: 'Submerge',
+    hint: 'Swims underwater with clip + water-edge FX; surface via status graph to eat',
+  },
+];
+
+const WATER_TRAVERSAL_SET = new Set<string>(INSECT_WATER_TRAVERSAL_OPTIONS.map((o) => o.id));
+
+/** Normalize authored water-traversal keys. Default: land only. */
+export function normalizeWaterTraversal(raw: unknown): InsectWaterTraversal {
+  if (typeof raw !== 'string') return 'none';
+  const s = raw.trim().toLowerCase().replace(/-/g, '_');
+  if (WATER_TRAVERSAL_SET.has(s)) return s as InsectWaterTraversal;
+  if (s === 'float' || s === 'floaty' || s === 'ducky') return 'surface';
+  if (s === 'underwater' || s === 'snorkel' || s === 'swim') return 'submerge';
+  if (s === 'land' || s === 'ground_only') return 'none';
+  return 'none';
+}
+
 export const INSECT_TRAVEL_LAYER_OPTIONS: ReadonlyArray<{
   id: InsectTravelLayer;
   label: string;
@@ -194,6 +232,11 @@ export interface InsectServerConfig {
    * Separate from {@link InsectArchetype} — archetype is roster flavor; this drives combat.
    */
   laneBehavior: InsectTravelLayer;
+  /**
+   * Pool / water lane access. Default `none` (land only).
+   * Flying insects bypass this and may enter any lane.
+   */
+  waterTraversal?: InsectWaterTraversal;
   burrowSkipsPlants?: number;
   /**
    * Attacker loadout card recharge after deploying this insect (seconds).

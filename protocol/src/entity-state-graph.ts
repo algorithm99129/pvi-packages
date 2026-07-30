@@ -47,6 +47,7 @@ export type InsectGraphStatus =
   | 'vault'
   | 'burrow'
   | 'emerge'
+  | 'swim'
   | 'fly'
   | 'summon'
   | 'throw'
@@ -89,6 +90,7 @@ export const INSECT_GRAPH_STATUSES: ReadonlyArray<{
   { id: 'vault', label: 'Vault', hint: 'Jump first plant', defaultLoop: false },
   { id: 'burrow', label: 'Burrow', hint: 'Underground travel', defaultLoop: true },
   { id: 'emerge', label: 'Emerge', hint: 'Surface from burrow', defaultLoop: false },
+  { id: 'swim', label: 'Swim', hint: 'Underwater / pool travel (Snorkel)', defaultLoop: true },
   { id: 'fly', label: 'Fly', hint: 'Air locomotion', defaultLoop: true },
   { id: 'summon', label: 'Summon', hint: 'Call backup insects', defaultLoop: false },
   { id: 'throw', label: 'Throw', hint: 'Hurl Imp / projectile', defaultLoop: false },
@@ -753,6 +755,11 @@ export interface StateStatModifiers {
   attackIntervalMs?: number;
   moveSpeed?: number;
   range?: number;
+  /**
+   * Fraction of the unit clipped below the waterline (0 = fully above, 1 = fully under).
+   * Cleared on status exit. Used by pool / snorkel visuals.
+   */
+  underwaterClipHeight?: number;
 }
 
 export interface EntityStateNode {
@@ -1775,6 +1782,62 @@ export function createMeleeConsumeStateGraph(opts?: {
         from: idleId,
         to: attackId,
         conditions: cond({ type: 'enemy_in_range' }),
+      },
+    ],
+    die: { spineAnim: opts?.dieAnim },
+  };
+}
+
+/** Snorkel: swim submerged → surface to bite → re-submerge. */
+export function createSnorkelStateGraph(opts?: {
+  swimAnim?: string;
+  attackAnim?: string;
+  dieAnim?: string;
+  /** Clip height while swimming (0–1). Default 0.55. */
+  swimClipHeight?: number;
+}): EntityStateGraph {
+  const swimId = createStateNodeId();
+  const attackId = createStateNodeId();
+  const clip = opts?.swimClipHeight ?? 0.55;
+  return {
+    version: 1,
+    entryNodeId: swimId,
+    nodes: [
+      {
+        id: swimId,
+        status: 'swim',
+        spineAnim: opts?.swimAnim,
+        loop: true,
+        modifiers: { underwaterClipHeight: clip },
+        actions: [{ type: 'start_moving', when: 'on_enter' }],
+        position: { x: 80, y: 160 },
+      },
+      {
+        id: attackId,
+        status: 'attack',
+        spineAnim: opts?.attackAnim,
+        loop: false,
+        modifiers: { underwaterClipHeight: 0 },
+        actions: [
+          { type: 'stop_moving', when: 'on_enter' },
+          { type: 'deal_contact_damage', when: 'after_anim' },
+          { type: 'reset_attack_timer', when: 'after_anim' },
+        ],
+        position: { x: 360, y: 160 },
+      },
+    ],
+    edges: [
+      {
+        id: createStateEdgeId(),
+        from: swimId,
+        to: attackId,
+        conditions: cond({ type: 'enemy_in_range' }, { type: 'attack_interval_ready' }),
+      },
+      {
+        id: createStateEdgeId(),
+        from: attackId,
+        to: swimId,
+        conditions: cond({ type: 'anim_ended' }),
       },
     ],
     die: { spineAnim: opts?.dieAnim },
