@@ -234,7 +234,6 @@ export async function exportGameData(
     join(clientRoot, CLIENT_EXPORT_PATHS.equipment),
     join(clientRoot, CLIENT_EXPORT_PATHS.missions),
     join(clientRoot, CLIENT_EXPORT_PATHS.maps),
-    join(clientRoot, CLIENT_EXPORT_PATHS.rewards),
     join(clientRoot, CLIENT_EXPORT_PATHS.balanceVersion),
   ];
 
@@ -255,8 +254,7 @@ export async function exportGameData(
   await writeJson(clientFiles[3], clientEquipment);
   await writeJson(clientFiles[4], clientMissions);
   await writeJson(clientFiles[5], clientMaps);
-  await writeJson(clientFiles[6], rewards);
-  await writeJson(clientFiles[7], balancePayload);
+  await writeJson(clientFiles[6], balancePayload);
 
   await writeJson(serverFiles[0], serverPlants);
   await writeJson(serverFiles[1], serverInsects);

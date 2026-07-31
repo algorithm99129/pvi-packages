@@ -15,7 +15,8 @@ export const CLIENT_EXPORT_PATHS = {
   equipmentDir: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.equipment}`,
   missions: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.missions}/missions.json`,
   maps: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.maps}/maps.json`,
-  rewards: `${CLIENT_RESOURCES_ROOT}/Rewards/rewards.json`,
+  /** Reward item art only — hub plan JSON is server-only (see SERVER_EXPORT_PATHS.rewards). */
+  rewardsMediaDir: `${CLIENT_RESOURCES_ROOT}/Rewards`,
   avatars: `${CLIENT_RESOURCES_ROOT}/Avatars/avatars.json`,
   avatarsDir: `${CLIENT_RESOURCES_ROOT}/Avatars`,
   branding: `${CLIENT_RESOURCES_ROOT}/branding.json`,
@@ -100,6 +101,21 @@ export function normalizeClientMediaPath(relativePath: string): string {
   }
 
   if (normalized.startsWith(`${CLIENT_EXPORT_PATHS.customMediaRoot}/`)) {
+    const underCustom = normalized.slice(`${CLIENT_EXPORT_PATHS.customMediaRoot}/`.length);
+    // Legacy mis-routes (before category was allowlisted) — lift into Resources root.
+    if (
+      underCustom.startsWith('Rewards/') ||
+      underCustom.startsWith('Plants/') ||
+      underCustom.startsWith('Insects/') ||
+      underCustom.startsWith('Bullets/') ||
+      underCustom.startsWith('Equipment/') ||
+      underCustom.startsWith('Missions/') ||
+      underCustom.startsWith('Maps/') ||
+      underCustom.startsWith('Screen/') ||
+      underCustom.startsWith('Avatars/')
+    ) {
+      return underCustom;
+    }
     return normalized;
   }
 
@@ -115,7 +131,8 @@ export function normalizeClientMediaPath(relativePath: string): string {
     normalized.startsWith('Missions/') ||
     normalized.startsWith('Maps/') ||
     normalized.startsWith('Screen/') ||
-    normalized.startsWith('Avatars/')
+    normalized.startsWith('Avatars/') ||
+    normalized.startsWith('Rewards/')
   ) {
     return normalized;
   }

@@ -15,6 +15,11 @@ export interface DailyLoginDay {
   grant: HubRewardGrant;
   /** Optional label shown under the day card (e.g. "Chest"). */
   displayHint?: string;
+  /**
+   * Client Resources sprite path (no extension), e.g. `Rewards/daily_day_1`.
+   * PNG lives under `Assets/Resources/Rewards/`; plan JSON is server-only.
+   */
+  image?: string;
 }
 
 export interface StreakBonusTier {
@@ -23,6 +28,8 @@ export interface StreakBonusTier {
   streakDays: number;
   grant: HubRewardGrant;
   displayName?: string;
+  /** Client Resources sprite path (no extension), e.g. `Rewards/streak_3`. */
+  image?: string;
 }
 
 export type DailyQuestObjectiveType =
@@ -63,7 +70,9 @@ export interface AchievementDef {
   grant: HubRewardGrant;
 }
 
-/** Authorable hub rewards plan (editor → client + API Resources/Rewards/rewards.json). */
+/** Authorable hub rewards plan (editor → API Resources/Rewards/rewards.json only).
+ * Item art PNGs are stored on the Unity client under Assets/Resources/Rewards/.
+ */
 export interface HubRewardPlan {
   schemaVersion: number;
   dailyLogin: DailyLoginDay[];
@@ -79,6 +88,8 @@ export interface PlayerDailyLoginDayView {
   day: number;
   grant: HubRewardGrant;
   displayHint?: string;
+  /** Client Resources sprite path (no extension). */
+  image?: string;
   /** claimed | today (pending/claimed today) | locked */
   state: 'claimed' | 'today' | 'locked';
 }
@@ -88,6 +99,8 @@ export interface PlayerStreakBonusView {
   streakDays: number;
   displayName?: string;
   grant: HubRewardGrant;
+  /** Client Resources sprite path (no extension). */
+  image?: string;
   status: RewardClaimStatus;
 }
 
@@ -160,19 +173,19 @@ export function createDefaultHubRewardPlan(): HubRewardPlan {
   return {
     schemaVersion: 1,
     dailyLogin: [
-      { day: 1, grant: { coin: 100 } },
-      { day: 2, grant: { gem: 3 } },
-      { day: 3, grant: { coin: 150 }, displayHint: 'Bonus' },
-      { day: 4, grant: { gem: 5, leaf: 2 }, displayHint: 'Pack' },
-      { day: 5, grant: { gem: 5 } },
-      { day: 6, grant: { coin: 200 } },
-      { day: 7, grant: { gem: 10, coin: 100 }, displayHint: 'Chest' },
+      { day: 1, grant: { coin: 100 }, image: 'Rewards/daily_day_1' },
+      { day: 2, grant: { gem: 3 }, image: 'Rewards/daily_day_2' },
+      { day: 3, grant: { coin: 150 }, displayHint: 'Bonus', image: 'Rewards/daily_day_3' },
+      { day: 4, grant: { gem: 5, leaf: 2 }, displayHint: 'Pack', image: 'Rewards/daily_day_4' },
+      { day: 5, grant: { gem: 5 }, image: 'Rewards/daily_day_5' },
+      { day: 6, grant: { coin: 200 }, image: 'Rewards/daily_day_6' },
+      { day: 7, grant: { gem: 10, coin: 100 }, displayHint: 'Chest', image: 'Rewards/daily_day_7' },
     ],
     streakBonuses: [
-      { id: 'streak_3', streakDays: 3, displayName: '3 Days', grant: { leaf: 5 } },
-      { id: 'streak_7', streakDays: 7, displayName: '7 Days', grant: { gem: 10 } },
-      { id: 'streak_14', streakDays: 14, displayName: '14 Days', grant: { gem: 15, coin: 200 } },
-      { id: 'streak_30', streakDays: 30, displayName: '30 Days', grant: { gem: 30, coin: 500 } },
+      { id: 'streak_3', streakDays: 3, displayName: '3 Days', grant: { leaf: 5 }, image: 'Rewards/streak_3' },
+      { id: 'streak_7', streakDays: 7, displayName: '7 Days', grant: { gem: 10 }, image: 'Rewards/streak_7' },
+      { id: 'streak_14', streakDays: 14, displayName: '14 Days', grant: { gem: 15, coin: 200 }, image: 'Rewards/streak_14' },
+      { id: 'streak_30', streakDays: 30, displayName: '30 Days', grant: { gem: 30, coin: 500 }, image: 'Rewards/streak_30' },
     ],
     dailyQuests: [
       {
@@ -251,14 +264,30 @@ export function normalizeHubRewardPlan(plan: HubRewardPlan | null | undefined): 
     day: i + 1,
     grant: d.grant ?? {},
     displayHint: d.displayHint,
+    image: normalizeRewardImagePath(d.image) || fallback.dailyLogin[i]?.image,
   }));
 
   return {
     schemaVersion: plan.schemaVersion ?? 1,
     dailyLogin: trimmedLogin,
-    streakBonuses: Array.isArray(plan.streakBonuses) ? plan.streakBonuses : fallback.streakBonuses,
+    streakBonuses: (Array.isArray(plan.streakBonuses) ? plan.streakBonuses : fallback.streakBonuses).map(
+      (tier, i) => ({
+        ...tier,
+        image: normalizeRewardImagePath(tier.image) || fallback.streakBonuses[i]?.image,
+      }),
+    ),
     dailyQuests: Array.isArray(plan.dailyQuests) ? plan.dailyQuests : fallback.dailyQuests,
     dailyQuestsAllClearGrant: plan.dailyQuestsAllClearGrant ?? fallback.dailyQuestsAllClearGrant,
     achievements: Array.isArray(plan.achievements) ? plan.achievements : fallback.achievements,
   };
+}
+
+/** Resources path without extension; lifts legacy `custom/Rewards/...` mis-routes. */
+function normalizeRewardImagePath(image: string | undefined): string | undefined {
+  const trimmed = image?.trim();
+  if (!trimmed) return undefined;
+  const withoutExt = trimmed.replace(/\.[^./]+$/, '');
+  if (withoutExt.startsWith('custom/Rewards/')) return withoutExt.slice('custom/'.length);
+  if (withoutExt.startsWith('Rewards/')) return withoutExt;
+  return withoutExt;
 }
