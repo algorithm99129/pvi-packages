@@ -87,6 +87,10 @@ export interface MapTemplateDefinition {
     corePosition: { lane: number; column: number };
     maxVillageLevel: number;
     minVillageLevel: number;
+    /** Garden map shop coin price (0 = free once unlocked by village level). */
+    shopPriceCoin?: number;
+    /** Garden map shop gem price. */
+    shopPriceGem?: number;
   };
 }
 

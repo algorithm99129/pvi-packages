@@ -11,6 +11,12 @@ export const DEFAULT_GARDEN_MAP_ID: EntityId = 'front_yard';
 /** Formula id for garden level-up cost (coin/gem/leaf). */
 export const GARDEN_UPGRADE_COST_FORMULA_ID = 'garden_upgrade_resource_cost';
 
+/** Dig-up refunds this fraction of the current place coin cost (server-authoritative). */
+export const GARDEN_DIG_REFUND_RATIO = 0.5;
+
+/** Default max hours of unclaimed garden production accrual per slot. */
+export const GARDEN_PRODUCTION_DEFAULT_MAX_ACCRUAL_HOURS = 8;
+
 /**
  * Coin cost to station one plant on the village layout.
  * Mirrors classic seed-packet tiers (producer/wall cheap, explode expensive).
@@ -55,10 +61,18 @@ export function gardenPlantPlaceCoinCost(input: {
   return Math.max(1, Math.round(base * rarityMult * levelMult));
 }
 
+/** Coins returned when digging up a placed plant (half place cost, floored). */
+export function gardenPlantDigRefundCoinCost(placeCoinCost: number): number {
+  const cost = Math.max(0, Math.floor(placeCoinCost));
+  return Math.max(0, Math.floor(cost * GARDEN_DIG_REFUND_RATIO));
+}
+
 export interface GardenPlantSlot {
   plantId: EntityId;
   lane: number;
   column: number;
+  /** ISO timestamp when placed / last production claim for this slot. */
+  plantedAt?: string;
 }
 
 export interface PlayerGarden {
@@ -66,6 +80,26 @@ export interface PlayerGarden {
   mapTemplateId: EntityId;
   layoutVersion: number;
   plants: GardenPlantSlot[];
+  /** Map templates the player has purchased (always includes {@link DEFAULT_GARDEN_MAP_ID}). */
+  ownedMapIds?: EntityId[];
+}
+
+export interface GardenProductionClaimed {
+  coin: number;
+  gem: number;
+}
+
+export interface GardenMapShopEntry {
+  mapTemplateId: EntityId;
+  displayName: string;
+  owned: boolean;
+  equipped: boolean;
+  /** True when garden level is within the map's min/max village range. */
+  unlockedByLevel: boolean;
+  priceCoin: number;
+  priceGem: number;
+  minVillageLevel: number;
+  maxVillageLevel: number;
 }
 
 export interface GardenPlacedPlantView extends GardenPlantSlot {
@@ -89,11 +123,31 @@ export interface GardenView {
   upgradeCost: WalletResources | null;
   map: ServerMapExport;
   plants: GardenPlacedPlantView[];
+  ownedMapIds: EntityId[];
+  availableMaps: GardenMapShopEntry[];
+  /** Present when GET /garden auto-claimed pending producer rewards. */
+  productionClaimed?: GardenProductionClaimed;
+}
+
+/** GET /garden response (claims pending production, returns updated wallet). */
+export interface GardenLoadResult {
+  garden: GardenView;
+  wallet: WalletResources;
+  productionClaimed?: GardenProductionClaimed;
 }
 
 export interface UpgradeGardenResult {
   garden: GardenView;
   wallet: WalletResources;
+}
+
+export interface PurchaseGardenMapResult {
+  garden: GardenView;
+  wallet: WalletResources;
+}
+
+export interface PurchaseGardenMapRequest {
+  mapTemplateId: EntityId;
 }
 
 /** Response after placing a defense plant (coins spent). */

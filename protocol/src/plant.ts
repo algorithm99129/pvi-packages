@@ -431,6 +431,26 @@ export interface PlantServerConfig {
    * Prefer explicit authorship; loadout / raid UI reads this when present.
    */
   sunCost?: number;
+  /**
+   * Village garden idle production (coin/gem per hour while planted).
+   * Claimed server-side on GET /garden from `plantedAt`.
+   */
+  gardenProduction?: {
+    coinPerHour?: number;
+    gemPerHour?: number;
+    /** Cap of unclaimed accrual hours (anti-idle-abuse). Default 8. */
+    maxAccrualHours?: number;
+  };
+  /**
+   * Neighbor damage aura while this producer is alive on a defended garden layout
+   * (PvP raid defense only).
+   */
+  gardenDefenseAura?: {
+    /** Chebyshev radius in cells (1 = adjacent including diagonals). */
+    radiusCells?: number;
+    /** Ally damage multiplier while this producer is alive (e.g. 1.25). */
+    damageMultiplier?: number;
+  };
 }
 
 /** Classic PvZ seed recharge tiers (seconds). */
@@ -563,4 +583,11 @@ export interface ClientPlantExport {
   stats: PlantStatCurve;
   behavior?: PlantBehaviorConfig;
   extraAttributes?: ExtraAttributes;
+  /**
+   * Subset of server config needed by the Unity client (recharge, sun, garden aura).
+   */
+  server?: Pick<
+    PlantServerConfig,
+    'rechargeSeconds' | 'sunCost' | 'hitsTravelLayers' | 'gardenDefenseAura'
+  >;
 }
