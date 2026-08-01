@@ -1,5 +1,6 @@
 import type { EntityId } from './index';
 import type { ServerMapExport } from './map';
+import type { PlantServerConfig } from './plant';
 import type { WalletResources } from './wallet';
 
 /** Max garden / village level. */
@@ -16,6 +17,9 @@ export const GARDEN_DIG_REFUND_RATIO = 0.5;
 
 /** Default max hours of unclaimed garden production accrual per slot. */
 export const GARDEN_PRODUCTION_DEFAULT_MAX_ACCRUAL_HOURS = 8;
+
+/** Default upgrade cards / hour for planted plants when not authored. */
+export const GARDEN_PRODUCTION_DEFAULT_UPGRADE_CARDS_PER_HOUR = 1;
 
 /**
  * Coin cost to station one plant on the village layout.
@@ -61,6 +65,33 @@ export function gardenPlantPlaceCoinCost(input: {
   return Math.max(1, Math.round(base * rarityMult * levelMult));
 }
 
+/**
+ * Minimum village level to station a plant in the garden.
+ * Authored `server.minVillageLevel` wins; otherwise rarity tiers.
+ */
+export function resolveGardenMinVillageLevel(plant: {
+  rarity?: string | null;
+  server?: Pick<PlantServerConfig, 'minVillageLevel'> | null;
+}): number {
+  const authored = plant.server?.minVillageLevel;
+  if (typeof authored === 'number' && Number.isFinite(authored) && authored >= 1) {
+    return Math.min(GARDEN_MAX_LEVEL, Math.floor(authored));
+  }
+
+  switch ((plant.rarity ?? 'common').trim().toLowerCase()) {
+    case 'uncommon':
+      return 2;
+    case 'rare':
+      return 4;
+    case 'epic':
+      return 7;
+    case 'legendary':
+      return 10;
+    default:
+      return 1;
+  }
+}
+
 /** Coins returned when digging up a placed plant (half place cost, floored). */
 export function gardenPlantDigRefundCoinCost(placeCoinCost: number): number {
   const cost = Math.max(0, Math.floor(placeCoinCost));
@@ -84,9 +115,16 @@ export interface PlayerGarden {
   ownedMapIds?: EntityId[];
 }
 
+export interface GardenPlantCardClaim {
+  plantId: EntityId;
+  count: number;
+}
+
 export interface GardenProductionClaimed {
   coin: number;
   gem: number;
+  /** Per-plant upgrade cards granted this claim. */
+  upgradeCards?: GardenPlantCardClaim[];
 }
 
 export interface GardenMapShopEntry {

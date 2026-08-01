@@ -30,6 +30,7 @@ export * from './formula';
 export * from './user-xp';
 export * from './player';
 export * from './garden';
+export * from './raid';
 export * from './team';
 export * from './catalog';
 export * from './deep-merge';

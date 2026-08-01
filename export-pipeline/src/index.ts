@@ -96,6 +96,7 @@ export function toClientPlant(plant: PlantDefinition): ClientPlantExport {
             sunCost: server.sunCost,
             hitsTravelLayers: server.hitsTravelLayers,
             gardenDefenseAura: server.gardenDefenseAura,
+            minVillageLevel: server.minVillageLevel,
           },
   };
 }

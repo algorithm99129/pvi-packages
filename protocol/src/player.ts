@@ -16,12 +16,16 @@ export interface UserPlantProgress {
   plantId: EntityId;
   level: number;
   unlocked: boolean;
+  /** Owned upgrade cards for this plant type (spent on level-ups). */
+  upgradeCards?: number;
 }
 
 export interface UserInsectProgress {
   insectId: EntityId;
   level: number;
   unlocked: boolean;
+  /** Owned upgrade cards for this insect type (spent on level-ups). */
+  upgradeCards?: number;
 }
 
 export interface UserMissionProgress {
@@ -88,6 +92,10 @@ export interface UserPlantView {
     range: number;
   };
   upgradeCost: WalletResources | null;
+  /** Owned upgrade cards for this plant. */
+  upgradeCards: number;
+  /** Cards required for the next level; `null` when locked or at max. */
+  upgradeCardsRequired: number | null;
   /** Gem cost to unlock while locked; `null` if already unlocked or not gem-purchasable. */
   unlockCost: WalletResources | null;
 }
@@ -114,6 +122,10 @@ export interface UserInsectView {
     moveSpeed: number;
   };
   upgradeCost: WalletResources | null;
+  /** Owned upgrade cards for this insect. */
+  upgradeCards: number;
+  /** Cards required for the next level; `null` when locked or at max. */
+  upgradeCardsRequired: number | null;
   /** Gem cost to unlock while locked; `null` if already unlocked or not gem-purchasable. */
   unlockCost: WalletResources | null;
 }

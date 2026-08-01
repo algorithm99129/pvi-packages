@@ -64,18 +64,42 @@ export interface PlantUpgradeConfig {
   statFormulaId: string;
   /** Formula id for next-level upgrade cost per resource (inputs: base, level). */
   costFormulaId: string;
+  /** Formula id for upgrade cards required (inputs: base, level). */
+  cardFormulaId: string;
   baseUpgradeCost: WalletResources;
+  /** Base upgrade-card count at level 1 → 2 (fed into {@link cardFormulaId}). */
+  baseUpgradeCards: number;
 }
 
 export const DEFAULT_PLANT_UPGRADE: PlantUpgradeConfig = {
   maxLevel: PLANT_MAX_LEVEL,
   statFormulaId: 'plant_stat_at_level',
   costFormulaId: 'plant_upgrade_resource_cost',
+  cardFormulaId: 'plant_upgrade_card_cost',
   baseUpgradeCost: { coin: 100, gem: 0, leaf: 2 },
+  baseUpgradeCards: 10,
 };
 
 export function resolvePlantUpgrade(plant: Pick<PlantDefinition, 'upgrade'>): PlantUpgradeConfig {
-  return plant.upgrade ?? DEFAULT_PLANT_UPGRADE;
+  const u = plant.upgrade;
+  if (!u) {
+    return {
+      ...DEFAULT_PLANT_UPGRADE,
+      baseUpgradeCost: { ...DEFAULT_PLANT_UPGRADE.baseUpgradeCost },
+    };
+  }
+  return {
+    maxLevel: u.maxLevel ?? DEFAULT_PLANT_UPGRADE.maxLevel,
+    statFormulaId: u.statFormulaId ?? DEFAULT_PLANT_UPGRADE.statFormulaId,
+    costFormulaId: u.costFormulaId ?? DEFAULT_PLANT_UPGRADE.costFormulaId,
+    cardFormulaId: u.cardFormulaId ?? DEFAULT_PLANT_UPGRADE.cardFormulaId,
+    baseUpgradeCost: {
+      coin: u.baseUpgradeCost?.coin ?? DEFAULT_PLANT_UPGRADE.baseUpgradeCost.coin,
+      gem: u.baseUpgradeCost?.gem ?? DEFAULT_PLANT_UPGRADE.baseUpgradeCost.gem,
+      leaf: u.baseUpgradeCost?.leaf ?? DEFAULT_PLANT_UPGRADE.baseUpgradeCost.leaf,
+    },
+    baseUpgradeCards: u.baseUpgradeCards ?? DEFAULT_PLANT_UPGRADE.baseUpgradeCards,
+  };
 }
 
 export interface PlantStatCurve {
@@ -432,12 +456,22 @@ export interface PlantServerConfig {
    */
   sunCost?: number;
   /**
-   * Village garden idle production (coin/gem per hour while planted).
+   * Minimum village / garden level required to station this plant on the village layout.
+   * Prefer explicit authorship; {@link resolveGardenMinVillageLevel} fills rarity defaults.
+   */
+  minVillageLevel?: number;
+  /**
+   * Village garden idle production (coin/gem/upgrade-cards per hour while planted).
    * Claimed server-side on GET /garden from `plantedAt`.
    */
   gardenProduction?: {
     coinPerHour?: number;
     gemPerHour?: number;
+    /**
+     * Upgrade cards of this plant type accrued per hour while planted.
+     * When omitted, server uses GARDEN_PRODUCTION_DEFAULT_UPGRADE_CARDS_PER_HOUR (1).
+     */
+    upgradeCardsPerHour?: number;
     /** Cap of unclaimed accrual hours (anti-idle-abuse). Default 8. */
     maxAccrualHours?: number;
   };
@@ -588,6 +622,6 @@ export interface ClientPlantExport {
    */
   server?: Pick<
     PlantServerConfig,
-    'rechargeSeconds' | 'sunCost' | 'hitsTravelLayers' | 'gardenDefenseAura'
+    'rechargeSeconds' | 'sunCost' | 'hitsTravelLayers' | 'gardenDefenseAura' | 'minVillageLevel'
   >;
 }
