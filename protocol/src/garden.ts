@@ -24,6 +24,84 @@ export const GARDEN_PRODUCTION_DEFAULT_UPGRADE_CARDS_PER_HOUR = 1;
 /** Default max pending production pickups queued per planted plant. */
 export const GARDEN_PRODUCTION_DEFAULT_MAX_QUEUE = 10;
 
+/** Max village item-box slots for instant / squash defense charges. */
+export const GARDEN_ITEM_BOX_MAX_SLOTS = 3;
+
+/**
+ * Village level required to unlock item-box slot index 0..2.
+ * Slot 0 is always available at level 1.
+ */
+export const GARDEN_ITEM_BOX_LEVEL_UNLOCKS: readonly number[] = [1, 5, 10];
+
+/**
+ * Gem cost to unlock slot index 0..2 early (slot 0 is free).
+ * Paying gems bumps {@link GardenItemBox.gemUnlockedExtra}.
+ */
+export const GARDEN_ITEM_BOX_GEM_UNLOCK_COSTS: readonly number[] = [0, 50, 100];
+
+/** Plant ids that live in the item box (never on the permanent lawn grid). */
+export const GARDEN_ITEM_BOX_PLANT_IDS = new Set([
+  'cherry_bomb',
+  'jalapeno',
+  'ice_shroom',
+  'doom_shroom',
+  'squash',
+]);
+
+/**
+ * True when this plant is a village item-box charge (instant explode + squash),
+ * not a permanent garden grid station.
+ */
+export function isGardenItemBoxPlant(plant: {
+  id?: string | null;
+  behavior?: { kind?: string | null } | null;
+}): boolean {
+  const id = String(plant.id ?? '').trim().toLowerCase();
+  if (id && GARDEN_ITEM_BOX_PLANT_IDS.has(id)) return true;
+  const kind = String(plant.behavior?.kind ?? '').trim().toLowerCase();
+  return kind === 'instant_explode';
+}
+
+/** How many item-box slots village level alone unlocks (1..{@link GARDEN_ITEM_BOX_MAX_SLOTS}). */
+export function gardenItemBoxLevelUnlockedCount(villageLevel: number): number {
+  const level = Math.max(1, Math.floor(villageLevel || 1));
+  let count = 0;
+  for (let i = 0; i < GARDEN_ITEM_BOX_LEVEL_UNLOCKS.length; i++) {
+    if (level >= GARDEN_ITEM_BOX_LEVEL_UNLOCKS[i]!) count = i + 1;
+  }
+  return Math.min(GARDEN_ITEM_BOX_MAX_SLOTS, Math.max(1, count));
+}
+
+/**
+ * Effective unlocked slot count = max(level unlocks, 1 + gem extras), capped at max.
+ */
+export function resolveGardenItemBoxUnlockedCount(input: {
+  villageLevel: number;
+  gemUnlockedExtra?: number | null;
+}): number {
+  const byLevel = gardenItemBoxLevelUnlockedCount(input.villageLevel);
+  const gemExtra = Math.max(0, Math.floor(Number(input.gemUnlockedExtra) || 0));
+  return Math.min(GARDEN_ITEM_BOX_MAX_SLOTS, Math.max(byLevel, 1 + gemExtra));
+}
+
+/** Gem price to unlock the next locked slot, or null if fully unlocked. */
+export function gardenItemBoxNextGemUnlockCost(input: {
+  villageLevel: number;
+  gemUnlockedExtra?: number | null;
+}): number | null {
+  const unlocked = resolveGardenItemBoxUnlockedCount(input);
+  if (unlocked >= GARDEN_ITEM_BOX_MAX_SLOTS) return null;
+  const cost = GARDEN_ITEM_BOX_GEM_UNLOCK_COSTS[unlocked] ?? 0;
+  return cost > 0 ? cost : null;
+}
+
+export function buildEmptyGardenItemBox(): GardenItemBox {
+  return {
+    gemUnlockedExtra: 0,
+    slots: Array.from({ length: GARDEN_ITEM_BOX_MAX_SLOTS }, () => ({})),
+  };
+}
+
 export type GardenProductionPickupKind = 'coin' | 'gem' | 'upgrade_card';
 
 /** One click-to-collect production item sitting on a planted garden plant. */
@@ -124,11 +202,62 @@ export function gardenPlantDigRefundCoinCost(placeCoinCost: number): number {
   return Math.max(0, Math.floor(cost * GARDEN_DIG_REFUND_RATIO));
 }
 
+/** One village item-box charge slot (instant / squash). */
+export interface GardenItemBoxSlot {
+  plantId?: EntityId;
+  /** ISO timestamp when the slot is ready to auto-deploy again; omit = ready. */
+  readyAt?: string;
+}
+
+/** Village item box for consumable defense charges (not lawn stations). */
+export interface GardenItemBox {
+  /**
+   * Extra slots unlocked with gems beyond village-level unlocks (0–2).
+   * Effective unlock count uses {@link resolveGardenItemBoxUnlockedCount}.
+   */
+  gemUnlockedExtra?: number;
+  /** Always length {@link GARDEN_ITEM_BOX_MAX_SLOTS}; only first unlockedCount are usable. */
+  slots: GardenItemBoxSlot[];
+}
+
+export interface GardenItemBoxSlotView extends GardenItemBoxSlot {
+  /** Roster level when a plant is assigned. */
+  level?: number;
+  placeCoinCost?: number;
+  /** True when this slot index is unlocked for the current garden. */
+  unlocked: boolean;
+  /**
+   * How this slot becomes available when locked:
+   * - `level` — reach village level threshold
+   * - `gem` — can buy early with gems
+   * - `none` — already unlocked / N/A
+   */
+  unlockHint?: 'level' | 'gem' | 'none';
+  /** Village level required for this slot index. */
+  unlockVillageLevel?: number;
+  /** Gem cost to unlock this slot early (0 if free / already unlocked). */
+  unlockGemCost?: number;
+}
+
+export interface GardenItemBoxView {
+  gemUnlockedExtra: number;
+  unlockedCount: number;
+  /** Next gem unlock cost, or null if maxed / only level remains with cost 0. */
+  nextUnlockGemCost: number | null;
+  slots: GardenItemBoxSlotView[];
+}
+
 export interface PlayerGarden {
   level: number;
   mapTemplateId: EntityId;
   layoutVersion: number;
+  /**
+   * Permanent lawn stations. Must NOT include {@link isGardenItemBoxPlant} types —
+   * those live in {@link itemBox}.
+   */
   plants: GardenPlantSlot[];
+  /** Instant / squash defense charges for village raids. */
+  itemBox?: GardenItemBox;
   /** Map templates the player has purchased (always includes {@link DEFAULT_GARDEN_MAP_ID}). */
   ownedMapIds?: EntityId[];
 }
@@ -167,6 +296,7 @@ export interface GardenView {
   upgradeCost: WalletResources | null;
   map: ServerMapExport;
   plants: GardenPlacedPlantView[];
+  itemBox: GardenItemBoxView;
   ownedMapIds: EntityId[];
   availableMaps: GardenMapShopEntry[];
 }
@@ -231,4 +361,22 @@ export interface RemoveGardenPlantRequest {
 
 export interface ChangeGardenMapRequest {
   mapTemplateId: EntityId;
+}
+
+export interface AssignGardenItemBoxSlotRequest {
+  slotIndex: number;
+  plantId: EntityId;
+}
+
+export interface RemoveGardenItemBoxSlotRequest {
+  slotIndex: number;
+}
+
+/** Response after assigning / removing / unlocking an item-box slot. */
+export interface GardenItemBoxMutationResult {
+  garden: GardenView;
+  wallet: WalletResources;
+  placeCost?: WalletResources;
+  refund?: WalletResources;
+  unlockCost?: WalletResources;
 }
