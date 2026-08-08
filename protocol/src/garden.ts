@@ -21,6 +21,32 @@ export const GARDEN_PRODUCTION_DEFAULT_MAX_ACCRUAL_HOURS = 8;
 /** Default upgrade cards / hour for planted plants when not authored. */
 export const GARDEN_PRODUCTION_DEFAULT_UPGRADE_CARDS_PER_HOUR = 1;
 
+/** Default max pending production pickups queued per planted plant. */
+export const GARDEN_PRODUCTION_DEFAULT_MAX_QUEUE = 10;
+
+export type GardenProductionPickupKind = 'coin' | 'gem' | 'upgrade_card';
+
+/** One click-to-collect production item sitting on a planted garden plant. */
+export interface GardenProductionPickup {
+  id: string;
+  kind: GardenProductionPickupKind;
+  /** Coin/gem amount, or upgrade-card count for this pickup. */
+  amount: number;
+  /** Plant type for upgrade_card pickups (usually the slot plant). */
+  plantId?: EntityId;
+  createdAt: string;
+}
+
+export interface GardenPlantSlot {
+  plantId: EntityId;
+  lane: number;
+  column: number;
+  /** ISO timestamp when placed / last production accrual for this slot. */
+  plantedAt?: string;
+  /** Pending click-to-collect rewards (not yet in wallet / roster). */
+  productionQueue?: GardenProductionPickup[];
+}
+
 /**
  * Coin cost to station one plant on the village layout.
  * Mirrors classic seed-packet tiers (producer/wall cheap, explode expensive).
@@ -98,14 +124,6 @@ export function gardenPlantDigRefundCoinCost(placeCoinCost: number): number {
   return Math.max(0, Math.floor(cost * GARDEN_DIG_REFUND_RATIO));
 }
 
-export interface GardenPlantSlot {
-  plantId: EntityId;
-  lane: number;
-  column: number;
-  /** ISO timestamp when placed / last production claim for this slot. */
-  plantedAt?: string;
-}
-
 export interface PlayerGarden {
   level: number;
   mapTemplateId: EntityId;
@@ -113,18 +131,6 @@ export interface PlayerGarden {
   plants: GardenPlantSlot[];
   /** Map templates the player has purchased (always includes {@link DEFAULT_GARDEN_MAP_ID}). */
   ownedMapIds?: EntityId[];
-}
-
-export interface GardenPlantCardClaim {
-  plantId: EntityId;
-  count: number;
-}
-
-export interface GardenProductionClaimed {
-  coin: number;
-  gem: number;
-  /** Per-plant upgrade cards granted this claim. */
-  upgradeCards?: GardenPlantCardClaim[];
 }
 
 export interface GardenMapShopEntry {
@@ -163,15 +169,23 @@ export interface GardenView {
   plants: GardenPlacedPlantView[];
   ownedMapIds: EntityId[];
   availableMaps: GardenMapShopEntry[];
-  /** Present when GET /garden auto-claimed pending producer rewards. */
-  productionClaimed?: GardenProductionClaimed;
 }
 
-/** GET /garden response (claims pending production, returns updated wallet). */
+/** GET /garden response (accrues production into plant queues; does not auto-grant). */
 export interface GardenLoadResult {
   garden: GardenView;
   wallet: WalletResources;
-  productionClaimed?: GardenProductionClaimed;
+}
+
+/** POST /garden/production/collect */
+export interface CollectGardenProductionRequest {
+  pickupIds: string[];
+}
+
+export interface CollectGardenProductionResult {
+  garden: GardenView;
+  wallet: WalletResources;
+  collected: GardenProductionPickup[];
 }
 
 export interface UpgradeGardenResult {

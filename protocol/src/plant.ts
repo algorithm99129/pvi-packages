@@ -462,7 +462,7 @@ export interface PlantServerConfig {
   minVillageLevel?: number;
   /**
    * Village garden idle production (coin/gem/upgrade-cards per hour while planted).
-   * Claimed server-side on GET /garden from `plantedAt`.
+   * Accrues into per-slot click-to-collect queues on GET /garden (not auto-granted).
    */
   gardenProduction?: {
     coinPerHour?: number;
@@ -474,6 +474,11 @@ export interface PlantServerConfig {
     upgradeCardsPerHour?: number;
     /** Cap of unclaimed accrual hours (anti-idle-abuse). Default 8. */
     maxAccrualHours?: number;
+    /**
+     * Max pending click-to-collect pickups queued on one planted plant.
+     * Default {@link GARDEN_PRODUCTION_DEFAULT_MAX_QUEUE} (10).
+     */
+    maxQueue?: number;
   };
   /**
    * Neighbor damage aura while this producer is alive on a defended garden layout
