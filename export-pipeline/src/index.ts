@@ -171,6 +171,7 @@ export function toClientMission(mission: MissionDefinition): ClientMissionExport
     rewardHard: previews.rewardHard,
     unlockPlantId: firstClear?.unlockPlantId,
     unlockInsectId: firstClear?.unlockInsectId,
+    thumbnailImage: mission.client?.thumbnailImage,
   };
 }
 

@@ -174,6 +174,21 @@ export interface MissionDefenseSlot {
   level?: number;
 }
 
+/** Client-only presentation assets for a mission (Unity Resources paths, no extension). */
+export interface MissionClientAssets {
+  /**
+   * Mission card / list thumbnail under Assets/Resources.
+   * Default convention: {@link missionThumbnailPath}.
+   */
+  thumbnailImage?: string;
+}
+
+/** Default Resources-relative path (no extension) for a mission thumbnail. */
+export function missionThumbnailPath(missionId: string): string {
+  const id = String(missionId ?? '').trim();
+  return id ? `Missions/${id}/thumbnail` : 'Missions/thumbnail';
+}
+
 export interface MissionSpawn {
   insectId: EntityId;
   lane: number;
@@ -230,6 +245,8 @@ export interface MissionDefinition {
     firstClear: MissionReward;
     perStar?: Partial<Record<1 | 2 | 3, MissionReward>>;
   };
+  /** Client presentation (thumbnail art, etc.). */
+  client?: MissionClientAssets;
 }
 
 /** Server — rewards, unlocks, progression gates only */
@@ -274,4 +291,6 @@ export interface ClientMissionExport {
   unlockPlantId?: EntityId;
   /** First-clear insect unlock preview (mirrors server rewards.firstClear.unlockInsectId). */
   unlockInsectId?: EntityId;
+  /** Mission card thumbnail (Resources path, no extension). */
+  thumbnailImage?: string;
 }
