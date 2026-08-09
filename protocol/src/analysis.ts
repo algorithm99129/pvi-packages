@@ -17,6 +17,8 @@ export interface AnalysisUserSummary {
   gardenLevel: number;
   gardenMapTemplateId: string;
   gardenPlantCount: number;
+  /** True when this account was seeded as an AI raid defender. */
+  isAi?: boolean;
   /** Lifetime account XP (user level track). */
   totalXp?: number;
   /** Derived account level from totalXp. */
@@ -89,4 +91,25 @@ export interface AnalysisBulkPatch {
   plantIds?: string[];
   insectIds?: string[];
   missionIds?: string[];
+}
+
+/** Request to insert AI defender accounts for garden raid testing. */
+export interface AnalysisCreateAiDefendersRequest {
+  /** How many new AI accounts to create (1–20). */
+  count: number;
+  /** Optional garden map template id (defaults to front_yard). */
+  mapTemplateId?: string;
+  /** Plant catalog ids used for roster unlocks + layout picks. */
+  plantIds?: string[];
+  /** Insect catalog ids for roster unlocks. */
+  insectIds?: string[];
+  /** Mission catalog ids for initial mission progress rows. */
+  missionIds?: string[];
+}
+
+export interface AnalysisCreateAiDefendersResult {
+  created: number;
+  skipped: number;
+  emails: string[];
+  message: string;
 }
