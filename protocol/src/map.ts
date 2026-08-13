@@ -41,11 +41,20 @@ export interface MapLaneSeedAnchor {
   y: number;
 }
 
+/** Normalized rectangle on the map background (0–1, y down from top). */
+export interface NormalizedMapRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 /**
  * Lane grid authored in normalized coordinates (0–1) relative to the map background image.
  * `referenceWidth` × `referenceHeight` must match the background image pixel size.
- * Corner points form the cell mesh.
- * Plant/insect column zones are defined on missions / game rules, not here.
+ * Corner points form the cell mesh (battle area).
+ * Optional `insectsArea` is the sidewalk / preview strip to the right of the grid.
+ * Plant/insect *column* bands for combat are still defined on missions / game rules.
  */
 export interface MapGridLayout {
   /** Background image width in pixels — all normalized X coords are relative to this. */
@@ -59,6 +68,11 @@ export interface MapGridLayout {
   cellTypes?: MapGridCellType[];
   /** @deprecated Migrated to `corners` */
   cells?: MapGridCellAnchor[];
+  /**
+   * Optional sidewalk / insect preview region (normalized).
+   * Used for in-raid seed-select camera focus and idle insect display.
+   */
+  insectsArea?: NormalizedMapRect;
 }
 
 /** Village / story map template */
