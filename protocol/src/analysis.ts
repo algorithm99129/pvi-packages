@@ -113,3 +113,25 @@ export interface AnalysisCreateAiDefendersResult {
   emails: string[];
   message: string;
 }
+
+/** Request to insert AI clan teams + member accounts for team browse/ranking tests. */
+export interface AnalysisCreateAiTeamsRequest {
+  /** How many new teams to create (1–10). */
+  teamCount: number;
+  /** Members per team including the leader (2–10). Defaults to 5. */
+  membersPerTeam?: number;
+  /** Optional garden map template id (defaults to front_yard). */
+  mapTemplateId?: string;
+  plantIds?: string[];
+  insectIds?: string[];
+  missionIds?: string[];
+}
+
+export interface AnalysisCreateAiTeamsResult {
+  teamsCreated: number;
+  playersCreated: number;
+  skipped: number;
+  teamNames: string[];
+  emails: string[];
+  message: string;
+}
