@@ -6,7 +6,7 @@ export type DefinitionKind = 'plant' | 'insect' | 'bullet' | 'map' | 'mission';
  * Current schema version stamped on definitions after migration.
  * Bump when adding a new migrator step; never reuse old numbers.
  */
-export const DEFINITION_SCHEMA_VERSION = 1;
+export const DEFINITION_SCHEMA_VERSION = 2;
 
 /** Missing / invalid schemaVersion is treated as legacy (pre-versioned) data. */
 export function readSchemaVersion(raw: unknown): number {

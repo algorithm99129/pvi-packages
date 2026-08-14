@@ -197,10 +197,15 @@ export interface MissionSpawn {
   count?: number;
   /** Delay between each insect when count > 1. */
   staggerMs?: number;
+  /**
+   * Milliseconds after this wave's `delayMs` when this appearance starts.
+   * Battle-absolute time = wave.delayMs + offsetMs. Default 0.
+   */
+  offsetMs?: number;
 }
 
 export interface MissionWave {
-  /** Milliseconds from battle start when this wave fires. */
+  /** Milliseconds from battle start when this wave starts (banner / progress). */
   delayMs: number;
   spawns: MissionSpawn[];
   /** Optional label shown in editor / UI (e.g. "Huge wave!"). */
