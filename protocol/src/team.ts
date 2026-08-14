@@ -27,6 +27,17 @@ export interface TeamMemberView {
   joinedAt: string;
 }
 
+/** Pending join application visible to leader/officers. */
+export interface TeamJoinRequestView {
+  id: EntityId;
+  userId: EntityId;
+  displayName: string;
+  avatarId: string;
+  /** Account trophy / score proxy (userLevel * 1000 for MVP). */
+  score: number;
+  createdAt: string;
+}
+
 export interface TeamView {
   id: EntityId;
   name: string;
@@ -43,6 +54,8 @@ export interface TeamView {
   maxMembers: number;
   wallet: WalletResources;
   members: TeamMemberView[];
+  /** Pending join requests — populated for leader/officer viewers only. */
+  joinRequests: TeamJoinRequestView[];
   /** Current user's role in this team, when applicable. */
   myRole: TeamMemberRole | null;
 }
@@ -82,6 +95,12 @@ export interface CreateTeamRequest {
 export interface JoinTeamRequest {
   /** Optional; path param is preferred. Kept for body-style clients. */
   teamId?: EntityId;
+}
+
+/** Response from POST /teams/:id/join — creates a pending request (no membership yet). */
+export interface RequestJoinResult {
+  pending: true;
+  teamId: EntityId;
 }
 
 export interface UpdateTeamRequest {
