@@ -9,6 +9,7 @@ export type ImageSizeOption =
   | '1024x1024'
   | '1024x1536'
   | '1536x1024'
+  | '1536x512'
   | '1024x1792'
   | '1792x1024'
   | '2048x2048'
@@ -44,6 +45,11 @@ export interface ImageModelOption {
   supportsStyle: boolean;
   /** Supports /v1/images/edits (reference refine & inpainting) */
   supportsEdits: boolean;
+  /**
+   * When true, `size` may be any WIDTHxHEIGHT that passes {@link isValidFlexibleImageSize}
+   * (gpt-image-2). Other models only accept the listed {@link sizes} presets.
+   */
+  supportsFlexibleSizes?: boolean;
   qualityOptions: readonly ImageQualityOption[];
   defaultQuality: ImageQualityOption;
   badges?: readonly string[];
@@ -107,6 +113,12 @@ export interface AiGenerateImageRequest {
   imageOutputFormat?: ImageOutputFormat;
   imageQuality?: ImageQualityOption;
   imageStyle?: DalleStyle;
+  /**
+   * Final pixel size after generation. Flexible models (gpt-image-2) generate this
+   * size natively when it passes API constraints; otherwise nearest model size + resize.
+   */
+  outputWidth?: number;
+  outputHeight?: number;
 }
 
 export interface AiEnhanceImagePromptRequest {
@@ -129,6 +141,7 @@ export const IMAGE_MODEL_OPTIONS: readonly ImageModelOption[] = [
       '1024x1024',
       '1536x1024',
       '1024x1536',
+      '1536x512',
       '2048x2048',
       '2048x1152',
       '3840x2160',
@@ -139,9 +152,10 @@ export const IMAGE_MODEL_OPTIONS: readonly ImageModelOption[] = [
     supportsQuality: true,
     supportsStyle: false,
     supportsEdits: false,
+    supportsFlexibleSizes: true,
     qualityOptions: ['low', 'medium', 'high', 'auto'],
     defaultQuality: 'auto',
-    badges: ['Latest', '4K'],
+    badges: ['Latest', '4K', 'Flexible size'],
   },
   {
     id: 'gpt-image-1.5',
@@ -295,6 +309,106 @@ export function defaultSizeForImageModel(modelId: string): ImageSizeOption {
 export function coerceImageSize(modelId: string, size: ImageSizeOption): ImageSizeOption {
   const sizes = sizesForImageModel(modelId);
   return sizes.includes(size) ? size : defaultSizeForImageModel(modelId);
+}
+
+/** Parse `WIDTHxHEIGHT` (e.g. `1536x512`). Returns null if invalid. */
+export function parsePixelSize(raw: string | null | undefined): { width: number; height: number } | null {
+  const m = String(raw ?? '')
+    .trim()
+    .toLowerCase()
+    .match(/^(\d+)\s*x\s*(\d+)$/);
+  if (!m) return null;
+  const width = Math.floor(Number(m[1]));
+  const height = Math.floor(Number(m[2]));
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width < 1 || height < 1) return null;
+  if (width > 8192 || height > 8192) return null;
+  return { width, height };
+}
+
+/**
+ * gpt-image-2 flexible size constraints from OpenAI docs:
+ * max edge ≤ 3840, multiples of 16, long:short ≤ 3:1, pixels in [655360, 8294400].
+ */
+export function isValidFlexibleImageSize(width: number, height: number): boolean {
+  const w = Math.floor(width);
+  const h = Math.floor(height);
+  if (w < 1 || h < 1) return false;
+  if (w > 3840 || h > 3840) return false;
+  if (w % 16 !== 0 || h % 16 !== 0) return false;
+  const longEdge = Math.max(w, h);
+  const shortEdge = Math.min(w, h);
+  if (longEdge / shortEdge > 3 + 1e-9) return false;
+  const pixels = w * h;
+  return pixels >= 655_360 && pixels <= 8_294_400;
+}
+
+/**
+ * Resolve the API `size` string and optional post-resize target.
+ * Flexible models (gpt-image-2) can generate custom dims natively when valid.
+ */
+export function resolveApiImageSize(args: {
+  modelId: string;
+  imageSize?: ImageSizeOption;
+  outputWidth?: number;
+  outputHeight?: number;
+}): { apiSize: string; resizeTo?: { width: number; height: number } } {
+  const option = getImageModelOption(args.modelId);
+  const outW =
+    typeof args.outputWidth === 'number' && Number.isFinite(args.outputWidth)
+      ? Math.floor(args.outputWidth)
+      : 0;
+  const outH =
+    typeof args.outputHeight === 'number' && Number.isFinite(args.outputHeight)
+      ? Math.floor(args.outputHeight)
+      : 0;
+  const wantsCustom = outW >= 1 && outH >= 1;
+
+  if (wantsCustom && option.supportsFlexibleSizes && isValidFlexibleImageSize(outW, outH)) {
+    return { apiSize: `${outW}x${outH}` };
+  }
+
+  if (wantsCustom) {
+    const nearest = pickNearestModelSize(args.modelId, outW, outH);
+    const apiSize = nearest === 'auto' ? '1024x1024' : nearest;
+    const parsed = parsePixelSize(apiSize);
+    if (parsed && parsed.width === outW && parsed.height === outH) {
+      return { apiSize };
+    }
+    return { apiSize, resizeTo: { width: outW, height: outH } };
+  }
+
+  const coerced = coerceImageSize(args.modelId, args.imageSize ?? defaultSizeForImageModel(args.modelId));
+  return { apiSize: coerced === 'auto' ? 'auto' : coerced };
+}
+
+/**
+ * Pick the model size whose aspect (and roughly area) best matches a custom output size.
+ * Used when generating then resizing to dims OpenAI does not support.
+ */
+export function pickNearestModelSize(
+  modelId: string,
+  width: number,
+  height: number,
+): ImageSizeOption {
+  const w = Math.max(1, Math.floor(width));
+  const h = Math.max(1, Math.floor(height));
+  const targetAspect = w / h;
+  const targetArea = w * h;
+  const candidates = sizesForImageModel(modelId).filter((s) => s !== 'auto');
+  let best: ImageSizeOption = defaultSizeForImageModel(modelId);
+  let bestScore = Number.POSITIVE_INFINITY;
+  for (const size of candidates) {
+    const parsed = parsePixelSize(size);
+    if (!parsed) continue;
+    const aspectDiff = Math.abs(parsed.width / parsed.height - targetAspect);
+    const areaDiff = Math.abs(parsed.width * parsed.height - targetArea) / targetArea;
+    const score = aspectDiff * 12 + areaDiff;
+    if (score < bestScore) {
+      bestScore = score;
+      best = size;
+    }
+  }
+  return best;
 }
 
 export function coerceImageQuality(

@@ -177,17 +177,37 @@ export interface MissionDefenseSlot {
 /** Client-only presentation assets for a mission (Unity Resources paths, no extension). */
 export interface MissionClientAssets {
   /**
-   * Mission card / list thumbnail under Assets/Resources.
+   * Square list thumbnail (target 256×256) under Assets/Resources.
    * Default convention: {@link missionThumbnailPath}.
    */
   thumbnailImage?: string;
+  /**
+   * Wide mission preview / detail banner (3:1 aspect) under Assets/Resources.
+   * Default convention: {@link missionPreviewPath}. Preferred size: {@link MISSION_PREVIEW_SIZE}.
+   */
+  previewImage?: string;
 }
 
-/** Default Resources-relative path (no extension) for a mission thumbnail. */
+/** Default Resources-relative path (no extension) for the square list thumbnail. */
 export function missionThumbnailPath(missionId: string): string {
   const id = String(missionId ?? '').trim();
   return id ? `Missions/${id}/thumbnail` : 'Missions/thumbnail';
 }
+
+/** Default Resources-relative path (no extension) for the 3:1 mission preview. */
+export function missionPreviewPath(missionId: string): string {
+  const id = String(missionId ?? '').trim();
+  return id ? `Missions/${id}/preview` : 'Missions/preview';
+}
+
+/** Authored pixel size for mission list thumbnails. */
+export const MISSION_THUMBNAIL_SIZE = { width: 256, height: 256 } as const;
+
+/**
+ * Preferred mission detail preview size (exact 3:1).
+ * Valid native size for gpt-image-2 (multiples of 16, ≥655360 px).
+ */
+export const MISSION_PREVIEW_SIZE = { width: 1536, height: 512 } as const;
 
 export interface MissionSpawn {
   insectId: EntityId;
@@ -296,6 +316,8 @@ export interface ClientMissionExport {
   unlockPlantId?: EntityId;
   /** First-clear insect unlock preview (mirrors server rewards.firstClear.unlockInsectId). */
   unlockInsectId?: EntityId;
-  /** Mission card thumbnail (Resources path, no extension). */
+  /** Square list thumbnail (Resources path, no extension). Target 256×256. */
   thumbnailImage?: string;
+  /** Wide detail preview (Resources path, no extension). 3:1 banner ({@link MISSION_PREVIEW_SIZE}). */
+  previewImage?: string;
 }
