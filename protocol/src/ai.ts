@@ -368,6 +368,7 @@ export function resolveApiImageSize(args: {
   }
 
   if (wantsCustom) {
+    // Prefer landscape presets for wide banners (avoids square letterboxing from the model).
     const nearest = pickNearestModelSize(args.modelId, outW, outH);
     const apiSize = nearest === 'auto' ? '1024x1024' : nearest;
     const parsed = parsePixelSize(apiSize);
@@ -400,9 +401,17 @@ export function pickNearestModelSize(
   for (const size of candidates) {
     const parsed = parsePixelSize(size);
     if (!parsed) continue;
-    const aspectDiff = Math.abs(parsed.width / parsed.height - targetAspect);
-    const areaDiff = Math.abs(parsed.width * parsed.height - targetArea) / targetArea;
-    const score = aspectDiff * 12 + areaDiff;
+    const sizeAspect = parsed.width / parsed.height;
+    const aspectDiff = Math.abs(sizeAspect - targetAspect);
+    // Prefer matching orientation (wide vs tall vs square) before area.
+    const orientPenalty =
+      Math.sign(sizeAspect - 1) !== Math.sign(targetAspect - 1) &&
+      Math.abs(targetAspect - 1) > 0.15 &&
+      Math.abs(sizeAspect - 1) > 0.15
+        ? 4
+        : 0;
+    const areaDiff = Math.abs(parsed.width * parsed.height - targetArea) / Math.max(1, targetArea);
+    const score = aspectDiff * 12 + orientPenalty + areaDiff;
     if (score < bestScore) {
       bestScore = score;
       best = size;
