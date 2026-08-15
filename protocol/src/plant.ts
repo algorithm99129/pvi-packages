@@ -461,18 +461,22 @@ export interface PlantServerConfig {
    */
   minVillageLevel?: number;
   /**
-   * Village garden idle production (coin/gem/upgrade-cards per hour while planted).
+   * Village garden idle production while planted.
+   * Each reward uses amount + intervalHours (coin usually 1h; gem/cards often day/week).
    * Accrues into per-slot click-to-collect queues on GET /garden (not auto-granted).
+   * Legacy *PerHour fields are still accepted and mapped by {@link resolveGardenProduction}.
    */
   gardenProduction?: {
+    coin?: { amount?: number; intervalHours?: number };
+    gem?: { amount?: number; intervalHours?: number };
+    upgradeCard?: { amount?: number; intervalHours?: number };
+    /** @deprecated Prefer coin.amount with coin.intervalHours (default 1). */
     coinPerHour?: number;
+    /** @deprecated Prefer gem.amount with gem.intervalHours. */
     gemPerHour?: number;
-    /**
-     * Upgrade cards of this plant type accrued per hour while planted.
-     * When omitted, server uses GARDEN_PRODUCTION_DEFAULT_UPGRADE_CARDS_PER_HOUR (1).
-     */
+    /** @deprecated Prefer upgradeCard.amount with upgradeCard.intervalHours. */
     upgradeCardsPerHour?: number;
-    /** Cap of unclaimed accrual hours (anti-idle-abuse). Default 8. */
+    /** Cap of unclaimed accrual window in hours. Default 168 (1 week). */
     maxAccrualHours?: number;
     /**
      * Max pending click-to-collect pickups queued on one planted plant.

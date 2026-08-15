@@ -15,11 +15,26 @@ export const GARDEN_UPGRADE_COST_FORMULA_ID = 'garden_upgrade_resource_cost';
 /** Dig-up refunds this fraction of the current place coin cost (server-authoritative). */
 export const GARDEN_DIG_REFUND_RATIO = 0.5;
 
-/** Default max hours of unclaimed garden production accrual per slot. */
-export const GARDEN_PRODUCTION_DEFAULT_MAX_ACCRUAL_HOURS = 8;
+/**
+ * Default wall-clock window for unclaimed garden production (hours).
+ * Long enough for day/week gem & card intervals to still accrue.
+ */
+export const GARDEN_PRODUCTION_DEFAULT_MAX_ACCRUAL_HOURS = 168;
 
-/** Default upgrade cards / hour for planted plants when not authored. */
+/** @deprecated Prefer upgradeCard.amount + intervalHours. Kept for catalog migration. */
 export const GARDEN_PRODUCTION_DEFAULT_UPGRADE_CARDS_PER_HOUR = 1;
+
+/** Default upgrade-card payout when a plant has no authored card production. */
+export const GARDEN_PRODUCTION_DEFAULT_UPGRADE_CARD_AMOUNT = 1;
+
+/** Default hours between upgrade-card payouts (1 day). */
+export const GARDEN_PRODUCTION_DEFAULT_UPGRADE_CARD_INTERVAL_HOURS = 24;
+
+/** Default hours between coin payouts. */
+export const GARDEN_PRODUCTION_DEFAULT_COIN_INTERVAL_HOURS = 1;
+
+/** Default hours between gem payouts (1 day). */
+export const GARDEN_PRODUCTION_DEFAULT_GEM_INTERVAL_HOURS = 24;
 
 /** Default max pending production pickups queued per planted plant. */
 export const GARDEN_PRODUCTION_DEFAULT_MAX_QUEUE = 10;
@@ -115,12 +130,21 @@ export interface GardenProductionPickup {
   createdAt: string;
 }
 
+/** Per-reward last-settled clocks (ISO). Different kinds use different intervals. */
+export interface GardenProductionAccruedAt {
+  coin?: string;
+  gem?: string;
+  upgrade_card?: string;
+}
+
 export interface GardenPlantSlot {
   plantId: EntityId;
   lane: number;
   column: number;
-  /** ISO timestamp when placed / last production accrual for this slot. */
+  /** ISO timestamp when placed (fallback clock for production). */
   plantedAt?: string;
+  /** Last settled production time per reward kind. */
+  productionAccruedAt?: GardenProductionAccruedAt;
   /** Pending click-to-collect rewards (not yet in wallet / roster). */
   productionQueue?: GardenProductionPickup[];
 }
@@ -318,6 +342,17 @@ export interface CollectGardenProductionResult {
   collected: GardenProductionPickup[];
 }
 
+/**
+ * POST /garden/production/force — test helper: rewind production clocks and accrue
+ * as if the given hours of idle time had passed.
+ */
+export interface ForceGardenProductionRequest {
+  /** Simulated idle hours (default 1). */
+  hours?: number;
+}
+
+export type ForceGardenProductionResult = GardenLoadResult;
+
 export interface UpgradeGardenResult {
   garden: GardenView;
   wallet: WalletResources;
@@ -379,4 +414,114 @@ export interface GardenItemBoxMutationResult {
   placeCost?: WalletResources;
   refund?: WalletResources;
   unlockCost?: WalletResources;
+}
+
+/** Normalized payout for one garden production kind. */
+export interface ResolvedGardenProductionReward {
+  amount: number;
+  /** Hours between each payout (≥ 1). */
+  intervalHours: number;
+}
+
+/** Normalized garden idle production for a plant definition. */
+export interface ResolvedGardenProduction {
+  coin: ResolvedGardenProductionReward | null;
+  gem: ResolvedGardenProductionReward | null;
+  upgradeCard: ResolvedGardenProductionReward | null;
+  maxAccrualHours: number;
+  maxQueue: number;
+}
+
+function normalizeRewardAmount(raw: unknown): number {
+  const n = Math.floor(Number(raw));
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function normalizeIntervalHours(raw: unknown, fallback: number): number {
+  const n = Math.floor(Number(raw));
+  if (Number.isFinite(n) && n > 0) return n;
+  return Math.max(1, Math.floor(fallback));
+}
+
+/**
+ * Resolve authored (or legacy *PerHour) garden production into amount + intervalHours.
+ * Plants without upgrade-card authorship still get 1 card / day by default.
+ */
+export function resolveGardenProduction(
+  production: PlantServerConfig['gardenProduction'] | null | undefined,
+): ResolvedGardenProduction {
+  const maxAccrualHours = Math.max(
+    1,
+    Math.floor(
+      Number(production?.maxAccrualHours) || GARDEN_PRODUCTION_DEFAULT_MAX_ACCRUAL_HOURS,
+    ),
+  );
+  const maxQueue = Math.max(
+    1,
+    Math.floor(Number(production?.maxQueue) || GARDEN_PRODUCTION_DEFAULT_MAX_QUEUE),
+  );
+
+  const coinAmount =
+    normalizeRewardAmount(production?.coin?.amount)
+    || normalizeRewardAmount(production?.coinPerHour);
+  const coin = coinAmount > 0
+    ? {
+        amount: coinAmount,
+        intervalHours: normalizeIntervalHours(
+          production?.coin?.intervalHours,
+          GARDEN_PRODUCTION_DEFAULT_COIN_INTERVAL_HOURS,
+        ),
+      }
+    : null;
+
+  const gemAmount =
+    normalizeRewardAmount(production?.gem?.amount)
+    || normalizeRewardAmount(production?.gemPerHour);
+  const gem = gemAmount > 0
+    ? {
+        amount: gemAmount,
+        intervalHours: normalizeIntervalHours(
+          production?.gem?.intervalHours,
+          // Legacy gemPerHour meant every hour; new gem.amount defaults to daily.
+          production?.gem?.amount != null
+            ? GARDEN_PRODUCTION_DEFAULT_GEM_INTERVAL_HOURS
+            : GARDEN_PRODUCTION_DEFAULT_COIN_INTERVAL_HOURS,
+        ),
+      }
+    : null;
+
+  const hasAuthoredCard =
+    production?.upgradeCard != null
+    || production?.upgradeCardsPerHour != null;
+
+  let upgradeCardAmount = GARDEN_PRODUCTION_DEFAULT_UPGRADE_CARD_AMOUNT;
+  if (hasAuthoredCard) {
+    const rawAmt = production?.upgradeCard?.amount;
+    const rawLegacy = production?.upgradeCardsPerHour;
+    if (rawAmt != null) {
+      upgradeCardAmount = Math.max(0, Math.floor(Number(rawAmt)) || 0);
+    } else if (rawLegacy != null) {
+      upgradeCardAmount = Math.max(0, Math.floor(Number(rawLegacy)) || 0);
+    } else {
+      // upgradeCard: {} with no amount → use default amount.
+      upgradeCardAmount = GARDEN_PRODUCTION_DEFAULT_UPGRADE_CARD_AMOUNT;
+    }
+  }
+
+  const upgradeCard = upgradeCardAmount > 0
+    ? {
+        amount: upgradeCardAmount,
+        intervalHours: normalizeIntervalHours(
+          production?.upgradeCard?.intervalHours,
+          // Legacy upgradeCardsPerHour meant every hour; new shape defaults to daily.
+          production?.upgradeCard?.intervalHours != null
+            || production?.upgradeCard?.amount != null
+            || production?.upgradeCardsPerHour == null
+            ? GARDEN_PRODUCTION_DEFAULT_UPGRADE_CARD_INTERVAL_HOURS
+            : GARDEN_PRODUCTION_DEFAULT_COIN_INTERVAL_HOURS,
+        ),
+      }
+    : null;
+
+  return { coin, gem, upgradeCard, maxAccrualHours, maxQueue };
 }
