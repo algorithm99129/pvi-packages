@@ -145,7 +145,19 @@ export interface GardenPlantSlot {
   plantedAt?: string;
   /** Last settled production time per reward kind. */
   productionAccruedAt?: GardenProductionAccruedAt;
-  /** Pending click-to-collect rewards (not yet in wallet / roster). */
+  /**
+   * Continuous coin accrued since last water/steal (not yet in wallet).
+   * Harvest via POST /garden/plants/water.
+   */
+  pendingCoin?: number;
+  /**
+   * Continuous gem accrued since last water/steal (not yet in wallet).
+   * Harvest via POST /garden/plants/water.
+   */
+  pendingGem?: number;
+  /**
+   * Pending click-to-collect upgrade-card pickups (coin/gem no longer use this queue).
+   */
   productionQueue?: GardenProductionPickup[];
 }
 
@@ -340,6 +352,23 @@ export interface CollectGardenProductionResult {
   garden: GardenView;
   wallet: WalletResources;
   collected: GardenProductionPickup[];
+}
+
+/** POST /garden/plants/water — free harvest of pending coin/gem on one plant. */
+export interface WaterGardenPlantRequest {
+  lane: number;
+  column: number;
+}
+
+export interface WaterGardenPlantCollected {
+  coin: number;
+  gem: number;
+}
+
+export interface WaterGardenPlantResult {
+  garden: GardenView;
+  wallet: WalletResources;
+  collected: WaterGardenPlantCollected;
 }
 
 /**
