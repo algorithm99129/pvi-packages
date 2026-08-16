@@ -44,6 +44,14 @@ export interface BattleRoomCreateRequest {
   battleDurationSec?: number;
 }
 
+/** Host lobby settings PATCH — omitted fields keep current values. */
+export interface BattleRoomUpdateRequest {
+  mapTemplateId?: string;
+  rewardCoin?: number;
+  rewardGem?: number;
+  battleDurationSec?: number;
+}
+
 export interface BattleRoomJoinRequest {
   /** Empty body is fine; rooms are open join when seats remain. */
 }
