@@ -148,7 +148,7 @@ export function resolveMissionSide(side?: MissionSide): MissionSide {
 }
 
 export function defaultRulesForSide(side: MissionSide, mode: MissionMode = 'adventure'): MissionRules {
-  const battlefield = defaultBattlefieldForGrid(9);
+  const battlefield = defaultBattlefieldForGrid(11);
   if (side === 'attacker') {
     return {
       mode: mode === 'adventure' ? 'i_zombie' : mode,
