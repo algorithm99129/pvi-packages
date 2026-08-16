@@ -36,8 +36,11 @@ export const GARDEN_PRODUCTION_DEFAULT_COIN_INTERVAL_HOURS = 1;
 /** Default hours between gem payouts (1 day). */
 export const GARDEN_PRODUCTION_DEFAULT_GEM_INTERVAL_HOURS = 24;
 
-/** Default max pending production pickups queued per planted plant. */
-export const GARDEN_PRODUCTION_DEFAULT_MAX_QUEUE = 10;
+/** Default max pending production pickups queued per planted plant (one card / one resource). */
+export const GARDEN_PRODUCTION_DEFAULT_MAX_QUEUE = 1;
+
+/** Active garden production kinds — a plant focuses on one at a time. */
+export type GardenProducingKind = 'coin' | 'gem' | 'upgrade_card';
 
 /** Max village item-box slots for instant / squash defense charges. */
 export const GARDEN_ITEM_BOX_MAX_SLOTS = 3;
@@ -146,17 +149,23 @@ export interface GardenPlantSlot {
   /** Last settled production time per reward kind. */
   productionAccruedAt?: GardenProductionAccruedAt;
   /**
-   * Continuous coin accrued since last water/steal (not yet in wallet).
-   * Harvest via POST /garden/plants/water.
+   * Continuous coin accrued since last harvest (not yet in wallet).
+   * Harvest via POST /garden/plants/harvest (or legacy water).
    */
   pendingCoin?: number;
   /**
-   * Continuous gem accrued since last water/steal (not yet in wallet).
-   * Harvest via POST /garden/plants/water.
+   * Continuous gem accrued since last harvest (not yet in wallet).
+   * Harvest via POST /garden/plants/harvest (or legacy water).
    */
   pendingGem?: number;
   /**
-   * Pending click-to-collect upgrade-card pickups (coin/gem no longer use this queue).
+   * Which resource this plant is currently producing.
+   * Only one kind accrues at a time; after harvest the plant picks again.
+   */
+  producingKind?: GardenProducingKind;
+  /**
+   * Pending click-to-collect upgrade-card pickups (at most one).
+   * Coin/gem use pendingCoin/pendingGem instead.
    */
   productionQueue?: GardenProductionPickup[];
 }
@@ -372,12 +381,36 @@ export interface WaterGardenPlantResult {
 }
 
 /**
+ * POST /garden/plants/harvest — collect pending coin/gem and all queued pickups
+ * on one planted plant (tap-to-harvest).
+ */
+export interface HarvestGardenPlantRequest {
+  lane: number;
+  column: number;
+}
+
+export interface HarvestGardenPlantCollected {
+  coin: number;
+  gem: number;
+  pickups: GardenProductionPickup[];
+}
+
+export interface HarvestGardenPlantResult {
+  garden: GardenView;
+  wallet: WalletResources;
+  collected: HarvestGardenPlantCollected;
+}
+
+/**
  * POST /garden/production/force — test helper: rewind production clocks and accrue
  * as if the given hours of idle time had passed.
+ * Auth optional (temporary). Prefer JWT or pass `userId`.
  */
 export interface ForceGardenProductionRequest {
   /** Simulated idle hours (default 1). */
   hours?: number;
+  /** Target user when calling without JWT. */
+  userId?: EntityId;
 }
 
 export type ForceGardenProductionResult = GardenLoadResult;
@@ -485,9 +518,12 @@ export function resolveGardenProduction(
       Number(production?.maxAccrualHours) || GARDEN_PRODUCTION_DEFAULT_MAX_ACCRUAL_HOURS,
     ),
   );
-  const maxQueue = Math.max(
+  const maxQueue = Math.min(
     1,
-    Math.floor(Number(production?.maxQueue) || GARDEN_PRODUCTION_DEFAULT_MAX_QUEUE),
+    Math.max(
+      1,
+      Math.floor(Number(production?.maxQueue) || GARDEN_PRODUCTION_DEFAULT_MAX_QUEUE),
+    ),
   );
 
   const coinAmount =

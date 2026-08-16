@@ -480,7 +480,8 @@ export interface PlantServerConfig {
     maxAccrualHours?: number;
     /**
      * Max pending click-to-collect pickups queued on one planted plant.
-     * Default {@link GARDEN_PRODUCTION_DEFAULT_MAX_QUEUE} (10).
+     * Default {@link GARDEN_PRODUCTION_DEFAULT_MAX_QUEUE} (1).
+     * Hard-capped at one queued upgrade card per plant.
      */
     maxQueue?: number;
   };
