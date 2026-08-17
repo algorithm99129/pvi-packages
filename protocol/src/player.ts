@@ -91,6 +91,8 @@ export interface UserPlantView {
     attackIntervalMs: number;
     range: number;
   };
+  /** Formula-evaluated stats at `level + 1`; `null` when locked or at max. */
+  nextStats: UserPlantView['stats'] | null;
   upgradeCost: WalletResources | null;
   /** Owned upgrade cards for this plant. */
   upgradeCards: number;
@@ -121,6 +123,8 @@ export interface UserInsectView {
     attackIntervalMs: number;
     moveSpeed: number;
   };
+  /** Formula-evaluated stats at `level + 1`; `null` when locked or at max. */
+  nextStats: UserInsectView['stats'] | null;
   upgradeCost: WalletResources | null;
   /** Owned upgrade cards for this insect. */
   upgradeCards: number;
