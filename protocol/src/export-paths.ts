@@ -19,6 +19,8 @@ export const CLIENT_EXPORT_PATHS = {
   rewardsMediaDir: `${CLIENT_RESOURCES_ROOT}/Rewards`,
   avatars: `${CLIENT_RESOURCES_ROOT}/Avatars/avatars.json`,
   avatarsDir: `${CLIENT_RESOURCES_ROOT}/Avatars`,
+  flags: `${CLIENT_RESOURCES_ROOT}/Flags/flags.json`,
+  flagsDir: `${CLIENT_RESOURCES_ROOT}/Flags`,
   branding: `${CLIENT_RESOURCES_ROOT}/branding.json`,
   balanceVersion: `${CLIENT_RESOURCES_ROOT}/balance-version.json`,
   /** Unity Resources root for path resolution */
@@ -45,6 +47,8 @@ export const SERVER_EXPORT_PATHS = {
   rewards: `${SERVER_RESOURCES_DIR}/Rewards/rewards.json`,
   avatars: `${SERVER_RESOURCES_DIR}/Avatars/avatars.json`,
   avatarsDir: `${SERVER_RESOURCES_DIR}/Avatars`,
+  flags: `${SERVER_RESOURCES_DIR}/Flags/flags.json`,
+  flagsDir: `${SERVER_RESOURCES_DIR}/Flags`,
   balanceVersion: `${SERVER_RESOURCES_DIR}/balance-version.json`,
   logic: `${SERVER_RESOURCES_DIR}/Systems/logic.json`,
 } as const;
@@ -72,6 +76,7 @@ const LEGACY_DATA_AGGREGATES: Record<string, string> = {
   maps: `${RESOURCE_CATEGORIES.maps}/maps`,
   rewards: 'Rewards/rewards',
   avatars: 'Avatars/avatars',
+  flags: 'Flags/flags',
   equipment: `${RESOURCE_CATEGORIES.equipment}/equipment`,
 };
 
@@ -112,7 +117,8 @@ export function normalizeClientMediaPath(relativePath: string): string {
       underCustom.startsWith('Missions/') ||
       underCustom.startsWith('Maps/') ||
       underCustom.startsWith('Screen/') ||
-      underCustom.startsWith('Avatars/')
+      underCustom.startsWith('Avatars/') ||
+      underCustom.startsWith('Flags/')
     ) {
       return underCustom;
     }
@@ -132,6 +138,7 @@ export function normalizeClientMediaPath(relativePath: string): string {
     normalized.startsWith('Maps/') ||
     normalized.startsWith('Screen/') ||
     normalized.startsWith('Avatars/') ||
+    normalized.startsWith('Flags/') ||
     normalized.startsWith('Rewards/')
   ) {
     return normalized;

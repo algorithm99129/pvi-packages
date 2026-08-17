@@ -9,7 +9,8 @@ export const TEAM_MAX_NAME_LEN = 24;
 export const TEAM_MAX_DESCRIPTION_LEN = 160;
 
 export const TEAM_DEFAULT_REGION = 'global';
-export const TEAM_DEFAULT_BANNER_ID = 'leaf';
+/** Matches DEFAULT_FLAG_ID / Flags/flag_000.png. */
+export const TEAM_DEFAULT_BANNER_ID = 'flag_000';
 export const TEAM_DEFAULT_LEAGUE = 'bronze_1';
 
 export type TeamMemberRole = 'leader' | 'officer' | 'member';
@@ -90,6 +91,8 @@ export interface CreateTeamRequest {
   description?: string;
   joinType?: TeamJoinType;
   requiredScore?: number;
+  /** Team flag id from Flags catalog (e.g. `flag_000`). */
+  bannerId?: string;
 }
 
 export interface JoinTeamRequest {

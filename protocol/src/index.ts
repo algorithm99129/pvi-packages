@@ -22,6 +22,7 @@ export * from './export-paths';
 export * from './ai';
 export * from './gallery';
 export * from './avatar';
+export * from './flag';
 export * from './branding';
 export * from './user';
 export * from './auth';
