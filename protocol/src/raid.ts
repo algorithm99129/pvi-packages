@@ -16,6 +16,29 @@ export const GARDEN_RAID_STARTING_SUN = 2000;
 /** Default battle countdown after scout ends. */
 export const GARDEN_RAID_BATTLE_DURATION_SEC = 90;
 
+/**
+ * How long a defender stays "under attack" after matchmake (scout + battle + buffer).
+ * Hub uses this to show the sword overlay / lock the garden.
+ */
+export const GARDEN_UNDER_ATTACK_TTL_SEC =
+  GARDEN_RAID_SCOUT_TIMEOUT_SEC + GARDEN_RAID_BATTLE_DURATION_SEC + 30;
+
+/** Safe-mode / shield duration after a garden raid ends (24h). */
+export const GARDEN_SAFE_MODE_DURATION_MS = 24 * 60 * 60 * 1000;
+
+/** Window for garden defense history shown in the client (24h). */
+export const GARDEN_RAID_HISTORY_WINDOW_MS = GARDEN_SAFE_MODE_DURATION_MS;
+
+/** True when `until` is a future ISO timestamp. */
+export function isFutureIsoTimestamp(
+  until: string | null | undefined,
+  nowMs: number = Date.now(),
+): boolean {
+  if (!until || typeof until !== 'string') return false;
+  const t = Date.parse(until);
+  return Number.isFinite(t) && t > nowMs;
+}
+
 /** One plant-type upgrade-card stack stolen during a village raid. */
 export interface GardenRaidStolenCard {
   plantId: EntityId;
@@ -49,6 +72,8 @@ export interface GardenRaidCompleteRequest {
   defenderUserId?: string;
   /** Client-reported loot stolen from defender plants (capped server-side). */
   stolenLoot?: GardenRaidStolenPlantLoot[];
+  /** Battle recording for defender history / replay (garden raids). */
+  replay?: GardenRaidReplay;
 }
 
 export interface InsectUpgradeCardClaim {
@@ -111,4 +136,58 @@ export interface GardenRaidScoutSnapshot {
   scoutTimeoutSec: number;
   startingSun: number;
   battleDurationSec: number;
+}
+
+/** One timed action in a garden raid replay. */
+export interface GardenRaidReplayAction {
+  /** Seconds from battle start. */
+  t: number;
+  type: 'deploy_insect';
+  insectId: EntityId;
+  lane: number;
+  level: number;
+}
+
+/** Stored battle recording for garden raid history / replay. */
+export interface GardenRaidReplay {
+  scoutSnapshot: GardenRaidScoutSnapshot;
+  insectIds: EntityId[];
+  actions: GardenRaidReplayAction[];
+  durationSec: number;
+  victory: boolean;
+  stars: number;
+}
+
+/** One raid against the player's garden (defender log). */
+export interface GardenRaidHistoryEntry {
+  id: string;
+  attackerUserId: string;
+  attackerDisplayName: string;
+  attackerAvatarId: string;
+  attackerIsAi: boolean;
+  /** True when the attacker won the raid. */
+  victory: boolean;
+  stars: number;
+  stolenCoin: number;
+  stolenGem: number;
+  attackedAt: string;
+  /** Present when a full battle was recorded (player or simulated AI raid). */
+  replay?: GardenRaidReplay;
+  /** True while a simulated AI raid is running server-side (test helper). */
+  inProgress?: boolean;
+  /** ISO time when under-attack ends (Hub sword / garden lock). */
+  underAttackUntil?: string;
+}
+
+export interface GardenRaidHistoryResponse {
+  entries: GardenRaidHistoryEntry[];
+}
+
+/** POST /api/raids/garden/test/ai-attack — run a full AI garden raid (testing). */
+export interface SimulateAiGardenAttackRequest {
+  /** Target garden owner; defaults to the authenticated user. */
+  defenderUserId?: string;
+  /** Optional override — otherwise outcome is simulated from garden strength. */
+  stars?: number;
+  victory?: boolean;
 }

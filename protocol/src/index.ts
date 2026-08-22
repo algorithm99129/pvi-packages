@@ -40,3 +40,4 @@ export * from './deep-merge';
 export * from './schema-version';
 export * from './migrations';
 export * from './analysis';
+export * from './admin-api';

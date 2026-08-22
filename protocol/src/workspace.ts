@@ -1,6 +1,7 @@
 /** Electron editor persisted workspace — client & server directory paths */
 import { DEFAULT_GALLERY_DIRECTORY } from './gallery';
 import { DEFAULT_MONGODB_URI } from './analysis';
+import { DEFAULT_API_BASE_URL } from './admin-api';
 
 export interface EditorWorkspaceConfig {
   version: 1;
@@ -17,7 +18,7 @@ export interface EditorWorkspaceConfig {
    */
   mongodbUri?: string;
   /**
-   * @deprecated Balance/catalog is loaded from local Resources/. Kept for old workspace files.
+   * Nest HTTP API base URL for the Admin panel (e.g. http://localhost:3000/api).
    */
   apiBaseUrl?: string;
   lastOpenedAt?: string;
@@ -30,4 +31,5 @@ export const DEFAULT_WORKSPACE: EditorWorkspaceConfig = {
   serverDirectory: 'apps/api',
   galleryDirectory: DEFAULT_GALLERY_DIRECTORY,
   mongodbUri: DEFAULT_MONGODB_URI,
+  apiBaseUrl: DEFAULT_API_BASE_URL,
 };

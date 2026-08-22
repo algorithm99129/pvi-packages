@@ -55,6 +55,16 @@ export interface UserGameState {
 /** Authenticated player profile — account info, wallet, and XP / village progression. */
 export interface PlayerProfile extends UserProfile, UserProgression {
   wallet: WalletResources;
+  /**
+   * ISO timestamp while another player is currently raiding this garden.
+   * Hub shows a sword overlay and blocks opening the garden until it expires / raid ends.
+   */
+  gardenUnderAttackUntil: string | null;
+  /**
+   * ISO timestamp for post-raid protection. Shielded gardens cannot be matchmade;
+   * attacking another garden clears this early.
+   */
+  gardenSafeModeUntil: string | null;
 }
 
 /** Response from POST /api/player/missions/complete */
