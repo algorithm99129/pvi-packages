@@ -174,6 +174,12 @@ export interface MissionDefenseSlot {
   level?: number;
 }
 
+/** Dirty egg group on the lawn — insects can rise from these cells (classic grave tiles). */
+export interface MissionEggGroupSlot {
+  lane: number;
+  column: number;
+}
+
 /** Client-only presentation assets for a mission (Unity Resources paths, no extension). */
 export interface MissionClientAssets {
   /**
@@ -222,6 +228,13 @@ export interface MissionSpawn {
    * Battle-absolute time = wave.delayMs + offsetMs. Default 0.
    */
   offsetMs?: number;
+  /**
+   * Rise from an active dirty egg group in this lane instead of the sidewalk edge.
+   * Uses `column` when set; otherwise picks a random active egg group in the lane.
+   */
+  fromEggGroup?: boolean;
+  /** Egg-group column when `fromEggGroup` is true (optional). */
+  column?: number;
 }
 
 export interface MissionWave {
@@ -248,6 +261,8 @@ export interface MissionDefinition {
   mapTemplateId: string;
   rules?: MissionRules;
   presetDefense?: MissionDefenseSlot[];
+  /** Dirty egg groups placed on the lawn at battle start (night / siege missions). */
+  eggGroups?: MissionEggGroupSlot[];
   waves?: MissionWave[];
   /** Starting sun for offline PVZ-style battles */
   startingSun?: number;
@@ -284,6 +299,7 @@ export interface ServerMissionExport {
   mapTemplateId: string;
   rules?: MissionRules;
   presetDefense?: MissionDefenseSlot[];
+  eggGroups?: MissionEggGroupSlot[];
   waves?: MissionWave[];
   starCriteria: MissionDefinition['starCriteria'];
   rewards: MissionDefinition['rewards'];
@@ -301,6 +317,7 @@ export interface ClientMissionExport {
   mapTemplateId: string;
   rules?: MissionRules;
   presetDefense?: MissionDefenseSlot[];
+  eggGroups?: MissionEggGroupSlot[];
   waves?: MissionWave[];
   startingSun?: number;
   availablePlants?: EntityId[];

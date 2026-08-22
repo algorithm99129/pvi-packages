@@ -376,6 +376,7 @@ export type StateActionKind =
   | 'redirect_lane'
   | 'charm_insect'
   | 'steal_metal'
+  | 'destroy_egg_group'
   | 'destroy_grave'
   | 'summon_insect'
   | 'throw_unit'
@@ -714,9 +715,14 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     kind: 'plant',
   },
   {
+    type: 'destroy_egg_group',
+    label: 'Destroy egg group',
+    hint: 'Remove the dirty egg group under this plant (Egg Eater)',
+  },
+  {
     type: 'destroy_grave',
-    label: 'Destroy grave',
-    hint: 'Remove a grave tile under this plant (Grave Buster)',
+    label: 'Destroy egg group (legacy)',
+    hint: 'Legacy alias for destroy_egg_group',
     kind: 'plant',
   },
   {
@@ -1695,23 +1701,23 @@ export function createMagnetStateGraph(opts?: {
   };
 }
 
-/** Grave Buster: destroy grave after short dig. */
-export function createGraveBusterStateGraph(opts?: {
+/** Egg Eater: destroy dirty egg group after short chew. */
+export function createEggEaterStateGraph(opts?: {
   idleAnim?: string;
   attackAnim?: string;
   dieAnim?: string;
-  digSeconds?: number;
+  chewSeconds?: number;
 }): EntityStateGraph {
   const idleId = createStateNodeId();
   const attackId = createStateNodeId();
-  const dig = opts?.digSeconds ?? 3;
+  const chew = opts?.chewSeconds ?? 3;
   return {
     version: 1,
     entryNodeId: idleId,
     nodes: [
       {
         id: idleId,
-        status: 'idle',
+        status: 'digest',
         spineAnim: opts?.idleAnim,
         loop: true,
         position: { x: 80, y: 160 },
@@ -1722,7 +1728,7 @@ export function createGraveBusterStateGraph(opts?: {
         spineAnim: opts?.attackAnim,
         loop: false,
         actions: [
-          { type: 'destroy_grave', when: 'after_anim' },
+          { type: 'destroy_egg_group', when: 'after_anim' },
           { type: 'despawn', when: 'after_anim' },
         ],
         position: { x: 360, y: 160 },
@@ -1733,11 +1739,26 @@ export function createGraveBusterStateGraph(opts?: {
         id: createStateEdgeId(),
         from: idleId,
         to: attackId,
-        conditions: cond({ type: 'after_seconds', value: literalDuration(dig) }),
+        conditions: cond({ type: 'after_seconds', value: literalDuration(chew) }),
       },
     ],
     die: { spineAnim: opts?.dieAnim },
   };
+}
+
+/** @deprecated Use {@link createEggEaterStateGraph}. */
+export function createGraveBusterStateGraph(opts?: {
+  idleAnim?: string;
+  attackAnim?: string;
+  dieAnim?: string;
+  digSeconds?: number;
+}): EntityStateGraph {
+  return createEggEaterStateGraph({
+    idleAnim: opts?.idleAnim,
+    attackAnim: opts?.attackAnim,
+    dieAnim: opts?.dieAnim,
+    chewSeconds: opts?.digSeconds,
+  });
 }
 
 /** Tangle Kelp / one-shot melee consume. */
@@ -2541,6 +2562,7 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   redirect_lane: 'redirect_lane',
   charm_insect: 'charm_insect',
   steal_metal: 'steal_metal',
+  destroy_egg_group: 'destroy_egg_group',
   destroy_grave: 'destroy_grave',
   summon_insect: 'summon_insect',
   throw_unit: 'throw_unit',

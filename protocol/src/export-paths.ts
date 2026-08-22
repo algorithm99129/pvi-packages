@@ -21,6 +21,9 @@ export const CLIENT_EXPORT_PATHS = {
   avatarsDir: `${CLIENT_RESOURCES_ROOT}/Avatars`,
   flags: `${CLIENT_RESOURCES_ROOT}/Flags/flags.json`,
   flagsDir: `${CLIENT_RESOURCES_ROOT}/Flags`,
+  specialCatalog: `${CLIENT_RESOURCES_ROOT}/Special/special.json`,
+  specialDir: `${CLIENT_RESOURCES_ROOT}/Special`,
+  eggGroupConfig: `${CLIENT_RESOURCES_ROOT}/Special/egg_group.json`,
   branding: `${CLIENT_RESOURCES_ROOT}/branding.json`,
   balanceVersion: `${CLIENT_RESOURCES_ROOT}/balance-version.json`,
   /** Unity Resources root for path resolution */
@@ -118,7 +121,8 @@ export function normalizeClientMediaPath(relativePath: string): string {
       underCustom.startsWith('Maps/') ||
       underCustom.startsWith('Screen/') ||
       underCustom.startsWith('Avatars/') ||
-      underCustom.startsWith('Flags/')
+      underCustom.startsWith('Flags/') ||
+      underCustom.startsWith('Special/')
     ) {
       return underCustom;
     }
@@ -139,6 +143,7 @@ export function normalizeClientMediaPath(relativePath: string): string {
     normalized.startsWith('Screen/') ||
     normalized.startsWith('Avatars/') ||
     normalized.startsWith('Flags/') ||
+    normalized.startsWith('Special/') ||
     normalized.startsWith('Rewards/')
   ) {
     return normalized;

@@ -7,6 +7,9 @@ export const DEFAULT_INSECT_CELL_WIDTH_FILL = 0.9;
 /** Default fraction of grid cell width used to size flying bullet sprites. */
 export const DEFAULT_BULLET_CELL_WIDTH_FILL = 0.4;
 
+/** Default fraction of grid cell width used to size dirty egg group sprites. */
+export const DEFAULT_EGG_GROUP_CELL_WIDTH_FILL = 0.82;
+
 /**
  * Normalized art box relative to one grid cell (bottom-left origin).
  * Edges are normally 0–1 inside the cell, but may overflow (e.g. −0.25…1.25)
@@ -80,6 +83,14 @@ export function defaultInsectCellAnchor(aspectRatio = 1): UnitCellAnchor {
   );
 }
 
+export function defaultEggGroupCellAnchor(aspectRatio = 1): UnitCellAnchor {
+  return cellAnchorFromWidthFill(
+    DEFAULT_EGG_GROUP_CELL_WIDTH_FILL,
+    DEFAULT_EGG_GROUP_CELL_WIDTH_FILL,
+    aspectRatio,
+  );
+}
+
 /** Sanitize a cell anchor (soft edge bounds; overflow past 0–1 is allowed). */
 export function resolveUnitCellAnchor(
   value: UnitCellAnchor | undefined,
@@ -119,10 +130,15 @@ export function unitCellAnchorHeight(anchor: UnitCellAnchor): number {
  */
 export function resolveClientCellAnchor(
   client: { cellAnchor?: UnitCellAnchor; cellWidthFill?: number; scale?: number } | undefined,
-  kind: 'plant' | 'insect',
+  kind: 'plant' | 'insect' | 'special',
   aspectRatio = 1,
 ): UnitCellAnchor {
-  const defaultFill = kind === 'plant' ? DEFAULT_PLANT_CELL_WIDTH_FILL : DEFAULT_INSECT_CELL_WIDTH_FILL;
+  const defaultFill =
+    kind === 'plant'
+      ? DEFAULT_PLANT_CELL_WIDTH_FILL
+      : kind === 'insect'
+        ? DEFAULT_INSECT_CELL_WIDTH_FILL
+        : DEFAULT_EGG_GROUP_CELL_WIDTH_FILL;
   const fallback = cellAnchorFromWidthFill(defaultFill, defaultFill, aspectRatio);
   if (client?.cellAnchor) return resolveUnitCellAnchor(client.cellAnchor, fallback);
 
