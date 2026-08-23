@@ -7,7 +7,7 @@ export const CHAT_SOCKET_EVENTS = {
   message: 'chat:message',
 } as const;
 
-export type ChatChannel = 'global' | 'team';
+export type ChatChannel = 'global' | 'team' | 'room';
 
 export interface ChatPhraseDefinition {
   id: string;
@@ -30,6 +30,8 @@ export interface ChatMessagePayload {
   id: string;
   channel: ChatChannel;
   teamId?: string;
+  /** Battle room id when channel is `room`. */
+  roomId?: string;
   senderUserId: string;
   senderDisplayName: string;
   senderAvatarId: string;
@@ -42,6 +44,8 @@ export interface ChatMessagePayload {
 
 export interface ChatSendPayload {
   channel: ChatChannel;
+  /** Required when channel is `room`. */
+  roomId?: string;
   phraseId?: string;
   emojiId?: string;
 }
