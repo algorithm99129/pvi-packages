@@ -21,6 +21,8 @@ export const CLIENT_EXPORT_PATHS = {
   avatarsDir: `${CLIENT_RESOURCES_ROOT}/Avatars`,
   flags: `${CLIENT_RESOURCES_ROOT}/Flags/flags.json`,
   flagsDir: `${CLIENT_RESOURCES_ROOT}/Flags`,
+  chat: `${CLIENT_RESOURCES_ROOT}/Chat/chat.json`,
+  chatDir: `${CLIENT_RESOURCES_ROOT}/Chat`,
   specialCatalog: `${CLIENT_RESOURCES_ROOT}/Special/special.json`,
   specialDir: `${CLIENT_RESOURCES_ROOT}/Special`,
   eggGroupConfig: `${CLIENT_RESOURCES_ROOT}/Special/egg_group.json`,
@@ -52,6 +54,8 @@ export const SERVER_EXPORT_PATHS = {
   avatarsDir: `${SERVER_RESOURCES_DIR}/Avatars`,
   flags: `${SERVER_RESOURCES_DIR}/Flags/flags.json`,
   flagsDir: `${SERVER_RESOURCES_DIR}/Flags`,
+  chat: `${SERVER_RESOURCES_DIR}/Chat/chat.json`,
+  chatDir: `${SERVER_RESOURCES_DIR}/Chat`,
   balanceVersion: `${SERVER_RESOURCES_DIR}/balance-version.json`,
   logic: `${SERVER_RESOURCES_DIR}/Systems/logic.json`,
 } as const;
