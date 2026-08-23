@@ -13,6 +13,9 @@ export const TEAM_DEFAULT_REGION = 'global';
 export const TEAM_DEFAULT_BANNER_ID = 'flag_000';
 export const TEAM_DEFAULT_LEAGUE = 'bronze_1';
 
+/** Max names returned by GET /teams/random-name. */
+export const TEAM_RANDOM_NAME_MAX_COUNT = 10;
+
 export type TeamMemberRole = 'leader' | 'officer' | 'member';
 export type TeamJoinType = 'open' | 'invite';
 
@@ -136,4 +139,9 @@ export interface TeamRankingResult {
   entries: TeamRankingEntry[];
   /** ISO or human-readable season end hint. */
   seasonEndsIn: string;
+}
+
+/** Response from GET /teams/random-name — available names for team creation. */
+export interface TeamRandomNameResult {
+  names: string[];
 }
