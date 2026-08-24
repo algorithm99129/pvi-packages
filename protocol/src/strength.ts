@@ -41,11 +41,16 @@ export interface GoldCupConfig {
   dayResetHourUtc: number;
   minTeamMembers: number;
   autoResolveUnplayed: boolean;
+  /** When set, force both teams to this formation size for linked team matches. */
+  formationSize?: 5 | 10;
 }
 
 export function defaultGoldCupConfig(
   partial?: Partial<GoldCupConfig> | null,
 ): GoldCupConfig {
+  const rawSize = partial?.formationSize;
+  const formationSize: 5 | 10 | undefined =
+    rawSize === 5 || rawSize === 10 ? rawSize : undefined;
   return {
     lockTeams: partial?.lockTeams ?? true,
     pointsWin: Math.max(0, Math.floor(partial?.pointsWin ?? GOLD_CUP_POINTS_WIN)),
@@ -65,6 +70,7 @@ export function defaultGoldCupConfig(
     ),
     minTeamMembers: Math.max(1, Math.floor(partial?.minTeamMembers ?? 2)),
     autoResolveUnplayed: partial?.autoResolveUnplayed ?? true,
+    formationSize,
   };
 }
 
@@ -167,6 +173,8 @@ export interface SeasonMatchView {
   resolution?: SeasonMatchResolution;
   scheduledFor: string;
   resolvedAt?: string;
+  /** Linked playable team-match document (formations / stars). */
+  teamMatchId?: EntityId;
 }
 
 export interface SeasonTableView {

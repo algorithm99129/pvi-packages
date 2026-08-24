@@ -74,6 +74,10 @@ export interface GardenRaidCompleteRequest {
   stolenLoot?: GardenRaidStolenPlantLoot[];
   /** Battle recording for defender history / replay (garden raids). */
   replay?: GardenRaidReplay;
+  /** When set, apply team-match war scoring (formation attempts / stars). */
+  teamMatchId?: EntityId;
+  /** Lanes fully cleared this raid — used for war star table when teamMatchId is set. */
+  lanesDestroyed?: number;
 }
 
 export interface InsectUpgradeCardClaim {

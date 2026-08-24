@@ -1,4 +1,5 @@
 import type { EntityId } from './index';
+import type { TeamCombatFormation } from './team-match';
 import type { WalletResources } from './wallet';
 
 /** Soft cap for clan size (GDD 20–50; MVP uses 30). */
@@ -70,6 +71,8 @@ export interface TeamView {
   joinRequests: TeamJoinRequestView[];
   /** Current user's role in this team, when applicable. */
   myRole: TeamMemberRole | null;
+  /** Leader-authored battle formation draft (team match / Gold Cup). */
+  combatFormation?: TeamCombatFormation | null;
 }
 
 /** Lightweight row for browse / join lists. */

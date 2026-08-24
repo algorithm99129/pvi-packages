@@ -35,6 +35,7 @@ export * from './garden';
 export * from './raid';
 export * from './battle-room';
 export * from './team';
+export * from './team-match';
 export * from './catalog';
 export * from './deep-merge';
 export * from './schema-version';
