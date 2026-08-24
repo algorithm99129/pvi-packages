@@ -16,6 +16,14 @@ export const TEAM_DEFAULT_LEAGUE = 'bronze_1';
 /** Max names returned by GET /teams/random-name. */
 export const TEAM_RANDOM_NAME_MAX_COUNT = 10;
 
+/**
+ * Logic constant id (`Systems/logic.json`) for gem cost to create a team.
+ * Editor Constants page + API create charge both use this.
+ */
+export const TEAM_CREATE_COST_GEM_ID = 'TEAM_CREATE_COST_GEM';
+/** Fallback when the logic constant is missing or invalid. */
+export const TEAM_CREATE_COST_GEM_DEFAULT = 500;
+
 export type TeamMemberRole = 'leader' | 'officer' | 'member';
 export type TeamJoinType = 'open' | 'invite';
 
@@ -144,4 +152,9 @@ export interface TeamRankingResult {
 /** Response from GET /teams/random-name — available names for team creation. */
 export interface TeamRandomNameResult {
   names: string[];
+}
+
+/** Response from GET /teams/create-cost — gem fee to create a team. */
+export interface TeamCreateCostResult {
+  gem: number;
 }

@@ -50,6 +50,7 @@ export interface AnalysisDbStatus {
   uri: string;
   database?: string;
   userCount?: number;
+  teamCount?: number;
   error?: string;
 }
 
@@ -134,4 +135,63 @@ export interface AnalysisCreateAiTeamsResult {
   teamNames: string[];
   emails: string[];
   message: string;
+}
+
+/** Editor analysis: clan / team row (Mongo `teams` collection). */
+export interface AnalysisTeamSummary {
+  id: string;
+  name: string;
+  description: string;
+  level: number;
+  score: number;
+  league: string;
+  joinType: 'open' | 'invite';
+  requiredScore: number;
+  region: string;
+  bannerId: string;
+  avatarId: string;
+  memberCount: number;
+  joinRequestCount: number;
+  leaderUserId: string;
+  leaderDisplayName?: string;
+  wallet: { coin: number; gem: number; leaf: number };
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AnalysisTeamMemberRow {
+  userId: string;
+  displayName: string;
+  email: string;
+  role: 'leader' | 'officer' | 'member';
+  isAi?: boolean;
+  joinedAt?: string;
+}
+
+export interface AnalysisTeamJoinRequestRow {
+  id: string;
+  userId: string;
+  displayName: string;
+  email: string;
+  createdAt?: string;
+}
+
+export interface AnalysisTeamDetail extends AnalysisTeamSummary {
+  members: AnalysisTeamMemberRow[];
+  joinRequests: AnalysisTeamJoinRequestRow[];
+}
+
+/** Partial update for admin team editor (Mongo writes). */
+export interface AnalysisTeamPatch {
+  name?: string;
+  description?: string;
+  level?: number;
+  score?: number;
+  league?: string;
+  joinType?: 'open' | 'invite';
+  requiredScore?: number;
+  region?: string;
+  bannerId?: string;
+  avatarId?: string;
+  wallet?: { coin: number; gem: number; leaf: number };
 }
