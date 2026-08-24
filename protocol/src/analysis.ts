@@ -51,6 +51,7 @@ export interface AnalysisDbStatus {
   database?: string;
   userCount?: number;
   teamCount?: number;
+  liveEventCount?: number;
   error?: string;
 }
 
