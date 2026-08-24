@@ -11,6 +11,7 @@ export type BattleRoomDurationSec = (typeof BATTLE_ROOM_DURATION_OPTIONS_SEC)[nu
 
 export interface BattleRoomSummary {
   id: string;
+  hostUserId: string;
   hostDisplayName: string;
   mapTemplateId: string;
   rewardCoin: number;
