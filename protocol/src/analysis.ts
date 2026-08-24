@@ -23,6 +23,8 @@ export interface AnalysisUserSummary {
   totalXp?: number;
   /** Derived account level from totalXp. */
   userLevel?: number;
+  /** Active clan id, or null when not in a team. */
+  teamId?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
