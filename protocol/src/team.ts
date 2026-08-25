@@ -35,6 +35,8 @@ export interface TeamMemberView {
   role: TeamMemberRole;
   /** Account trophy / score proxy (userLevel * 1000 for MVP). */
   score: number;
+  /** Combat strength for team match / Gold Cup. */
+  strength: number;
   /** ISO timestamp or empty when unknown. */
   lastActiveAt: string;
   joinedAt: string;
@@ -57,6 +59,8 @@ export interface TeamView {
   description: string;
   level: number;
   score: number;
+  /** Sum of member combat strengths. */
+  strength: number;
   league: string;
   joinType: TeamJoinType;
   requiredScore: number;
@@ -129,7 +133,22 @@ export interface UpdateTeamRequest {
 }
 
 export interface DonateToTeamRequest {
-  coin: number;
+  /** Coins to move from player wallet → team treasury (optional). */
+  coin?: number;
+  /** Leaves to move from player wallet → team treasury (optional). */
+  leaf?: number;
+}
+
+/** One member grant when distributing team treasury. */
+export interface TeamDistributeGrant {
+  userId: EntityId;
+  coin?: number;
+  leaf?: number;
+}
+
+/** Leader-only: move resources from team treasury to members. */
+export interface DistributeTeamResourcesRequest {
+  grants: TeamDistributeGrant[];
 }
 
 export interface MyTeamResult {
