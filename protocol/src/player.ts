@@ -55,6 +55,8 @@ export interface UserGameState {
 /** Authenticated player profile — account info, wallet, and XP / village progression. */
 export interface PlayerProfile extends UserProfile, UserProgression {
   wallet: WalletResources;
+  /** Combat strength from plants, insects, and garden. */
+  strength: number;
   /**
    * ISO timestamp while another player is currently raiding this garden.
    * Hub shows a sword overlay and blocks opening the garden until it expires / raid ends.
