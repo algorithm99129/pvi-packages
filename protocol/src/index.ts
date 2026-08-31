@@ -44,5 +44,4 @@ export * from './analysis';
 export * from './admin-api';
 export * from './chat';
 export * from './live-events';
-export * from './client-update';
 export * from './strength';
