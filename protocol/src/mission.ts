@@ -35,6 +35,18 @@ export function missionDifficultyCoinMultiplier(difficulty: string | undefined):
   }
 }
 
+/** Max performance stars earnable for the chosen difficulty (Easy 1, Medium 2, Hard 3). */
+export function missionMaxStarsForDifficulty(difficulty: string | undefined): number {
+  switch (difficulty) {
+    case 'hard':
+      return 3;
+    case 'medium':
+      return 2;
+    default:
+      return 1;
+  }
+}
+
 /** Client Missions UI coin labels derived from first-clear photosynthesis (→ coin). */
 export function missionClientRewardPreviews(reward: MissionReward | null | undefined): {
   rewardEasy: number;
