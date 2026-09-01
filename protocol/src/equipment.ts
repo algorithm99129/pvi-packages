@@ -13,14 +13,17 @@ export interface EquipmentHitbox {
 }
 
 export interface EquipmentClientAssets {
-  /** PascalCase folder under Equipment/, e.g. IronHelmet */
+  /** PascalCase folder under Equipment/, e.g. IronHelmet (catalog identity only). */
   folder: string;
   /**
    * Default placement template when an insect first assigns this piece.
    * Runtime uses `insect.client.equipmentHitbox` when set (per-insect).
    */
   hitbox: EquipmentHitbox;
-  /** Optional overlay sprite Resources path without extension. */
+  /**
+   * @deprecated Equipment is abstract — visuals live on the insect avatar/Spine.
+   * Ignored by editor and client; kept optional for older JSON.
+   */
   image?: string;
   /** Reserved for Magnet-shroom / steal_metal. */
   isMetal?: boolean;
@@ -37,8 +40,8 @@ export interface EquipmentDefinition {
   schemaVersion?: number;
   stats: EquipmentStats;
   /**
-   * Insect status-graph status to enter when equipment HP hits 0.
-   * Empty / omitted = none (still sets ArmorBroken).
+   * Insect status-graph status to enter when equipment HP hits 0 (or is stolen).
+   * Empty / omitted = none (still pulses `armor_broken` / equipment-lost).
    */
   onDestroyStatus?: InsectGraphStatus | '';
   client: EquipmentClientAssets;
@@ -69,15 +72,10 @@ export const EQUIPMENT_ON_DESTROY_STATUSES: ReadonlyArray<{
   })),
 ];
 
-export function equipmentAvatarPath(folder: string): string {
-  return `Equipment/${folder}/avatar`;
-}
-
 export function defaultEquipmentClientAssets(folder: string): EquipmentClientAssets {
   return {
     folder,
     hitbox: { ...DEFAULT_EQUIPMENT_HITBOX },
-    image: equipmentAvatarPath(folder),
     isMetal: false,
   };
 }
@@ -146,10 +144,6 @@ export function normalizeEquipmentDefinition(
     client: {
       folder,
       hitbox: normalizeEquipmentHitbox(raw.client?.hitbox),
-      image:
-        typeof raw.client?.image === 'string' && raw.client.image.trim()
-          ? raw.client.image.replace(/\\/g, '/').replace(/\.[^./]+$/, '')
-          : equipmentAvatarPath(folder),
       isMetal: Boolean(raw.client?.isMetal),
     },
   };

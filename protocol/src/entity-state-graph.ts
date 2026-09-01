@@ -323,8 +323,8 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
   },
   {
     type: 'armor_broken',
-    label: 'Armor broken',
-    hint: 'Shield / newspaper / screen-door layer destroyed',
+    label: 'Equipment lost',
+    hint: 'Assigned equipment HP hit 0 or was stolen (Magnet). Drive a bare/enrage Spine status from here — equipment art lives on the insect avatar/Spine, not a separate overlay.',
   },
   {
     type: 'being_bitten',
@@ -2858,7 +2858,7 @@ export function conditionLabel(condition: StateCondition): string {
     case 'health_below':
       return `Health < ${Math.round(condition.ratio * 100)}%`;
     case 'armor_broken':
-      return 'Armor broken';
+      return 'Equipment lost';
     case 'being_bitten':
       return 'Being bitten';
     case 'player_command':
