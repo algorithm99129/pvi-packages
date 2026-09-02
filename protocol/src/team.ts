@@ -33,6 +33,8 @@ export interface TeamMemberView {
   displayName: string;
   avatarId: string;
   role: TeamMemberRole;
+  /** Account village / user level (shown on roster rows). */
+  userLevel: number;
   /** Account trophy / score proxy (userLevel * 1000 for MVP). */
   score: number;
   /** Combat strength for team match / Gold Cup. */
