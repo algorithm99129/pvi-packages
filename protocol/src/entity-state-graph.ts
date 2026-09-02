@@ -373,6 +373,8 @@ export type StateActionKind =
   | 'vault_over_plant'
   | 'enter_burrow'
   | 'exit_burrow'
+  | 'enter_fly'
+  | 'exit_fly'
   | 'redirect_lane'
   | 'charm_insect'
   | 'steal_metal'
@@ -694,6 +696,18 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     type: 'exit_burrow',
     label: 'Exit burrow',
     hint: 'Surface and resume normal combat',
+    kind: 'insect',
+  },
+  {
+    type: 'enter_fly',
+    label: 'Enter fly',
+    hint: 'Switch travel layer to flying (Balloon Moth with balloon equipment)',
+    kind: 'insect',
+  },
+  {
+    type: 'exit_fly',
+    label: 'Exit fly / land',
+    hint: 'Drop to ground travel layer after balloon is lost',
     kind: 'insect',
   },
   {
@@ -1866,14 +1880,17 @@ export function createSnorkelStateGraph(opts?: {
   };
 }
 
-/** Flyer: fly ↔ attack (Balloon Moth). */
+/** Flyer with balloon equipment: fly until armor_broken / balloon lost, then walk ↔ attack. */
 export function createInsectFlyerStateGraph(opts?: {
   flyAnim?: string;
+  walkAnim?: string;
   attackAnim?: string;
   dieAnim?: string;
 }): EntityStateGraph {
   const flyId = createStateNodeId();
+  const walkId = createStateNodeId();
   const attackId = createStateNodeId();
+  const groundAnim = opts?.walkAnim ?? opts?.flyAnim;
   return {
     version: 1,
     entryNodeId: flyId,
@@ -1883,8 +1900,22 @@ export function createInsectFlyerStateGraph(opts?: {
         status: 'fly',
         spineAnim: opts?.flyAnim,
         loop: true,
-        actions: [{ type: 'start_moving', when: 'on_enter' }],
-        position: { x: 80, y: 160 },
+        actions: [
+          { type: 'enter_fly', when: 'on_enter' },
+          { type: 'start_moving', when: 'on_enter' },
+        ],
+        position: { x: 80, y: 200 },
+      },
+      {
+        id: walkId,
+        status: 'walk',
+        spineAnim: groundAnim,
+        loop: true,
+        actions: [
+          { type: 'exit_fly', when: 'on_enter' },
+          { type: 'start_moving', when: 'on_enter' },
+        ],
+        position: { x: 80, y: 40 },
       },
       {
         id: attackId,
@@ -1896,20 +1927,27 @@ export function createInsectFlyerStateGraph(opts?: {
           { type: 'deal_contact_damage', when: 'after_anim' },
           { type: 'reset_attack_timer', when: 'after_anim' },
         ],
-        position: { x: 360, y: 160 },
+        position: { x: 360, y: 120 },
       },
     ],
     edges: [
+      // Balloon / equipment lost → land and walk on the ground.
       {
         id: createStateEdgeId(),
         from: flyId,
+        to: walkId,
+        conditions: cond({ type: 'armor_broken' }),
+      },
+      {
+        id: createStateEdgeId(),
+        from: walkId,
         to: attackId,
         conditions: cond({ type: 'enemy_in_range' }, { type: 'attack_interval_ready' }),
       },
       {
         id: createStateEdgeId(),
         from: attackId,
-        to: flyId,
+        to: walkId,
         conditions: cond({ type: 'anim_ended' }),
       },
     ],
@@ -2559,6 +2597,8 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   vault_over_plant: 'vault_over_plant',
   enter_burrow: 'enter_burrow',
   exit_burrow: 'exit_burrow',
+  enter_fly: 'enter_fly',
+  exit_fly: 'exit_fly',
   redirect_lane: 'redirect_lane',
   charm_insect: 'charm_insect',
   steal_metal: 'steal_metal',
