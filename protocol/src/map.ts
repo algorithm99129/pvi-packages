@@ -89,6 +89,11 @@ export interface MapTemplateDefinition {
   /** Client background / tileset — paths relative to Assets/Resources */
   client: {
     backgroundImage: string;
+    /**
+     * Square list / shop thumbnail (target {@link MAP_THUMBNAIL_SIZE}).
+     * Default convention: {@link mapThumbnailPath}.
+     */
+    thumbnailImage?: string;
     /** Background variant index (0=day, 1=night, …) */
     backgroundType?: number;
     tileset?: string;
@@ -129,3 +134,12 @@ export interface ClientMapExport {
   corePosition: MapTemplateDefinition['server']['corePosition'];
   client: MapTemplateDefinition['client'];
 }
+
+/** Default Resources-relative path (no extension) for the square map list thumbnail. */
+export function mapThumbnailPath(mapId: string): string {
+  const id = String(mapId ?? '').trim();
+  return id ? `Maps/${id}/thumbnail` : 'Maps/thumbnail';
+}
+
+/** Authored pixel size for map list / shop thumbnails. */
+export const MAP_THUMBNAIL_SIZE = { width: 256, height: 256 } as const;
