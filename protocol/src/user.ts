@@ -12,6 +12,8 @@ export interface UserProfile {
   displayName: string;
   /** Selected avatar id from Resources/Avatars catalog. */
   avatarId: string;
+  /** Current team id when the player belongs to a team; otherwise null/omitted. */
+  teamId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
