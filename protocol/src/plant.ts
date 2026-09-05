@@ -456,6 +456,20 @@ export interface PlantServerConfig {
    */
   sunCost?: number;
   /**
+   * How this plant stacks on a cell:
+   * - omit / host: normal plant
+   * - `pad`: lily-pad style water platform
+   * - `shell`: pumpkin-style wrap over a host
+   * - `hazard`: spikeweed-style ground hazard (walk-over)
+   */
+  stackRole?: 'pad' | 'shell' | 'hazard';
+  /** Blocks vault / pogo / dolphin jumps onto this plant. */
+  blocksVault?: boolean;
+  /** Ignites or extinguishes peas that pass through this plant. */
+  transformsPeas?: boolean;
+  /** Protects nearby plants from aerial steal (Bungee). Radius via extra.aerialProtectRadius. */
+  blocksAerialSteal?: boolean;
+  /**
    * Minimum village / garden level required to station this plant on the village layout.
    * Prefer explicit authorship; {@link resolveGardenMinVillageLevel} fills rarity defaults.
    */

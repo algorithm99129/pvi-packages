@@ -267,6 +267,17 @@ export interface InsectServerConfig {
    * Prefer explicit authorship; {@link resolveInsectRechargeSeconds} fills defaults.
    */
   rechargeSeconds?: number;
+  /**
+   * How the attacker picks a deploy cell.
+   * - `lane` (default): click / drop on a lane (spawn at insect column).
+   * - `plant`: click a plant to drop onto that cell (Bungee-style).
+   */
+  deployTarget?: 'lane' | 'plant';
+  /**
+   * When this insect would spawn on water terrain, remap to this catalog id
+   * (e.g. land beetle → duck-tube variant).
+   */
+  waterVariantId?: string;
 }
 
 /** Default insect card recharge (seconds) when not authored. */

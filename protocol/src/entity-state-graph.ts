@@ -49,6 +49,7 @@ export type InsectGraphStatus =
   | 'emerge'
   | 'swim'
   | 'fly'
+  | 'aim'
   | 'summon'
   | 'throw'
   | 'special'
@@ -92,6 +93,12 @@ export const INSECT_GRAPH_STATUSES: ReadonlyArray<{
   { id: 'emerge', label: 'Emerge', hint: 'Surface from burrow', defaultLoop: false },
   { id: 'swim', label: 'Swim', hint: 'Underwater / pool travel (Snorkel)', defaultLoop: true },
   { id: 'fly', label: 'Fly', hint: 'Air locomotion', defaultLoop: true },
+  {
+    id: 'aim',
+    label: 'Aim / hang',
+    hint: 'Wind-up while dangling over a plant (Bungee Spider)',
+    defaultLoop: true,
+  },
   { id: 'summon', label: 'Summon', hint: 'Call backup insects', defaultLoop: false },
   { id: 'throw', label: 'Throw', hint: 'Hurl Imp / projectile', defaultLoop: false },
   { id: 'special', label: 'Special', hint: 'One-shot ability (ladder, etc.)', defaultLoop: false },
@@ -383,6 +390,9 @@ export type StateActionKind =
   | 'summon_insect'
   | 'throw_unit'
   | 'place_ladder'
+  | 'steal_plant'
+  | 'bungee_drop'
+  | 'bungee_aim'
   | 'apply_freeze'
   | 'smash_plant';
 
@@ -755,6 +765,24 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     type: 'place_ladder',
     label: 'Place ladder',
     hint: 'Deploy a ladder on the blocking plant (Ladder Ant)',
+    kind: 'insect',
+  },
+  {
+    type: 'bungee_drop',
+    label: 'Bungee drop',
+    hint: 'Pick a plant cell and drop from the sky onto it (Bungee Spider)',
+    kind: 'insect',
+  },
+  {
+    type: 'bungee_aim',
+    label: 'Bungee aim',
+    hint: 'Hang / aim animation while locked onto a plant (Bungee Spider)',
+    kind: 'insect',
+  },
+  {
+    type: 'steal_plant',
+    label: 'Steal plant',
+    hint: 'Grab the plant underfoot and lift it away (Bungee Spider). Blocked by Umbrella Leaf.',
     kind: 'insect',
   },
   {
@@ -2487,6 +2515,84 @@ export function createInsectLadderStateGraph(opts?: {
   };
 }
 
+/** Bungee Spider: drop onto a plant → aim / hang → steal upward (or leave empty-handed). */
+export function createInsectBungeeStateGraph(opts?: {
+  flyAnim?: string;
+  aimAnim?: string;
+  stealAnim?: string;
+  dieAnim?: string;
+  aimSeconds?: number;
+}): EntityStateGraph {
+  const dropId = createStateNodeId();
+  const aimId = createStateNodeId();
+  const stealId = createStateNodeId();
+  const aimSeconds = opts?.aimSeconds ?? 2.5;
+  const flyAnim = opts?.flyAnim;
+  const aimAnim = opts?.aimAnim ?? opts?.flyAnim;
+  const stealAnim = opts?.stealAnim ?? opts?.flyAnim;
+  return {
+    version: 1,
+    entryNodeId: dropId,
+    nodes: [
+      {
+        id: dropId,
+        status: 'fly',
+        label: 'Drop',
+        spineAnim: flyAnim,
+        loop: true,
+        actions: [
+          { type: 'enter_fly', when: 'on_enter' },
+          { type: 'stop_moving', when: 'on_enter' },
+          { type: 'bungee_drop', when: 'on_enter' },
+        ],
+        position: { x: 40, y: 200 },
+      },
+      {
+        id: aimId,
+        status: 'aim',
+        label: 'Aim / hang',
+        spineAnim: aimAnim,
+        loop: true,
+        actions: [
+          { type: 'stop_moving', when: 'on_enter' },
+          { type: 'bungee_aim', when: 'on_enter' },
+        ],
+        position: { x: 240, y: 200 },
+      },
+      {
+        id: stealId,
+        status: 'special',
+        label: 'Steal plant',
+        spineAnim: stealAnim,
+        loop: false,
+        actions: [
+          { type: 'stop_moving', when: 'on_enter' },
+          { type: 'steal_plant', when: 'on_enter' },
+        ],
+        position: { x: 440, y: 200 },
+      },
+    ],
+    edges: [
+      // Drop anim holds placement; once Update resumes, settle into aim.
+      {
+        id: createStateEdgeId(),
+        from: dropId,
+        to: aimId,
+        conditions: cond({ type: 'after_seconds', value: literalDuration(0.05) }),
+      },
+      // Bungee is flying (SkipsPlantContact), so do not gate on enemy_in_range —
+      // steal_plant resolves the plant underfoot (or retreats empty-handed).
+      {
+        id: createStateEdgeId(),
+        from: aimId,
+        to: stealId,
+        conditions: cond({ type: 'after_seconds', value: literalDuration(aimSeconds) }),
+      },
+    ],
+    die: { spineAnim: opts?.dieAnim },
+  };
+}
+
 /** Mirror flat legacy clip fields from the graph for older readers. */
 export function mirrorPlantClipsFromGraph(graph: EntityStateGraph): {
   idle: string;
@@ -2607,6 +2713,9 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   summon_insect: 'summon_insect',
   throw_unit: 'throw_unit',
   place_ladder: 'place_ladder',
+  steal_plant: 'steal_plant',
+  bungee_drop: 'bungee_drop',
+  bungee_aim: 'bungee_aim',
   apply_freeze: 'apply_freeze',
   smash_plant: 'smash_plant',
 };
