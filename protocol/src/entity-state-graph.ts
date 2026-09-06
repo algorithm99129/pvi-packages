@@ -113,6 +113,8 @@ export type StateConditionKind =
   | 'no_enemy_in_proximity'
   | 'metal_in_range'
   | 'no_metal_in_range'
+  | 'holding_metal'
+  | 'no_holding_metal'
   | 'attack_interval_ready'
   | 'anim_ended'
   | 'after_seconds'
@@ -135,6 +137,8 @@ export type StateCondition =
   | { type: 'no_enemy_in_proximity' }
   | { type: 'metal_in_range' }
   | { type: 'no_metal_in_range' }
+  | { type: 'holding_metal' }
+  | { type: 'no_holding_metal' }
   | { type: 'attack_interval_ready' }
   | { type: 'anim_ended' }
   | { type: 'after_seconds'; value: StateDurationValue }
@@ -301,6 +305,16 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
     hint: 'No insect with stealable metal armor is within attack range',
   },
   {
+    type: 'holding_metal',
+    label: 'Holding stolen metal',
+    hint: 'Magnet successfully stole metal and is still holding it',
+  },
+  {
+    type: 'no_holding_metal',
+    label: 'Not holding metal',
+    hint: 'Magnet is not currently holding stolen metal',
+  },
+  {
     type: 'attack_interval_ready',
     label: 'Attack cooldown elapsed',
     hint: 'Attack interval timer has finished (stats.attackIntervalMs)',
@@ -399,6 +413,7 @@ export type StateActionKind =
   | 'redirect_lane'
   | 'charm_insect'
   | 'steal_metal'
+  | 'digest_metal'
   | 'destroy_egg_group'
   | 'destroy_grave'
   | 'leave_crater'
@@ -757,7 +772,13 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'steal_metal',
     label: 'Steal metal',
-    hint: 'Remove metal armor / bucket / ladder from insects in range (Magnet-shroom)',
+    hint: 'Pull metal armor onto this plant and start holding it (Magnet-shroom)',
+    kind: 'plant',
+  },
+  {
+    type: 'digest_metal',
+    label: 'Digest metal',
+    hint: 'Destroy held metal after the hold and free the magnet for another steal',
     kind: 'plant',
   },
   {
@@ -1724,7 +1745,7 @@ export function createHypnoStateGraph(opts?: {
   };
 }
 
-/** Magnet-shroom: pull metal when in range, then hold before ready again. */
+/** Magnet-shroom: pull metal when in range, hold it on the plant, then digest. */
 export function createMagnetStateGraph(opts?: {
   idleAnim?: string;
   attackAnim?: string;
@@ -1762,6 +1783,7 @@ export function createMagnetStateGraph(opts?: {
         label: 'Hold metal',
         spineAnim: opts?.holdAnim ?? opts?.idleAnim,
         loop: true,
+        actions: [{ type: 'digest_metal', when: 'on_exit' }],
         position: { x: 560, y: 160 },
       },
     ],
@@ -1777,8 +1799,22 @@ export function createMagnetStateGraph(opts?: {
         from: attackId,
         to: holdId,
         conditions: hasAttackAnim
-          ? cond({ type: 'anim_ended' })
-          : cond({ type: 'after_seconds', value: literalDuration(0) }),
+          ? cond({ type: 'anim_ended' }, { type: 'holding_metal' })
+          : cond(
+              { type: 'after_seconds', value: literalDuration(0.05) },
+              { type: 'holding_metal' },
+            ),
+      },
+      {
+        id: createStateEdgeId(),
+        from: attackId,
+        to: idleId,
+        conditions: hasAttackAnim
+          ? cond({ type: 'anim_ended' }, { type: 'no_holding_metal' })
+          : cond(
+              { type: 'after_seconds', value: literalDuration(0.35) },
+              { type: 'no_holding_metal' },
+            ),
       },
       {
         id: createStateEdgeId(),
@@ -2759,6 +2795,7 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   redirect_lane: 'redirect_lane',
   charm_insect: 'charm_insect',
   steal_metal: 'steal_metal',
+  digest_metal: 'digest_metal',
   destroy_egg_group: 'destroy_egg_group',
   destroy_grave: 'destroy_grave',
   leave_crater: 'leave_crater',
@@ -2848,6 +2885,8 @@ function normalizeCondition(raw: unknown): StateCondition | null {
     case 'no_enemy_in_proximity':
     case 'metal_in_range':
     case 'no_metal_in_range':
+    case 'holding_metal':
+    case 'no_holding_metal':
     case 'attack_interval_ready':
     case 'anim_ended':
     case 'prepare_complete':
@@ -3048,6 +3087,10 @@ export function conditionLabel(condition: StateCondition): string {
       return 'Metal in range';
     case 'no_metal_in_range':
       return 'No metal in range';
+    case 'holding_metal':
+      return 'Holding stolen metal';
+    case 'no_holding_metal':
+      return 'Not holding metal';
     case 'attack_interval_ready':
       return 'Cooldown elapsed';
     case 'anim_ended':
