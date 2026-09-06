@@ -1,6 +1,6 @@
-export type MapCellType = 'ground' | 'water' | 'bridge';
+export type MapCellType = 'ground' | 'water' | 'bridge' | 'pot';
 
-export const MAP_CELL_TYPES: MapCellType[] = ['ground', 'water', 'bridge'];
+export const MAP_CELL_TYPES: MapCellType[] = ['ground', 'water', 'bridge', 'pot'];
 
 export interface MapLaneConfig {
   laneIndex: number;
