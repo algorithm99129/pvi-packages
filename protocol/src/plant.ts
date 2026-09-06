@@ -136,11 +136,12 @@ export interface PlantBulletSpawnPoint {
 }
 
 /** How a projectile leaves the plant. */
-export type BulletTrajectory = 'linear' | 'curved';
+export type BulletTrajectory = 'linear' | 'curved' | 'homing';
 
 /**
  * One projectile in a volley. Direction 0° = right (lane-forward), increasing CCW.
  * Curved shots bake an aiming point at fire time from the enemy — do not author `target` into plant JSON.
+ * Homing shots seek a living target across any lane (Cattail).
  */
 export interface PlantBulletShot {
   /** Stable id for editor list selection. */
@@ -275,7 +276,12 @@ export function createBulletShot(
   idFactory: () => string = () => `shot_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
 ): PlantBulletShot {
   const spawn = sanitizePoint(partial?.spawn ?? DEFAULT_PLANT_BULLET_SPAWN, DEFAULT_PLANT_BULLET_SPAWN);
-  const trajectory = partial?.trajectory === 'curved' ? 'curved' : 'linear';
+  const trajectory =
+    partial?.trajectory === 'curved'
+      ? 'curved'
+      : partial?.trajectory === 'homing'
+        ? 'homing'
+        : 'linear';
   const shot: PlantBulletShot = {
     id: partial?.id && partial.id.length > 0 ? partial.id : idFactory(),
     spawn,
