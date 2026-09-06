@@ -21,8 +21,10 @@ export interface EquipmentClientAssets {
    */
   hitbox: EquipmentHitbox;
   /**
-   * @deprecated Equipment is abstract — visuals live on the insect avatar/Spine.
-   * Ignored by editor and client; kept optional for older JSON.
+   * Resources path (no extension) for the standalone equipment sprite.
+   * Used when Magnet-shroom steals metal (pull FX) and for break arcs.
+   * Defaults to `Equipment/{folder}/avatar` when omitted.
+   * While worn, art still lives on the insect avatar/Spine — this is the detach sprite.
    */
   image?: string;
   /** Reserved for Magnet-shroom / steal_metal. */
@@ -72,10 +74,16 @@ export const EQUIPMENT_ON_DESTROY_STATUSES: ReadonlyArray<{
   })),
 ];
 
+/** Default Resources path for equipment detach / magnet-steal sprites. */
+export function defaultEquipmentImagePath(folder: string): string {
+  return `Equipment/${folder}/avatar`;
+}
+
 export function defaultEquipmentClientAssets(folder: string): EquipmentClientAssets {
   return {
     folder,
     hitbox: { ...DEFAULT_EQUIPMENT_HITBOX },
+    image: defaultEquipmentImagePath(folder),
     isMetal: false,
   };
 }
@@ -144,6 +152,9 @@ export function normalizeEquipmentDefinition(
     client: {
       folder,
       hitbox: normalizeEquipmentHitbox(raw.client?.hitbox),
+      image:
+        raw.client?.image?.trim() ||
+        defaultEquipmentImagePath(folder),
       isMetal: Boolean(raw.client?.isMetal),
     },
   };
