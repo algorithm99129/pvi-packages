@@ -13,6 +13,12 @@ export interface BattleRoomSummary {
   id: string;
   hostUserId: string;
   hostDisplayName: string;
+  /** Creator portrait id from Resources/Avatars. */
+  hostAvatarId: string;
+  /** Account level for the lv. badge. */
+  hostLevel: number;
+  /** Combat strength shown under the creator name. */
+  hostStrength: number;
   mapTemplateId: string;
   rewardCoin: number;
   rewardGem: number;
