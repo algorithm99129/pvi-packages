@@ -40,7 +40,7 @@ export interface PlantBehaviorConfig {
   hideProximityColumns?: number;
 }
 
-const INSTANT_EXPLODE_IDS = new Set(['cherry_bomb', 'jalapeno', 'ice_shroom']);
+const INSTANT_EXPLODE_IDS = new Set(['cherry_bomb', 'jalapeno', 'ice_shroom', 'doom_shroom']);
 const PRODUCER_IDS = new Set(['sun_flower', 'sun_shroom', 'twin_sunflower']);
 
 export const DEFAULT_PLANT_BEHAVIOR: PlantBehaviorConfig = { kind: 'shooter' };
@@ -104,12 +104,20 @@ function inferPlantBehavior(input: {
   if (INSTANT_EXPLODE_IDS.has(id)) {
     return {
       kind: 'instant_explode',
-      detonateDelaySeconds: id === 'cherry_bomb' ? 0.65 : 0.5,
-      triggerLaneRange: id === 'jalapeno' ? 0 : 1,
-      triggerColumnRange: id === 'jalapeno' ? 9 : 1.5,
+      detonateDelaySeconds: id === 'cherry_bomb' ? 0.65 : id === 'doom_shroom' ? 1 : 0.5,
+      triggerLaneRange: id === 'jalapeno' ? 0 : id === 'doom_shroom' ? 3 : 1,
+      triggerColumnRange: id === 'jalapeno' ? 9 : id === 'doom_shroom' ? 3.5 : 1.5,
       removeOnTrigger: true,
       explodeGfx:
-        id === 'jalapeno' ? 'lane_fire' : id === 'ice_shroom' ? 'ice' : id === 'cherry_bomb' ? 'fire' : 'boom',
+        id === 'jalapeno'
+          ? 'lane_fire'
+          : id === 'ice_shroom'
+            ? 'ice'
+            : id === 'cherry_bomb'
+              ? 'fire'
+              : id === 'doom_shroom'
+                ? 'boom'
+                : 'boom',
     };
   }
 

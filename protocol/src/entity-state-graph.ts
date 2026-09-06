@@ -401,6 +401,7 @@ export type StateActionKind =
   | 'steal_metal'
   | 'destroy_egg_group'
   | 'destroy_grave'
+  | 'leave_crater'
   | 'summon_insect'
   | 'throw_unit'
   | 'place_ladder'
@@ -602,6 +603,13 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     defaultAttribute: 'extra.splashLaneRange',
   },
   {
+    action: 'leave_crater',
+    key: 'columnRange',
+    label: 'Crater radius (cells)',
+    hint: 'Chebyshev crater radius (0 = plant cell only)',
+    defaultAttribute: 'extra.craterRadiusCells',
+  },
+  {
     action: 'clear_fog',
     key: 'columnRange',
     label: 'Clear radius (cells)',
@@ -761,6 +769,12 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     type: 'destroy_grave',
     label: 'Destroy egg group (legacy)',
     hint: 'Legacy alias for destroy_egg_group',
+    kind: 'plant',
+  },
+  {
+    type: 'leave_crater',
+    label: 'Leave crater',
+    hint: 'Mark cells unplantable (Doom-shroom). Radius via extra.craterRadiusCells (0 = own cell).',
     kind: 'plant',
   },
   {
@@ -2747,6 +2761,7 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   steal_metal: 'steal_metal',
   destroy_egg_group: 'destroy_egg_group',
   destroy_grave: 'destroy_grave',
+  leave_crater: 'leave_crater',
   summon_insect: 'summon_insect',
   throw_unit: 'throw_unit',
   place_ladder: 'place_ladder',

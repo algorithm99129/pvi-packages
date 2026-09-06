@@ -108,6 +108,13 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     defaultValue: 1,
   },
   {
+    key: 'craterRadiusCells',
+    label: 'Crater radius (cells)',
+    hint: 'Doom-shroom leave_crater Chebyshev radius (0 = plant cell only)',
+    type: 'number',
+    defaultValue: 0,
+  },
+  {
     key: 'splashColumnRange',
     label: 'Splash column range',
     hint: 'Extra crush/splash radius around Squash impact (near the primary target)',
