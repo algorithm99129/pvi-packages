@@ -122,6 +122,8 @@ export type StateConditionKind =
   | 'armor_broken'
   | 'being_bitten'
   | 'player_command'
+  | 'player_controlled'
+  | 'ai_controlled'
   | 'vault_ready'
   | 'throw_ready'
   | 'special_ready';
@@ -142,6 +144,8 @@ export type StateCondition =
   | { type: 'armor_broken' }
   | { type: 'being_bitten' }
   | { type: 'player_command' }
+  | { type: 'player_controlled' }
+  | { type: 'ai_controlled' }
   | { type: 'vault_ready' }
   | { type: 'throw_ready' }
   | { type: 'special_ready' };
@@ -341,7 +345,17 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
   {
     type: 'player_command',
     label: 'Player command',
-    hint: 'Manual fire / ability trigger (Cob Cannon)',
+    hint: 'Manual fire / ability pulse (tap Cob Cannon when player-controlled)',
+  },
+  {
+    type: 'player_controlled',
+    label: 'Player controlled',
+    hint: 'Human plant side — manual Cob (tap cannon, then tap lawn). False when garden is under attack or plant side is AI.',
+  },
+  {
+    type: 'ai_controlled',
+    label: 'AI controlled',
+    hint: 'Garden defense under attack, or AI plant player — Cob auto-fires at enemies in range',
   },
   {
     type: 'vault_ready',
@@ -1532,25 +1546,36 @@ export function createScaredyStateGraph(opts?: {
   };
 }
 
-/** Cob Cannon: idle until player fires. */
+/** Cob Cannon: reload → armed, then manual (human) or auto (AI) fire. */
 export function createPlayerCommandStateGraph(opts?: {
   idleAnim?: string;
+  armedAnim?: string;
   attackAnim?: string;
   dieAnim?: string;
 }): EntityStateGraph {
-  const idleId = createStateNodeId();
+  const reloadId = createStateNodeId();
+  const armedId = createStateNodeId();
   const attackId = createStateNodeId();
   const hasAttackAnim = Boolean(opts?.attackAnim?.trim());
+  const reloadAnim = opts?.idleAnim;
+  const armedAnim = opts?.armedAnim?.trim() ? opts.armedAnim : opts?.idleAnim;
   return {
     version: 1,
-    entryNodeId: idleId,
+    entryNodeId: reloadId,
     nodes: [
       {
-        id: idleId,
+        id: reloadId,
         status: 'idle',
-        spineAnim: opts?.idleAnim,
+        spineAnim: reloadAnim,
         loop: true,
         position: { x: 80, y: 160 },
+      },
+      {
+        id: armedId,
+        status: 'armed',
+        spineAnim: armedAnim,
+        loop: true,
+        position: { x: 280, y: 160 },
       },
       {
         id: attackId,
@@ -1561,20 +1586,32 @@ export function createPlayerCommandStateGraph(opts?: {
           { type: 'fire_bullet', when: hasAttackAnim ? 'after_anim' : 'on_enter' },
           { type: 'reset_attack_timer', when: hasAttackAnim ? 'after_anim' : 'on_enter' },
         ],
-        position: { x: 360, y: 160 },
+        position: { x: 480, y: 160 },
       },
     ],
     edges: [
       {
         id: createStateEdgeId(),
-        from: idleId,
+        from: reloadId,
+        to: armedId,
+        conditions: cond({ type: 'attack_interval_ready' }),
+      },
+      {
+        id: createStateEdgeId(),
+        from: armedId,
         to: attackId,
-        conditions: cond({ type: 'player_command' }),
+        conditions: cond({ type: 'player_controlled' }, { type: 'player_command' }),
+      },
+      {
+        id: createStateEdgeId(),
+        from: armedId,
+        to: attackId,
+        conditions: cond({ type: 'ai_controlled' }, { type: 'enemy_in_range' }),
       },
       {
         id: createStateEdgeId(),
         from: attackId,
-        to: idleId,
+        to: reloadId,
         conditions: hasAttackAnim
           ? cond({ type: 'anim_ended' })
           : cond({ type: 'after_seconds', value: literalDuration(0) }),
@@ -2803,6 +2840,8 @@ function normalizeCondition(raw: unknown): StateCondition | null {
     case 'armor_broken':
     case 'being_bitten':
     case 'player_command':
+    case 'player_controlled':
+    case 'ai_controlled':
     case 'vault_ready':
     case 'throw_ready':
     case 'special_ready':
@@ -3012,6 +3051,10 @@ export function conditionLabel(condition: StateCondition): string {
       return 'Being bitten';
     case 'player_command':
       return 'Player command';
+    case 'player_controlled':
+      return 'Player controlled';
+    case 'ai_controlled':
+      return 'AI controlled';
     case 'vault_ready':
       return 'Vault ready';
     case 'throw_ready':

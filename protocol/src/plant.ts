@@ -470,6 +470,15 @@ export interface PlantServerConfig {
   /** Protects nearby plants from aerial steal (Bungee). Radius via extra.aerialProtectRadius. */
   blocksAerialSteal?: boolean;
   /**
+   * Grid cells occupied horizontally (default 1). Cob Cannon is 2.
+   * Placement cell is the top-left (min lane, min column) of the footprint.
+   */
+  footprintColumns?: number;
+  /**
+   * Grid cells occupied vertically / by lane (default 1). Cob Cannon is 2.
+   */
+  footprintLanes?: number;
+  /**
    * Minimum village / garden level required to station this plant on the village layout.
    * Prefer explicit authorship; {@link resolveGardenMinVillageLevel} fills rarity defaults.
    */
