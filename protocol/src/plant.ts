@@ -469,6 +469,12 @@ export interface PlantServerConfig {
    * - `hazard`: spikeweed-style ground hazard (walk-over)
    */
   stackRole?: 'pad' | 'shell' | 'hazard';
+  /**
+   * Classic plant-on-plant upgrade: this packet cannot plant on empty cells.
+   * It must be planted onto a living plant with this id, which is replaced.
+   * Examples: Gatling Pea → `repeater_pea`, Cattail → `lily_pad`.
+   */
+  upgradeFromPlantId?: EntityId;
   /** Blocks vault / pogo / dolphin jumps onto this plant. */
   blocksVault?: boolean;
   /** Ignites or extinguishes peas that pass through this plant. */
