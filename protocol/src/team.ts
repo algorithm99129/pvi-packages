@@ -104,6 +104,8 @@ export interface TeamRankingEntry {
   score: number;
   bannerId: string;
   league: string;
+  memberCount: number;
+  maxMembers: number;
 }
 
 export interface CreateTeamRequest {
