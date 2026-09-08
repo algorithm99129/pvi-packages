@@ -80,7 +80,10 @@ export function mergePlant(client: ClientPlantExport, server?: ServerPlantExport
     rarity: client.rarity ?? server?.rarity ?? 'common',
     stats: mergePreferPrimary(client.stats, server?.stats) ?? client.stats,
     client: mergePreferPrimary(client.client, server?.client) ?? client.client,
-    server: server?.server ?? DEFAULT_PLANT_SERVER,
+    server:
+      mergePreferPrimary(client.server, server?.server) ??
+      server?.server ??
+      DEFAULT_PLANT_SERVER,
     behavior: mergePreferPrimary(client.behavior, server?.behavior),
     extraAttributes: mergePreferPrimary(client.extraAttributes, server?.extraAttributes),
     upgrade: server?.upgrade,

@@ -664,10 +664,8 @@ export interface ClientPlantExport {
   behavior?: PlantBehaviorConfig;
   extraAttributes?: ExtraAttributes;
   /**
-   * Subset of server config needed by the Unity client (recharge, sun, garden aura).
+   * Combat / placement server config for Unity (sun, terrain, stackRole, upgrades, etc.).
+   * Keep in sync with authored `server` — do not slim on export.
    */
-  server?: Pick<
-    PlantServerConfig,
-    'rechargeSeconds' | 'sunCost' | 'hitsTravelLayers' | 'gardenDefenseAura' | 'minVillageLevel'
-  >;
+  server?: PlantServerConfig;
 }

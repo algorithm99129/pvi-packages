@@ -76,7 +76,6 @@ export function toServerPlant(plant: PlantDefinition): ServerPlantExport {
 }
 
 export function toClientPlant(plant: PlantDefinition): ClientPlantExport {
-  const server = plant.server;
   return {
     id: plant.id,
     displayName: plant.displayName,
@@ -88,16 +87,9 @@ export function toClientPlant(plant: PlantDefinition): ClientPlantExport {
     stats: plant.stats,
     behavior: plant.behavior,
     extraAttributes: plant.extraAttributes,
-    server:
-      server == null
-        ? undefined
-        : {
-            rechargeSeconds: server.rechargeSeconds,
-            sunCost: server.sunCost,
-            hitsTravelLayers: server.hitsTravelLayers,
-            gardenDefenseAura: server.gardenDefenseAura,
-            minVillageLevel: server.minVillageLevel,
-          },
+    // Pass through full server config. Slimming stripped combat fields
+    // (upgradeFromPlantId, validTerrain, stackRole, …) from Unity plants.json.
+    server: plant.server,
   };
 }
 
