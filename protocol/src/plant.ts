@@ -475,6 +475,11 @@ export interface PlantServerConfig {
    * Examples: Gatling Pea → `repeater_pea`, Cattail → `lily_pad`.
    */
   upgradeFromPlantId?: EntityId;
+  /**
+   * Classic mushrooms sleep on daytime lawns until woken (Coffee Bean).
+   * When omitted, clients treat `*_shroom` ids as sleeping-by-day.
+   */
+  sleepsDuringDay?: boolean;
   /** Blocks vault / pogo / dolphin jumps onto this plant. */
   blocksVault?: boolean;
   /** Ignites or extinguishes peas that pass through this plant. */
