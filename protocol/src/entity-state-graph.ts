@@ -401,6 +401,9 @@ export type StateActionKind =
   | 'explode'
   | 'produce_sun'
   | 'clear_fog'
+  | 'clear_all_fog'
+  | 'blow_away_flying'
+  | 'blow_away'
   | 'despawn'
   | 'reset_attack_timer'
   | 'stop_moving'
@@ -703,6 +706,24 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     type: 'clear_fog',
     label: 'Clear fog',
     hint: 'Punch a clear hole in raid fog while this status is active (Plantern)',
+    kind: 'plant',
+  },
+  {
+    type: 'clear_all_fog',
+    label: 'Clear all fog',
+    hint: 'Permanently wipe the entire fog bank (Blover)',
+    kind: 'plant',
+  },
+  {
+    type: 'blow_away_flying',
+    label: 'Blow away flying',
+    hint: 'Remove every flying insect on the board (Blover)',
+    kind: 'plant',
+  },
+  {
+    type: 'blow_away',
+    label: 'Blow away',
+    hint: 'Clear all fog and remove flying insects (Blover combo)',
     kind: 'plant',
   },
   {
@@ -2783,6 +2804,11 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   produce_sun: 'produce_sun',
   clear_fog: 'clear_fog',
   light_fog: 'clear_fog',
+  clear_all_fog: 'clear_all_fog',
+  blow_fog: 'clear_all_fog',
+  blow_away_flying: 'blow_away_flying',
+  kill_flying: 'blow_away_flying',
+  blow_away: 'blow_away',
   despawn: 'despawn',
   reset_attack_timer: 'reset_attack_timer',
   stop_moving: 'stop_moving',
