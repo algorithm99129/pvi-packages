@@ -138,10 +138,14 @@ export interface PlantBulletSpawnPoint {
 /** How a projectile leaves the plant. */
 export type BulletTrajectory = 'linear' | 'curved' | 'homing';
 
+/** Where a homing shot may seek. Default `board` = Cattail (any lane). */
+export type HomingScope = 'lane' | 'board';
+
 /**
  * One projectile in a volley. Direction 0° = right (lane-forward), increasing CCW.
  * Curved shots bake an aiming point at fire time from the enemy — do not author `target` into plant JSON.
- * Homing shots seek a living target across any lane (Cattail).
+ * Homing shots seek a living target; scope defaults to any lane (`board`, Cattail).
+ * Use `homingScope: "lane"` for same-lane seekers (Cactus).
  */
 export interface PlantBulletShot {
   /** Stable id for editor list selection. */
@@ -150,6 +154,10 @@ export interface PlantBulletShot {
   /** Degrees; 0 = right / forward along the lane, CCW positive. */
   directionDeg: number;
   trajectory: BulletTrajectory;
+  /**
+   * Homing only. `lane` = same lane as the shooter; `board` / omit = any lane.
+   */
+  homingScope?: HomingScope;
   /**
    * @deprecated Not persisted. Combat bakes aim at fire; editor keeps a preview Aim in UI state only.
    */
@@ -291,6 +299,9 @@ export function createBulletShot(
   };
   if (Number.isFinite(partial?.laneOffset) && (partial!.laneOffset as number) !== 0) {
     shot.laneOffset = Math.trunc(partial!.laneOffset as number);
+  }
+  if (trajectory === 'homing' && partial?.homingScope === 'lane') {
+    shot.homingScope = 'lane';
   }
   if (trajectory === 'curved') {
     shot.arcHeight =
