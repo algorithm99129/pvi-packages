@@ -92,6 +92,79 @@ export const STARTER_INSECT_IDS: EntityId[] = [
   'worker_beetle',
 ];
 
+/**
+ * Premium plants that are gem-shop only (no mission / hub unlock grants).
+ * Author `server.unlockSource: 'event'` + `unlockGemCost` and gem `upgrade.baseUpgradeCost`.
+ */
+export const GEM_ONLY_PLANT_IDS: EntityId[] = [
+  'gatling_pea',
+  'doom_shroom',
+  'winter_melon',
+  'spikerock',
+  'twin_sunflower',
+];
+
+/**
+ * Premium insects that are gem-shop only (no mission / hub unlock grants).
+ * Author `server.unlockSource: 'event'` + `unlockGemCost` and gem `upgrade.baseUpgradeCost`.
+ */
+export const GEM_ONLY_INSECT_IDS: EntityId[] = [
+  'jack_in_the_box_flea',
+  'bungee_spider',
+  'digger_cricket',
+  'frost_roller_beetle',
+  'red_gargantuar_beetle',
+  'dancing_firefly',
+];
+
+/** Default roster upgrade base for gem-only units (coin replaced by gem). */
+export const GEM_ONLY_UPGRADE_BASE: WalletResources = {
+  coin: 0,
+  gem: 25,
+  leaf: 2,
+};
+
+/** Rarity → gem buyout when `server.unlockGemCost` is omitted (non-starters). */
+export function defaultUnlockGemCost(rarity: string | null | undefined): number {
+  switch ((rarity ?? 'common').trim().toLowerCase()) {
+    case 'uncommon':
+      return 100;
+    case 'rare':
+      return 175;
+    case 'epic':
+      return 275;
+    case 'legendary':
+      return 400;
+    default:
+      return 50;
+  }
+}
+
+/**
+ * Gem cost to unlock a locked plant/insect from the roster.
+ * Starters → 0. Explicit `unlockGemCost` wins. Otherwise rarity default
+ * so mission units remain gem-buyable without per-unit authorship.
+ */
+export function resolveUnitUnlockGemCost(input: {
+  id: EntityId;
+  rarity?: string | null;
+  unlockGemCost?: number | null;
+  kind: 'plant' | 'insect';
+}): number {
+  if (input.kind === 'plant' && STARTER_PLANT_IDS.includes(input.id)) return 0;
+  if (input.kind === 'insect' && STARTER_INSECT_IDS.includes(input.id)) return 0;
+  const explicit = Math.max(0, Math.floor(Number(input.unlockGemCost) || 0));
+  if (explicit > 0) return explicit;
+  return defaultUnlockGemCost(input.rarity);
+}
+
+/**
+ * Mission / hub reward unlocks must not grant gem-shop (`event`) units.
+ */
+export function blocksMissionUnlock(unlockSource: string | null | undefined): boolean {
+  return (unlockSource ?? '').trim().toLowerCase() === 'event';
+}
+
 export interface UserPlantView {
   id: EntityId;
   role: PlantRole;

@@ -244,11 +244,17 @@ export function normalizeLaneBehavior(raw: unknown): InsectTravelLayer {
 }
 
 export interface InsectServerConfig {
+  /**
+   * How the insect enters the roster:
+   * - `default` / `story` / `goal`: mission or progression unlock (also gem-buyable via rarity default)
+   * - `event`: gem-shop only — never granted by mission / hub unlock rewards
+   */
   unlockSource: 'story' | 'goal' | 'event' | 'default';
   unlockRef?: string;
   /**
    * Gem (diamond) cost to unlock from the Insects roster when still locked.
-   * Omitted or `0` = not purchasable with gems (mission / other unlock only).
+   * When omitted, {@link resolveUnitUnlockGemCost} fills a rarity default (starters stay 0).
+   * Set explicitly for gem-only / premium pricing.
    */
   unlockGemCost?: number;
   /**
