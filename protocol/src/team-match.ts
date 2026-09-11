@@ -147,8 +147,12 @@ export interface TeamMatchSlotState {
   /** Display enrichment for UI (optional). */
   displayName?: string;
   avatarId?: string;
-  /** Trophy / score proxy for the seated member. */
+  /** Combat power shown under the seat name. */
   score?: number;
+  /** Player level for side-list / seat captions. */
+  userLevel?: number;
+  /** Team role when known (`leader` / `officer` / `member`). */
+  role?: string;
   /** Remaining war attempts for this member (0–2). Empty slots omit. */
   attemptsRemaining?: number;
 }
@@ -178,9 +182,24 @@ export interface TeamMatchAttackLog {
   createdAt: string;
 }
 
+/** Enriched attack row for battle-log UI. */
+export interface TeamMatchAttackLogView extends TeamMatchAttackLog {
+  attackerDisplayName?: string;
+  defenderDisplayName?: string;
+}
+
+export interface TeamMatchAttacksResult {
+  matchId: EntityId;
+  attacks: TeamMatchAttackLogView[];
+}
+
 export interface TeamMatchSideView {
   teamId: EntityId;
   teamName: string;
+  /** Team flag / banner catalog id. */
+  bannerId?: string;
+  /** Team trophy score (cup). */
+  score?: number;
   formation: TeamCombatFormation;
   slots: TeamMatchSlotState[];
   stars: number;
@@ -199,6 +218,10 @@ export interface TeamMatchView {
   formationsLocked: boolean;
   home: TeamMatchSideView;
   away: TeamMatchSideView;
+  /** Sum of lanesDestroyed on attacks vs home seats. */
+  homeDestructions: number;
+  /** Sum of lanesDestroyed on attacks vs away seats. */
+  awayDestructions: number;
   /** Remaining attempts for the current viewer (0–2), when seated. */
   myAttemptsRemaining?: number;
   result?: TeamMatchResult;
