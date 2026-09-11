@@ -31,6 +31,8 @@ export interface ResolvedInsectCombatStats {
   damage: number;
   attackIntervalMs: number;
   moveSpeed: number;
+  /** Attack / detect range in cells (melee default ~0.75). */
+  range?: number;
 }
 
 /**

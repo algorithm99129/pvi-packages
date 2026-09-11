@@ -202,8 +202,12 @@ function normalizeBulletChoice(raw: Partial<PlantBulletChoice> | undefined): Pla
 
 /**
  * Authoritative projectile pool. Migrates legacy single `bullet` into one choice.
+ * Accepts plant or insect client assets that author bullet fields.
  */
-export function resolveBulletChoices(client: PlantClientAssets): PlantBulletChoice[] {
+export function resolveBulletChoices(client: {
+  bullet?: string;
+  bulletChoices?: PlantBulletChoice[];
+}): PlantBulletChoice[] {
   if (client.bulletChoices && client.bulletChoices.length > 0) {
     const cleaned = client.bulletChoices
       .map((c) => normalizeBulletChoice(c))
@@ -217,7 +221,10 @@ export function resolveBulletChoices(client: PlantClientAssets): PlantBulletChoi
 }
 
 /** Highest-weight choice (ties → first) — used for damage preview / legacy `bullet`. */
-export function primaryBulletRef(client: PlantClientAssets): string | undefined {
+export function primaryBulletRef(client: {
+  bullet?: string;
+  bulletChoices?: PlantBulletChoice[];
+}): string | undefined {
   const choices = resolveBulletChoices(client);
   if (choices.length === 0) return undefined;
   let best = choices[0];
@@ -228,10 +235,10 @@ export function primaryBulletRef(client: PlantClientAssets): string | undefined 
 }
 
 /** Persist choices and mirror `bullet` to the primary entry for older readers. */
-export function withBulletChoices(
-  client: PlantClientAssets,
-  choices: PlantBulletChoice[],
-): PlantClientAssets {
+export function withBulletChoices<T extends {
+  bullet?: string;
+  bulletChoices?: PlantBulletChoice[];
+}>(client: T, choices: PlantBulletChoice[]): T {
   const normalized = choices
     .map((c) => normalizeBulletChoice(c))
     .filter((c): c is PlantBulletChoice => c != null);
@@ -273,7 +280,10 @@ export function bulletChoiceChancePercent(choices: PlantBulletChoice[], index: n
   return (choices[index].weight / total) * 100;
 }
 
-export function resolveBulletSpawn(client: PlantClientAssets): PlantBulletSpawnPoint {
+export function resolveBulletSpawn(client: {
+  bulletSpawn?: PlantBulletSpawnPoint;
+  bulletShots?: PlantBulletShot[];
+}): PlantBulletSpawnPoint {
   const shots = resolveBulletShots(client);
   return shots[0]?.spawn ?? DEFAULT_PLANT_BULLET_SPAWN;
 }
@@ -316,7 +326,10 @@ export function createBulletShot(
  * Resolve the authored volley. Migrates legacy `bulletSpawn` into one linear shot when
  * `bulletShots` is missing/empty.
  */
-export function resolveBulletShots(client: PlantClientAssets): PlantBulletShot[] {
+export function resolveBulletShots(client: {
+  bulletSpawn?: PlantBulletSpawnPoint;
+  bulletShots?: PlantBulletShot[];
+}): PlantBulletShot[] {
   if (client.bulletShots && client.bulletShots.length > 0) {
     return client.bulletShots.map((s) =>
       createBulletShot(s, () => s.id || `shot_${Math.random().toString(36).slice(2, 9)}`),
@@ -340,10 +353,10 @@ export function resolveBulletShots(client: PlantClientAssets): PlantBulletShot[]
 }
 
 /** Persist shots and keep deprecated `bulletSpawn` mirrored to the first shot for older readers. */
-export function withBulletShots(
-  client: PlantClientAssets,
-  shots: PlantBulletShot[],
-): PlantClientAssets {
+export function withBulletShots<T extends {
+  bulletSpawn?: PlantBulletSpawnPoint;
+  bulletShots?: PlantBulletShot[];
+}>(client: T, shots: PlantBulletShot[]): T {
   const normalized = shots.map((s) => {
     const next = createBulletShot(s, () => s.id);
     // Never persist preview aim points — combat bakes from the enemy at fire.

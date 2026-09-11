@@ -86,6 +86,11 @@ export interface InsectStatCurve {
    */
   moveSpeed: number;
   attackIntervalMs: number;
+  /**
+   * Attack / detect range in cells. Omit or 0 → melee (~0.75).
+   * Catapult Aphid uses a long range so it can lob from afar.
+   */
+  range?: number;
   levelScaling: {
     healthPerLevel: number;
     damagePerLevel: number;
@@ -98,6 +103,12 @@ import type { UnitCellAnchor } from './unit-sizing';
 import type { ExtraAttributes } from './extra-attributes';
 import type { EntityStateGraph } from './entity-state-graph';
 import { mirrorInsectClipsFromGraph } from './entity-state-graph';
+import type {
+  PlantBulletChoice,
+  PlantBulletShot,
+  PlantBulletSpawnPoint,
+} from './plant';
+import { graphHasAction } from './plant-behavior';
 
 /** Legacy PvZ zombie entity ids → Garden Siege insect ids (saved progress / old content). */
 export const LEGACY_INSECT_ID_ALIASES: Record<string, string> = {
@@ -126,6 +137,24 @@ export interface InsectClientAssets {
   die?: string;
   /** Status graph — statuses, AND conditions, and predefined engine actions. */
   stateGraph?: EntityStateGraph;
+  /**
+   * Bullet folder under Bullets/ (Catapult Aphid cabbage, etc.).
+   * @deprecated Prefer `bulletChoices`. Mirrored from the highest-weight choice.
+   */
+  bullet?: string;
+  /** Weighted projectile pool for `fire_bullet` insects. */
+  bulletChoices?: PlantBulletChoice[];
+  /**
+   * @deprecated Prefer `bulletShots`. Kept in sync with `bulletShots[0].spawn`.
+   */
+  bulletSpawn?: PlantBulletSpawnPoint;
+  /** Projectiles emitted in one `fire_bullet` volley. */
+  bulletShots?: PlantBulletShot[];
+  /**
+   * Normalized carry / release point for `throw_unit` (0–1 on the insect sprite box).
+   * Imp sits here and rides with the carrier until thrown.
+   */
+  throwSpawn?: PlantBulletSpawnPoint;
   extraAnimations?: GfxAnimationSlot[];
   cropX?: number;
   cropWidth?: number;
@@ -167,6 +196,19 @@ export function withInsectStateGraph(
     attack: clips.attack,
     die: clips.die,
   };
+}
+
+/** True when the insect fires projectile bullets (`fire_bullet` / authored shots). */
+export function insectShootsBullets(input: {
+  client?: InsectClientAssets | null;
+}): boolean {
+  const client = input.client;
+  if (!client) return false;
+  if (graphHasAction(client.stateGraph, 'fire_bullet')) return true;
+  if (client.bullet && client.bullet.trim().length > 0) return true;
+  if (client.bulletChoices && client.bulletChoices.length > 0) return true;
+  if (client.bulletShots && client.bulletShots.length > 0) return true;
+  return false;
 }
 
 export type InsectTravelLayer = 'ground' | 'flying' | 'burrow';

@@ -379,7 +379,7 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
   {
     type: 'throw_ready',
     label: 'Throw ready',
-    hint: 'Has not used throw_unit yet this life',
+    hint: 'Has Imp and has not thrown yet; also requires ~6 columns from the house (classic Gargantuar)',
   },
   {
     type: 'special_ready',
@@ -665,8 +665,8 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'fire_bullet',
     label: 'Fire bullet',
-    hint: 'Launch projectile volley from client.bulletShots',
-    kind: 'plant',
+    hint: 'Launch projectile volley from client.bulletShots (plants + catapult insects)',
+    kind: 'both',
   },
   {
     type: 'deal_contact_damage',
@@ -2469,7 +2469,87 @@ export function createInsectSummonStateGraph(opts?: {
   };
 }
 
-/** Gargantuar: walk ↔ attack (smash), throw when health low. */
+/**
+ * Lobber insect (Catapult Aphid) — matches PvZ Catapult Zombie cadence:
+ * drive until a plant is in range, stop, lob, idle-reload (~attackIntervalMs),
+ * lob again; only resume walking when the lane is clear.
+ */
+export function createInsectCatapultStateGraph(opts?: {
+  walkAnim?: string;
+  attackAnim?: string;
+  dieAnim?: string;
+}): EntityStateGraph {
+  const walkId = createStateNodeId();
+  const attackId = createStateNodeId();
+  const idleId = createStateNodeId();
+  return {
+    version: 1,
+    entryNodeId: walkId,
+    nodes: [
+      {
+        id: walkId,
+        status: 'walk',
+        spineAnim: opts?.walkAnim,
+        loop: true,
+        actions: [{ type: 'start_moving', when: 'on_enter' }],
+        position: { x: 80, y: 200 },
+      },
+      {
+        id: attackId,
+        status: 'attack',
+        spineAnim: opts?.attackAnim,
+        loop: false,
+        actions: [
+          { type: 'stop_moving', when: 'on_enter' },
+          // Fire on enter (like Cabbage-pult) so missing Spine clips still honor attackIntervalMs.
+          { type: 'fire_bullet', when: 'on_enter' },
+          { type: 'reset_attack_timer', when: 'on_enter' },
+        ],
+        position: { x: 360, y: 80 },
+      },
+      {
+        id: idleId,
+        status: 'idle',
+        spineAnim: opts?.walkAnim,
+        loop: true,
+        actions: [{ type: 'stop_moving', when: 'on_enter' }],
+        position: { x: 360, y: 240 },
+      },
+    ],
+    edges: [
+      {
+        id: createStateEdgeId(),
+        from: walkId,
+        to: attackId,
+        conditions: cond({ type: 'enemy_in_range' }, { type: 'attack_interval_ready' }),
+      },
+      {
+        id: createStateEdgeId(),
+        from: attackId,
+        to: idleId,
+        conditions: cond({
+          type: 'after_seconds',
+          value: { kind: 'literal', seconds: 0.05 },
+        }),
+      },
+      {
+        id: createStateEdgeId(),
+        from: idleId,
+        to: attackId,
+        conditions: cond({ type: 'enemy_in_range' }, { type: 'attack_interval_ready' }),
+      },
+      {
+        id: createStateEdgeId(),
+        from: idleId,
+        to: walkId,
+        conditions: cond({ type: 'no_enemy_in_range' }),
+      },
+    ],
+    die: { spineAnim: opts?.dieAnim },
+  };
+}
+
+/** Gargantuar: walk ↔ attack (smash), throw Imp when health low (priority over smash). */
 export function createInsectThrowStateGraph(opts?: {
   walkAnim?: string;
   attackAnim?: string;
@@ -2512,12 +2592,20 @@ export function createInsectThrowStateGraph(opts?: {
         loop: false,
         actions: [
           { type: 'stop_moving', when: 'on_enter' },
-          { type: 'throw_unit', when: 'after_anim' },
+          // Release mid-windup so the Imp arc is the visible throw (classic ~74% of anim).
+          { type: 'throw_unit', when: 'on_enter' },
         ],
         position: { x: 360, y: 40 },
       },
     ],
     edges: [
+      // Throw has priority over smash when HP is low (classic UpdateZombieGargantuar order).
+      {
+        id: createStateEdgeId(),
+        from: walkId,
+        to: throwId,
+        conditions: cond({ type: 'health_below', ratio }, { type: 'throw_ready' }),
+      },
       {
         id: createStateEdgeId(),
         from: walkId,
@@ -2532,15 +2620,12 @@ export function createInsectThrowStateGraph(opts?: {
       },
       {
         id: createStateEdgeId(),
-        from: walkId,
-        to: throwId,
-        conditions: cond({ type: 'health_below', ratio }, { type: 'throw_ready' }),
-      },
-      {
-        id: createStateEdgeId(),
         from: throwId,
         to: walkId,
-        conditions: cond({ type: 'anim_ended' }),
+        conditions: cond({
+          type: 'after_seconds',
+          value: { kind: 'literal', seconds: 0.85 },
+        }),
       },
     ],
     die: { spineAnim: opts?.dieAnim },

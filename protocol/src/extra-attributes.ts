@@ -163,6 +163,20 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     type: 'number',
     defaultValue: 1,
   },
+  {
+    key: 'throwInsectId',
+    label: 'Throw insect id',
+    hint: 'Catalog id spawned by throw_unit (Gargantuar → imp_ant)',
+    type: 'string',
+    defaultValue: 'imp_ant',
+  },
+  {
+    key: 'summonInsectId',
+    label: 'Summon insect id',
+    hint: 'Catalog id spawned by summon_insect (Dancing Firefly → backup_gnat)',
+    type: 'string',
+    defaultValue: 'backup_gnat',
+  },
 ];
 
 export function extraPath(key: string): string {
