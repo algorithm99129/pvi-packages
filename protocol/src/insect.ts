@@ -38,11 +38,17 @@ export interface InsectUpgradeConfig {
   statFormulaId: string;
   /** Formula id for next-level upgrade cost per resource (inputs: base, level). */
   costFormulaId: string;
-  /** Formula id for upgrade cards required (inputs: base, level). */
-  cardFormulaId: string;
+  /**
+   * @deprecated Upgrade cards removed — leaf is part of {@link baseUpgradeCost}.
+   * Kept optional for old catalog JSON.
+   */
+  cardFormulaId?: string;
   baseUpgradeCost: WalletResources;
-  /** Base upgrade-card count at level 1 → 2 (fed into {@link cardFormulaId}). */
-  baseUpgradeCards: number;
+  /**
+   * @deprecated Upgrade cards removed — ignored by upgrade spend.
+   * Kept optional for old catalog JSON.
+   */
+  baseUpgradeCards?: number;
 }
 
 /** MVP: reuse plant formulas until nectar/chitin economy lands. */
@@ -50,9 +56,7 @@ export const DEFAULT_INSECT_UPGRADE: InsectUpgradeConfig = {
   maxLevel: INSECT_MAX_LEVEL,
   statFormulaId: 'plant_stat_at_level',
   costFormulaId: 'plant_upgrade_resource_cost',
-  cardFormulaId: 'insect_upgrade_card_cost',
   baseUpgradeCost: { coin: 100, gem: 0, leaf: 2 },
-  baseUpgradeCards: 10,
 };
 
 export function resolveInsectUpgrade(insect: Pick<InsectDefinition, 'upgrade'>): InsectUpgradeConfig {
@@ -67,13 +71,11 @@ export function resolveInsectUpgrade(insect: Pick<InsectDefinition, 'upgrade'>):
     maxLevel: u.maxLevel ?? DEFAULT_INSECT_UPGRADE.maxLevel,
     statFormulaId: u.statFormulaId ?? DEFAULT_INSECT_UPGRADE.statFormulaId,
     costFormulaId: u.costFormulaId ?? DEFAULT_INSECT_UPGRADE.costFormulaId,
-    cardFormulaId: u.cardFormulaId ?? DEFAULT_INSECT_UPGRADE.cardFormulaId,
     baseUpgradeCost: {
       coin: u.baseUpgradeCost?.coin ?? DEFAULT_INSECT_UPGRADE.baseUpgradeCost.coin,
       gem: u.baseUpgradeCost?.gem ?? DEFAULT_INSECT_UPGRADE.baseUpgradeCost.gem,
       leaf: u.baseUpgradeCost?.leaf ?? DEFAULT_INSECT_UPGRADE.baseUpgradeCost.leaf,
     },
-    baseUpgradeCards: u.baseUpgradeCards ?? DEFAULT_INSECT_UPGRADE.baseUpgradeCards,
   };
 }
 

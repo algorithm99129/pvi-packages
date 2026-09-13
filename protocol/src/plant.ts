@@ -64,20 +64,24 @@ export interface PlantUpgradeConfig {
   statFormulaId: string;
   /** Formula id for next-level upgrade cost per resource (inputs: base, level). */
   costFormulaId: string;
-  /** Formula id for upgrade cards required (inputs: base, level). */
-  cardFormulaId: string;
+  /**
+   * @deprecated Upgrade cards removed — leaf is part of {@link baseUpgradeCost}.
+   * Kept optional for old catalog JSON.
+   */
+  cardFormulaId?: string;
   baseUpgradeCost: WalletResources;
-  /** Base upgrade-card count at level 1 → 2 (fed into {@link cardFormulaId}). */
-  baseUpgradeCards: number;
+  /**
+   * @deprecated Upgrade cards removed — ignored by upgrade spend.
+   * Kept optional for old catalog JSON.
+   */
+  baseUpgradeCards?: number;
 }
 
 export const DEFAULT_PLANT_UPGRADE: PlantUpgradeConfig = {
   maxLevel: PLANT_MAX_LEVEL,
   statFormulaId: 'plant_stat_at_level',
   costFormulaId: 'plant_upgrade_resource_cost',
-  cardFormulaId: 'plant_upgrade_card_cost',
   baseUpgradeCost: { coin: 100, gem: 0, leaf: 2 },
-  baseUpgradeCards: 10,
 };
 
 export function resolvePlantUpgrade(plant: Pick<PlantDefinition, 'upgrade'>): PlantUpgradeConfig {
@@ -92,13 +96,11 @@ export function resolvePlantUpgrade(plant: Pick<PlantDefinition, 'upgrade'>): Pl
     maxLevel: u.maxLevel ?? DEFAULT_PLANT_UPGRADE.maxLevel,
     statFormulaId: u.statFormulaId ?? DEFAULT_PLANT_UPGRADE.statFormulaId,
     costFormulaId: u.costFormulaId ?? DEFAULT_PLANT_UPGRADE.costFormulaId,
-    cardFormulaId: u.cardFormulaId ?? DEFAULT_PLANT_UPGRADE.cardFormulaId,
     baseUpgradeCost: {
       coin: u.baseUpgradeCost?.coin ?? DEFAULT_PLANT_UPGRADE.baseUpgradeCost.coin,
       gem: u.baseUpgradeCost?.gem ?? DEFAULT_PLANT_UPGRADE.baseUpgradeCost.gem,
       leaf: u.baseUpgradeCost?.leaf ?? DEFAULT_PLANT_UPGRADE.baseUpgradeCost.leaf,
     },
-    baseUpgradeCards: u.baseUpgradeCards ?? DEFAULT_PLANT_UPGRADE.baseUpgradeCards,
   };
 }
 
@@ -532,19 +534,21 @@ export interface PlantServerConfig {
   minVillageLevel?: number;
   /**
    * Village garden idle production while planted.
-   * Each reward uses amount + intervalHours (coin usually 1h; gem/cards often day/week).
+   * Each reward uses amount + intervalHours (coin usually 1h; gem/leaf often day/week).
    * Accrues into per-slot click-to-collect queues on GET /garden (not auto-granted).
-   * Legacy *PerHour fields are still accepted and mapped by {@link resolveGardenProduction}.
+   * Legacy *PerHour / upgradeCard fields are still accepted and mapped by {@link resolveGardenProduction}.
    */
   gardenProduction?: {
     coin?: { amount?: number; intervalHours?: number };
     gem?: { amount?: number; intervalHours?: number };
+    leaf?: { amount?: number; intervalHours?: number };
+    /** @deprecated Prefer leaf.amount with leaf.intervalHours. */
     upgradeCard?: { amount?: number; intervalHours?: number };
     /** @deprecated Prefer coin.amount with coin.intervalHours (default 1). */
     coinPerHour?: number;
     /** @deprecated Prefer gem.amount with gem.intervalHours. */
     gemPerHour?: number;
-    /** @deprecated Prefer upgradeCard.amount with upgradeCard.intervalHours. */
+    /** @deprecated Prefer leaf.amount with leaf.intervalHours. */
     upgradeCardsPerHour?: number;
     /** Cap of unclaimed accrual window in hours. Default 168 (1 week). */
     maxAccrualHours?: number;

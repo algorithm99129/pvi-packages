@@ -17,18 +17,24 @@ export const GARDEN_DIG_REFUND_RATIO = 0.5;
 
 /**
  * Default wall-clock window for unclaimed garden production (hours).
- * Long enough for day/week gem & card intervals to still accrue.
+ * Long enough for day/week gem intervals to still accrue.
  */
 export const GARDEN_PRODUCTION_DEFAULT_MAX_ACCRUAL_HOURS = 168;
 
-/** @deprecated Prefer upgradeCard.amount + intervalHours. Kept for catalog migration. */
+/** @deprecated Prefer leaf.amount + intervalHours. Kept for catalog migration. */
 export const GARDEN_PRODUCTION_DEFAULT_UPGRADE_CARDS_PER_HOUR = 1;
 
-/** Default upgrade-card payout when a plant has no authored card production. */
+/** @deprecated Use {@link GARDEN_PRODUCTION_DEFAULT_LEAF_AMOUNT}. */
 export const GARDEN_PRODUCTION_DEFAULT_UPGRADE_CARD_AMOUNT = 1;
 
-/** Default hours between upgrade-card payouts (1 day). */
-export const GARDEN_PRODUCTION_DEFAULT_UPGRADE_CARD_INTERVAL_HOURS = 24;
+/** Default leaf payout when a plant has no authored leaf production. */
+export const GARDEN_PRODUCTION_DEFAULT_LEAF_AMOUNT = 1;
+
+/** @deprecated Use {@link GARDEN_PRODUCTION_DEFAULT_LEAF_INTERVAL_HOURS}. */
+export const GARDEN_PRODUCTION_DEFAULT_UPGRADE_CARD_INTERVAL_HOURS = 1;
+
+/** Default hours between leaf payouts (same cadence as coin). */
+export const GARDEN_PRODUCTION_DEFAULT_LEAF_INTERVAL_HOURS = 1;
 
 /** Default hours between coin payouts. */
 export const GARDEN_PRODUCTION_DEFAULT_COIN_INTERVAL_HOURS = 1;
@@ -36,11 +42,21 @@ export const GARDEN_PRODUCTION_DEFAULT_COIN_INTERVAL_HOURS = 1;
 /** Default hours between gem payouts (1 day). */
 export const GARDEN_PRODUCTION_DEFAULT_GEM_INTERVAL_HOURS = 24;
 
-/** Default max pending production pickups queued per planted plant (one card / one resource). */
+/** Default max pending production pickups queued per planted plant (one leaf / one resource). */
 export const GARDEN_PRODUCTION_DEFAULT_MAX_QUEUE = 1;
 
 /** Active garden production kinds — a plant focuses on one at a time. */
-export type GardenProducingKind = 'coin' | 'gem' | 'upgrade_card';
+export type GardenProducingKind = 'coin' | 'gem' | 'leaf';
+
+/** Normalize legacy `upgrade_card` pickups/kinds to `leaf`. */
+export function normalizeGardenProductionKind(
+  kind: string | null | undefined,
+): GardenProducingKind | null {
+  const k = String(kind ?? '').trim().toLowerCase();
+  if (k === 'coin' || k === 'gem' || k === 'leaf') return k;
+  if (k === 'upgrade_card') return 'leaf';
+  return null;
+}
 
 /** Max village item-box slots for instant / squash defense charges. */
 export const GARDEN_ITEM_BOX_MAX_SLOTS = 3;
@@ -120,15 +136,15 @@ export function buildEmptyGardenItemBox(): GardenItemBox {
   };
 }
 
-export type GardenProductionPickupKind = 'coin' | 'gem' | 'upgrade_card';
+export type GardenProductionPickupKind = 'coin' | 'gem' | 'leaf';
 
 /** One click-to-collect production item sitting on a planted garden plant. */
 export interface GardenProductionPickup {
   id: string;
   kind: GardenProductionPickupKind;
-  /** Coin/gem amount, or upgrade-card count for this pickup. */
+  /** Coin/gem/leaf amount for this pickup. */
   amount: number;
-  /** Plant type for upgrade_card pickups (usually the slot plant). */
+  /** Plant type for leaf pickups (usually the slot plant). */
   plantId?: EntityId;
   createdAt: string;
 }
@@ -137,6 +153,8 @@ export interface GardenProductionPickup {
 export interface GardenProductionAccruedAt {
   coin?: string;
   gem?: string;
+  leaf?: string;
+  /** @deprecated Migrated to {@link leaf}. */
   upgrade_card?: string;
 }
 
@@ -159,13 +177,17 @@ export interface GardenPlantSlot {
    */
   pendingGem?: number;
   /**
+   * Continuous leaf accrued since last harvest (not yet in wallet).
+   * Same rate → pending → bubble → harvest flow as coin/gem.
+   */
+  pendingLeaf?: number;
+  /**
    * Which resource this plant is currently producing.
    * Only one kind accrues at a time; after harvest the plant picks again.
    */
   producingKind?: GardenProducingKind;
   /**
-   * Pending click-to-collect upgrade-card pickups (at most one).
-   * Coin/gem use pendingCoin/pendingGem instead.
+   * @deprecated Leaf uses {@link pendingLeaf}. Kept for one-release migration of old queues.
    */
   productionQueue?: GardenProductionPickup[];
 }
@@ -372,6 +394,7 @@ export interface WaterGardenPlantRequest {
 export interface WaterGardenPlantCollected {
   coin: number;
   gem: number;
+  leaf: number;
 }
 
 export interface WaterGardenPlantResult {
@@ -381,8 +404,8 @@ export interface WaterGardenPlantResult {
 }
 
 /**
- * POST /garden/plants/harvest — collect pending coin/gem and all queued pickups
- * on one planted plant (tap-to-harvest).
+ * POST /garden/plants/harvest — collect pending coin/gem/leaf on one planted plant
+ * (tap-to-harvest bubble).
  */
 export interface HarvestGardenPlantRequest {
   lane: number;
@@ -392,6 +415,8 @@ export interface HarvestGardenPlantRequest {
 export interface HarvestGardenPlantCollected {
   coin: number;
   gem: number;
+  leaf: number;
+  /** @deprecated Leaf is in {@link leaf}; kept empty for older clients. */
   pickups: GardenProductionPickup[];
 }
 
@@ -489,7 +514,7 @@ export interface ResolvedGardenProductionReward {
 export interface ResolvedGardenProduction {
   coin: ResolvedGardenProductionReward | null;
   gem: ResolvedGardenProductionReward | null;
-  upgradeCard: ResolvedGardenProductionReward | null;
+  leaf: ResolvedGardenProductionReward | null;
   maxAccrualHours: number;
   maxQueue: number;
 }
@@ -507,7 +532,8 @@ function normalizeIntervalHours(raw: unknown, fallback: number): number {
 
 /**
  * Resolve authored (or legacy *PerHour) garden production into amount + intervalHours.
- * Plants without upgrade-card authorship still get 1 card / day by default.
+ * Plants without leaf authorship still get 1 leaf / hour by default.
+ * Legacy upgradeCard / upgradeCardsPerHour catalogs map to leaf.
  */
 export function resolveGardenProduction(
   production: PlantServerConfig['gardenProduction'] | null | undefined,
@@ -555,38 +581,42 @@ export function resolveGardenProduction(
       }
     : null;
 
-  const hasAuthoredCard =
-    production?.upgradeCard != null
+  const hasAuthoredLeaf =
+    production?.leaf != null
+    || production?.upgradeCard != null
     || production?.upgradeCardsPerHour != null;
 
-  let upgradeCardAmount = GARDEN_PRODUCTION_DEFAULT_UPGRADE_CARD_AMOUNT;
-  if (hasAuthoredCard) {
-    const rawAmt = production?.upgradeCard?.amount;
+  let leafAmount = GARDEN_PRODUCTION_DEFAULT_LEAF_AMOUNT;
+  if (hasAuthoredLeaf) {
+    const rawAmt = production?.leaf?.amount ?? production?.upgradeCard?.amount;
     const rawLegacy = production?.upgradeCardsPerHour;
     if (rawAmt != null) {
-      upgradeCardAmount = Math.max(0, Math.floor(Number(rawAmt)) || 0);
+      leafAmount = Math.max(0, Math.floor(Number(rawAmt)) || 0);
     } else if (rawLegacy != null) {
-      upgradeCardAmount = Math.max(0, Math.floor(Number(rawLegacy)) || 0);
+      leafAmount = Math.max(0, Math.floor(Number(rawLegacy)) || 0);
     } else {
-      // upgradeCard: {} with no amount → use default amount.
-      upgradeCardAmount = GARDEN_PRODUCTION_DEFAULT_UPGRADE_CARD_AMOUNT;
+      // leaf/upgradeCard: {} with no amount → use default amount.
+      leafAmount = GARDEN_PRODUCTION_DEFAULT_LEAF_AMOUNT;
     }
   }
 
-  const upgradeCard = upgradeCardAmount > 0
+  const leafIntervalRaw =
+    production?.leaf?.intervalHours ?? production?.upgradeCard?.intervalHours;
+  const leaf = leafAmount > 0
     ? {
-        amount: upgradeCardAmount,
+        amount: leafAmount,
         intervalHours: normalizeIntervalHours(
-          production?.upgradeCard?.intervalHours,
-          // Legacy upgradeCardsPerHour meant every hour; new shape defaults to daily.
-          production?.upgradeCard?.intervalHours != null
+          leafIntervalRaw,
+          // Legacy upgradeCardsPerHour meant every hour; authored leaf defaults to hourly like coin.
+          leafIntervalRaw != null
+            || production?.leaf?.amount != null
             || production?.upgradeCard?.amount != null
             || production?.upgradeCardsPerHour == null
-            ? GARDEN_PRODUCTION_DEFAULT_UPGRADE_CARD_INTERVAL_HOURS
+            ? GARDEN_PRODUCTION_DEFAULT_LEAF_INTERVAL_HOURS
             : GARDEN_PRODUCTION_DEFAULT_COIN_INTERVAL_HOURS,
         ),
       }
     : null;
 
-  return { coin, gem, upgradeCard, maxAccrualHours, maxQueue };
+  return { coin, gem, leaf, maxAccrualHours, maxQueue };
 }

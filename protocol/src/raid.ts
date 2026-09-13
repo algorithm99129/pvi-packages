@@ -2,10 +2,13 @@ import type { EntityId } from './index';
 import type { GardenProductionPickup } from './garden';
 
 /**
- * Upgrade cards granted per insect type used, multiplied by stars (1–3).
- * Tunable constant until a logic.json formula is authored.
+ * Leaves granted per insect type used, multiplied by stars (1–3).
+ * Same numeric rate as the retired upgrade-card grant.
  */
-export const RAID_INSECT_CARDS_PER_STAR = 2;
+export const RAID_INSECT_LEAVES_PER_STAR = 2;
+
+/** @deprecated Use {@link RAID_INSECT_LEAVES_PER_STAR}. */
+export const RAID_INSECT_CARDS_PER_STAR = RAID_INSECT_LEAVES_PER_STAR;
 
 /** Default scout preview length before combat auto-starts. */
 export const GARDEN_RAID_SCOUT_TIMEOUT_SEC = 10;
@@ -39,26 +42,21 @@ export function isFutureIsoTimestamp(
   return Number.isFinite(t) && t > nowMs;
 }
 
-/** One plant-type upgrade-card stack stolen during a village raid. */
-export interface GardenRaidStolenCard {
-  plantId: EntityId;
-  amount: number;
-}
-
 /** Loot taken from one defender plant during a village raid. */
 export interface GardenRaidStolenPlantLoot {
   lane: number;
   column: number;
   coin: number;
   gem: number;
-  cards: GardenRaidStolenCard[];
+  /** Leaves stolen from this plant's pending garden production queue. */
+  leaf: number;
 }
 
 /** Aggregated stolen resources from a village raid. */
 export interface GardenRaidStolenSummary {
   coin: number;
   gem: number;
-  cards: GardenRaidStolenCard[];
+  leaf: number;
 }
 
 /** Request body for POST /api/raids/garden/complete */
@@ -80,15 +78,11 @@ export interface GardenRaidCompleteRequest {
   lanesDestroyed?: number;
 }
 
-export interface InsectUpgradeCardClaim {
-  insectId: EntityId;
-  count: number;
-}
-
 /** Response from POST /api/raids/garden/complete */
 export interface GardenRaidCompleteResult {
-  upgradeCards: InsectUpgradeCardClaim[];
-  /** Wallet/card loot stolen from the defender garden (if any). */
+  /** Wallet leaves granted for unlocked insects used in a victory. */
+  leavesGranted: number;
+  /** Wallet/leaf loot stolen from the defender garden (if any). */
   stolen?: GardenRaidStolenSummary;
 }
 
@@ -108,7 +102,9 @@ export interface GardenRaidPlacedPlant {
   pendingCoin?: number;
   /** Continuous pending gem available to steal / show. */
   pendingGem?: number;
-  /** Pending upgrade-card pickups on this plant. */
+  /** Continuous pending leaf available to steal / show. */
+  pendingLeaf?: number;
+  /** @deprecated Prefer pendingLeaf. Legacy leaf queue rows. */
   productionQueue?: GardenProductionPickup[];
 }
 
