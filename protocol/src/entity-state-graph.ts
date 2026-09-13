@@ -128,7 +128,8 @@ export type StateConditionKind =
   | 'ai_controlled'
   | 'vault_ready'
   | 'throw_ready'
-  | 'special_ready';
+  | 'special_ready'
+  | 'reached_target';
 
 export type StateCondition =
   | { type: 'enemy_in_range' }
@@ -152,7 +153,8 @@ export type StateCondition =
   | { type: 'ai_controlled' }
   | { type: 'vault_ready' }
   | { type: 'throw_ready' }
-  | { type: 'special_ready' };
+  | { type: 'special_ready' }
+  | { type: 'reached_target' };
 
 /**
  * Duration for `after_seconds` — literal, unit attribute, or logic constant.
@@ -386,6 +388,11 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
     label: 'Special ready',
     hint: 'Has not used a one-shot special (ladder, etc.) yet',
   },
+  {
+    type: 'reached_target',
+    label: 'Reached march target',
+    hint: 'Lane mover arrived at its current target (house / first column, or reverse-march edge)',
+  },
 ];
 
 /**
@@ -411,6 +418,7 @@ export type StateActionKind =
   | 'vault_over_plant'
   | 'enter_burrow'
   | 'exit_burrow'
+  | 'reverse_march'
   | 'enter_fly'
   | 'exit_fly'
   | 'redirect_lane'
@@ -767,6 +775,12 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     kind: 'insect',
   },
   {
+    type: 'reverse_march',
+    label: 'Reverse march',
+    hint: 'Turn around and walk back toward the spawn edge (Digger after surfacing)',
+    kind: 'insect',
+  },
+  {
     type: 'enter_fly',
     label: 'Enter fly',
     hint: 'Switch travel layer to flying (Balloon Moth with balloon equipment)',
@@ -879,6 +893,12 @@ export interface StateStatModifiers {
    * Cleared on status exit. Used by pool / snorkel visuals.
    */
   underwaterClipHeight?: StateDurationValue;
+  /**
+   * Fraction of the unit clipped below the ground line (0 = fully above, 1 = fully under).
+   * Prefer `attributeDuration('extra.undergroundClipHeight')`. Same clip method as snorkel,
+   * but the plane is the authored sprite/cell bottom instead of the pool waterline.
+   */
+  undergroundClipHeight?: StateDurationValue;
 }
 
 export interface EntityStateNode {
@@ -2167,20 +2187,18 @@ export function createInsectVaultStateGraph(opts?: {
   };
 }
 
-/** Burrower: burrow → emerge → walk ↔ attack. */
+/** Burrower: underground clip to first column → emerge → wait → reverse-walk ↔ attack. */
 export function createInsectBurrowStateGraph(opts?: {
   burrowAnim?: string;
   emergeAnim?: string;
   walkAnim?: string;
   attackAnim?: string;
   dieAnim?: string;
-  burrowSeconds?: number;
 }): EntityStateGraph {
   const burrowId = createStateNodeId();
   const emergeId = createStateNodeId();
   const walkId = createStateNodeId();
   const attackId = createStateNodeId();
-  const burrowSeconds = opts?.burrowSeconds ?? 4;
   return {
     version: 1,
     entryNodeId: burrowId,
@@ -2190,6 +2208,9 @@ export function createInsectBurrowStateGraph(opts?: {
         status: 'burrow',
         spineAnim: opts?.burrowAnim ?? opts?.walkAnim,
         loop: true,
+        modifiers: {
+          undergroundClipHeight: attributeDuration('extra.undergroundClipHeight'),
+        },
         actions: [
           { type: 'enter_burrow', when: 'on_enter' },
           { type: 'start_moving', when: 'on_enter' },
@@ -2200,10 +2221,14 @@ export function createInsectBurrowStateGraph(opts?: {
         id: emergeId,
         status: 'emerge',
         spineAnim: opts?.emergeAnim ?? opts?.walkAnim,
-        loop: false,
+        loop: true,
+        // Literal 0 eases the clip off like snorkel surfacing.
+        modifiers: { undergroundClipHeight: literalDuration(0) },
         actions: [
           { type: 'stop_moving', when: 'on_enter' },
-          { type: 'exit_burrow', when: 'after_anim' },
+          { type: 'exit_burrow', when: 'on_enter' },
+          // Turn once when leaving emerge — not on every walk re-enter.
+          { type: 'reverse_march', when: 'on_exit' },
         ],
         position: { x: 260, y: 160 },
       },
@@ -2233,13 +2258,16 @@ export function createInsectBurrowStateGraph(opts?: {
         id: createStateEdgeId(),
         from: burrowId,
         to: emergeId,
-        conditions: cond({ type: 'after_seconds', value: literalDuration(burrowSeconds) }),
+        conditions: cond({ type: 'reached_target' }),
       },
       {
         id: createStateEdgeId(),
         from: emergeId,
         to: walkId,
-        conditions: cond({ type: 'anim_ended' }),
+        conditions: cond({
+          type: 'after_seconds',
+          value: attributeDuration('extra.emergeWaitSeconds'),
+        }),
       },
       {
         id: createStateEdgeId(),
@@ -2901,6 +2929,7 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   vault_over_plant: 'vault_over_plant',
   enter_burrow: 'enter_burrow',
   exit_burrow: 'exit_burrow',
+  reverse_march: 'reverse_march',
   enter_fly: 'enter_fly',
   exit_fly: 'exit_fly',
   redirect_lane: 'redirect_lane',
@@ -3010,6 +3039,7 @@ function normalizeCondition(raw: unknown): StateCondition | null {
     case 'vault_ready':
     case 'throw_ready':
     case 'special_ready':
+    case 'reached_target':
       return { type: c.type };
     case 'after_seconds':
       return { type: 'after_seconds', value: normalizeDurationValue(c) };
@@ -3141,6 +3171,9 @@ function normalizeStatModifiers(raw: unknown): StateStatModifiers | undefined {
   if (m.underwaterClipHeight !== undefined && m.underwaterClipHeight !== null) {
     out.underwaterClipHeight = normalizeDurationValue(m.underwaterClipHeight);
   }
+  if (m.undergroundClipHeight !== undefined && m.undergroundClipHeight !== null) {
+    out.undergroundClipHeight = normalizeDurationValue(m.undergroundClipHeight);
+  }
   return Object.keys(out).length > 0 ? out : undefined;
 }
 
@@ -3230,6 +3263,8 @@ export function conditionLabel(condition: StateCondition): string {
       return 'Throw ready';
     case 'special_ready':
       return 'Special ready';
+    case 'reached_target':
+      return 'Reached march target';
     default:
       return 'Condition';
   }

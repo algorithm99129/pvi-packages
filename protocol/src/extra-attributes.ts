@@ -157,6 +157,20 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     defaultValue: 0.55,
   },
   {
+    key: 'undergroundClipHeight',
+    label: 'Underground clip height',
+    hint: 'Same clip method as snorkel; groundline is the editor character bottom (cellAnchor), not cell center. Wire via burrow status → extra.undergroundClipHeight.',
+    type: 'number',
+    defaultValue: 0.55,
+  },
+  {
+    key: 'emergeWaitSeconds',
+    label: 'Emerge wait seconds',
+    hint: 'Pause after digger surfaces before reverse-march (status graph after_seconds).',
+    type: 'number',
+    defaultValue: 1,
+  },
+  {
     key: 'waterEdgeParticleScale',
     label: 'Water edge particle scale',
     hint: 'Optional scale for the waterline ripple while clipped (read by waterline VFX).',
