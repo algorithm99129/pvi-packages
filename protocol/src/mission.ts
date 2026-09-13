@@ -63,9 +63,16 @@ export function missionClientRewardPreviews(reward: MissionReward | null | undef
 
 export interface MissionObjective {
   type: 'survive' | 'clear_lanes' | 'protect_core' | 'time_limit' | 'no_lawn_mowers_lost' | 'max_plants';
+  /**
+   * For `max_plants`: max plants/insects used for the lean-defense star.
+   * Must be ≤ raid tray max (10). 0 is reserved for special “lose none” wording.
+   */
   value?: number;
   description: string;
 }
+
+/** Raid / mission seed-tray capacity — also the max for `max_plants` star goals. */
+export const MISSION_MAX_CARD_SLOTS = 10;
 
 export type MissionMode =
   | 'adventure'

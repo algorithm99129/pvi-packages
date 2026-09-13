@@ -1,4 +1,5 @@
 import type { MissionDefinition, MissionSpawn, MissionWave } from '../mission';
+import { MISSION_MAX_CARD_SLOTS } from '../mission';
 import { DEFINITION_SCHEMA_VERSION, readSchemaVersion, stampSchemaVersion } from '../schema-version';
 
 type Loose = Record<string, unknown>;
@@ -123,5 +124,27 @@ export function migrateMissionDefinition(raw: unknown): MissionDefinition {
     }
     version = readSchemaVersion(current);
   }
-  return current as unknown as MissionDefinition;
+  return clampMaxPlantsStarGoals(current as unknown as MissionDefinition);
+}
+
+/** Hard-star lean-defense goals cannot exceed the raid tray (10 cards). */
+function clampMaxPlantsStarGoals(mission: MissionDefinition): MissionDefinition {
+  const sc = mission.starCriteria;
+  if (!sc) return mission;
+
+  const clampObj = <T extends { type?: string; value?: number }>(obj: T | undefined): T | undefined => {
+    if (!obj || obj.type !== 'max_plants' || obj.value == null) return obj;
+    if (!Number.isFinite(obj.value) || obj.value <= MISSION_MAX_CARD_SLOTS) return obj;
+    return { ...obj, value: MISSION_MAX_CARD_SLOTS };
+  };
+
+  return {
+    ...mission,
+    starCriteria: {
+      ...sc,
+      oneStar: clampObj(sc.oneStar) ?? sc.oneStar,
+      twoStar: clampObj(sc.twoStar) ?? sc.twoStar,
+      threeStar: clampObj(sc.threeStar) ?? sc.threeStar,
+    },
+  };
 }
