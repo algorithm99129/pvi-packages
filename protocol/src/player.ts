@@ -3,6 +3,7 @@ import type { InsectArchetype } from './insect';
 import type { ServerMapExport } from './map';
 import type { ServerMissionExport } from './mission';
 import type { PlantRole } from './plant';
+import type { ActivePotionBuff, UserPotionStack } from './potion';
 import type { UserProfile } from './user';
 import type { UserProgression } from './user-xp';
 import type { WalletResources } from './wallet';
@@ -61,6 +62,10 @@ export interface UserGameState {
 /** Authenticated player profile — account info, wallet, and XP / village progression. */
 export interface PlayerProfile extends UserProfile, UserProgression {
   wallet: WalletResources;
+  /** Owned enhancement potion stacks (shop inventory). */
+  potions: UserPotionStack[];
+  /** Timed potion buffs currently in effect (garden production / raid combat). */
+  activePotionBuffs: ActivePotionBuff[];
   /** Combat strength from plants, insects, and garden. */
   strength: number;
   /** Current team id when the player belongs to a team; otherwise null. */

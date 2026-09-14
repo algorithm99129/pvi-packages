@@ -6,6 +6,7 @@ import type {
   ClientMapExport,
   ClientMissionExport,
   ClientPlantExport,
+  ClientPotionExport,
   EquipmentDefinition,
   HubRewardPlan,
   InsectDefinition,
@@ -14,12 +15,14 @@ import type {
   MissionDefinition,
   PlantDefinition,
   PlantServerConfig,
+  PotionDefinition,
   ServerBulletExport,
   ServerEquipmentExport,
   ServerInsectExport,
   ServerMapExport,
   ServerMissionExport,
   ServerPlantExport,
+  ServerPotionExport,
 } from '@garden-siege/protocol';
 import {
   defaultInsectClientAssets,
@@ -33,6 +36,7 @@ import {
   normalizeBulletDefinition,
   normalizeEquipmentDefinition,
   normalizeHubRewardPlan,
+  normalizePotionDefinition,
 } from '@garden-siege/protocol';
 import type { GameDataBundle } from './index';
 
@@ -185,6 +189,28 @@ export function mergeEquipment(
   return merged;
 }
 
+export function mergePotion(
+  client: ClientPotionExport,
+  server?: ServerPotionExport,
+): PotionDefinition {
+  const merged = normalizePotionDefinition({
+    ...server,
+    ...client,
+    id: client.id || server?.id,
+    displayName: client.displayName ?? server?.displayName,
+    description: client.description ?? server?.description,
+    rarity: client.rarity ?? server?.rarity,
+    effect: mergePreferPrimary(client.effect, server?.effect) ?? client.effect,
+    client: mergePreferPrimary(client.client, server?.client) ?? client.client,
+    server: mergePreferPrimary(client.server, server?.server) ?? client.server,
+    schemaVersion: client.schemaVersion ?? server?.schemaVersion,
+  });
+  if (!merged) {
+    throw new Error(`Invalid potion definition: ${client.id ?? server?.id}`);
+  }
+  return merged;
+}
+
 export function mergeGameDataBundle(parts: {
   clientPlants: ClientPlantExport[];
   serverPlants: ServerPlantExport[];
@@ -194,6 +220,8 @@ export function mergeGameDataBundle(parts: {
   serverBullets?: ServerBulletExport[];
   clientEquipment?: ClientEquipmentExport[];
   serverEquipment?: ServerEquipmentExport[];
+  clientPotions?: ClientPotionExport[];
+  serverPotions?: ServerPotionExport[];
   clientMissions: ClientMissionExport[];
   serverMissions: ServerMissionExport[];
   clientMaps: ClientMapExport[];
@@ -204,6 +232,7 @@ export function mergeGameDataBundle(parts: {
   const serverInsects = indexById(parts.serverInsects);
   const serverBullets = indexById(parts.serverBullets ?? []);
   const serverEquipment = indexById(parts.serverEquipment ?? []);
+  const serverPotions = indexById(parts.serverPotions ?? []);
   const serverMissions = indexById(parts.serverMissions);
   const serverMaps = indexById(parts.serverMaps);
 
@@ -211,6 +240,7 @@ export function mergeGameDataBundle(parts: {
   const clientInsectIds = new Set(parts.clientInsects.map((p) => p.id));
   const clientBulletIds = new Set((parts.clientBullets ?? []).map((p) => p.id));
   const clientEquipmentIds = new Set((parts.clientEquipment ?? []).map((p) => p.id));
+  const clientPotionIds = new Set((parts.clientPotions ?? []).map((p) => p.id));
   const clientMissionIds = new Set(parts.clientMissions.map((p) => p.id));
   const clientMapIds = new Set(parts.clientMaps.map((p) => p.id));
 
@@ -280,6 +310,19 @@ export function mergeGameDataBundle(parts: {
     ...serverOnlyEquipment,
   ];
 
+  const clientPotions = (parts.clientPotions ?? [])
+    .map((raw) => normalizePotionDefinition(raw))
+    .filter((e): e is PotionDefinition => Boolean(e));
+  const serverOnlyPotions = (parts.serverPotions ?? [])
+    .filter((server) => !clientPotionIds.has(server.id))
+    .map((raw) => normalizePotionDefinition(raw))
+    .filter((e): e is PotionDefinition => Boolean(e));
+
+  const potions = [
+    ...clientPotions.map((client) => mergePotion(client, serverPotions.get(client.id))),
+    ...serverOnlyPotions,
+  ];
+
   const missions = [
     ...parts.clientMissions.map((client) => mergeMission(client, serverMissions.get(client.id))),
     ...parts.serverMissions
@@ -330,6 +373,7 @@ export function mergeGameDataBundle(parts: {
     insects,
     bullets,
     equipment,
+    potions,
     missions,
     maps,
     rewards: normalizeHubRewardPlan(parts.rewards),

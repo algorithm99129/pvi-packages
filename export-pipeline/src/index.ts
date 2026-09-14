@@ -18,6 +18,7 @@ import {
   type MapTemplateDefinition,
   type MissionDefinition,
   type PlantDefinition,
+  type PotionDefinition,
   type HubRewardPlan,
   type ServerBulletExport,
   type ServerEquipmentExport,
@@ -25,6 +26,8 @@ import {
   type ServerMapExport,
   type ServerMissionExport,
   type ServerPlantExport,
+  type ServerPotionExport,
+  type ClientPotionExport,
   createDefaultHubRewardPlan,
   normalizeHubRewardPlan,
 } from '@garden-siege/protocol';
@@ -34,6 +37,7 @@ export interface GameDataBundle {
   insects: InsectDefinition[];
   bullets: BulletDefinition[];
   equipment: EquipmentDefinition[];
+  potions: PotionDefinition[];
   missions: MissionDefinition[];
   maps: MapTemplateDefinition[];
   /** Hub daily / quest / achievement plan (single document). */
@@ -56,6 +60,14 @@ export function toServerEquipment(equipment: EquipmentDefinition): ServerEquipme
 
 export function toClientEquipment(equipment: EquipmentDefinition): ClientEquipmentExport {
   return { ...equipment };
+}
+
+export function toServerPotion(potion: PotionDefinition): ServerPotionExport {
+  return { ...potion };
+}
+
+export function toClientPotion(potion: PotionDefinition): ClientPotionExport {
+  return { ...potion };
 }
 
 export function toServerPlant(plant: PlantDefinition): ServerPlantExport {
@@ -228,6 +240,8 @@ export async function exportGameData(
   const serverBullets = (bundle.bullets ?? []).map(toServerBullet);
   const clientEquipment = (bundle.equipment ?? []).map(toClientEquipment);
   const serverEquipment = (bundle.equipment ?? []).map(toServerEquipment);
+  const clientPotions = (bundle.potions ?? []).map(toClientPotion);
+  const serverPotions = (bundle.potions ?? []).map(toServerPotion);
   const clientMissions = bundle.missions.map(toClientMission);
   const serverMissions = bundle.missions.map(toServerMission);
   const clientMaps = bundle.maps.map(toClientMap);
@@ -241,6 +255,7 @@ export async function exportGameData(
     join(clientRoot, CLIENT_EXPORT_PATHS.insects),
     join(clientRoot, CLIENT_EXPORT_PATHS.bullets),
     join(clientRoot, CLIENT_EXPORT_PATHS.equipment),
+    join(clientRoot, CLIENT_EXPORT_PATHS.potions),
     join(clientRoot, CLIENT_EXPORT_PATHS.missions),
     join(clientRoot, CLIENT_EXPORT_PATHS.maps),
     join(clientRoot, CLIENT_EXPORT_PATHS.balanceVersion),
@@ -251,6 +266,7 @@ export async function exportGameData(
     join(serverRoot, SERVER_EXPORT_PATHS.insects),
     join(serverRoot, SERVER_EXPORT_PATHS.bullets),
     join(serverRoot, SERVER_EXPORT_PATHS.equipment),
+    join(serverRoot, SERVER_EXPORT_PATHS.potions),
     join(serverRoot, SERVER_EXPORT_PATHS.missions),
     join(serverRoot, SERVER_EXPORT_PATHS.maps),
     join(serverRoot, SERVER_EXPORT_PATHS.rewards),
@@ -261,18 +277,20 @@ export async function exportGameData(
   await writeJson(clientFiles[1], clientInsects);
   await writeJson(clientFiles[2], clientBullets);
   await writeJson(clientFiles[3], clientEquipment);
-  await writeJson(clientFiles[4], clientMissions);
-  await writeJson(clientFiles[5], clientMaps);
-  await writeJson(clientFiles[6], balancePayload);
+  await writeJson(clientFiles[4], clientPotions);
+  await writeJson(clientFiles[5], clientMissions);
+  await writeJson(clientFiles[6], clientMaps);
+  await writeJson(clientFiles[7], balancePayload);
 
   await writeJson(serverFiles[0], serverPlants);
   await writeJson(serverFiles[1], serverInsects);
   await writeJson(serverFiles[2], serverBullets);
   await writeJson(serverFiles[3], serverEquipment);
-  await writeJson(serverFiles[4], serverMissions);
-  await writeJson(serverFiles[5], serverMaps);
-  await writeJson(serverFiles[6], rewards);
-  await writeJson(serverFiles[7], balancePayload);
+  await writeJson(serverFiles[4], serverPotions);
+  await writeJson(serverFiles[5], serverMissions);
+  await writeJson(serverFiles[6], serverMaps);
+  await writeJson(serverFiles[7], rewards);
+  await writeJson(serverFiles[8], balancePayload);
 
   return { clientFiles, serverFiles, balanceVersion: BALANCE_VERSION };
 }

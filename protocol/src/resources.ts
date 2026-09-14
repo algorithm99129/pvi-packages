@@ -4,6 +4,7 @@ export type ResourceCategory =
   | 'Insects'
   | 'Bullets'
   | 'Equipment'
+  | 'Potions'
   | 'Missions'
   | 'Maps'
   | 'Screen';
@@ -13,6 +14,7 @@ export const RESOURCE_CATEGORIES = {
   insects: 'Insects',
   bullets: 'Bullets',
   equipment: 'Equipment',
+  potions: 'Potions',
   missions: 'Missions',
   maps: 'Maps',
   screen: 'Screen',

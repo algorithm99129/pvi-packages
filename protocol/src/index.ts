@@ -12,6 +12,7 @@ export * from './extra-attributes';
 export * from './entity-state-graph';
 export * from './bullet';
 export * from './equipment';
+export * from './potion';
 export * from './unit-sizing';
 export * from './insect';
 export * from './mission';

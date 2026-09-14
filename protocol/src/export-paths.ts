@@ -13,6 +13,8 @@ export const CLIENT_EXPORT_PATHS = {
   bulletsDir: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.bullets}`,
   equipment: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.equipment}/equipment.json`,
   equipmentDir: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.equipment}`,
+  potions: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.potions}/potions.json`,
+  potionsDir: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.potions}`,
   missions: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.missions}/missions.json`,
   maps: `${CLIENT_RESOURCES_ROOT}/${RESOURCE_CATEGORIES.maps}/maps.json`,
   /** Reward item art only — hub plan JSON is server-only (see SERVER_EXPORT_PATHS.rewards). */
@@ -47,6 +49,8 @@ export const SERVER_EXPORT_PATHS = {
   bulletsDir: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.bullets}`,
   equipment: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.equipment}/equipment.json`,
   equipmentDir: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.equipment}`,
+  potions: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.potions}/potions.json`,
+  potionsDir: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.potions}`,
   missions: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.missions}/missions.json`,
   maps: `${SERVER_RESOURCES_DIR}/${RESOURCE_CATEGORIES.maps}/maps.json`,
   rewards: `${SERVER_RESOURCES_DIR}/Rewards/rewards.json`,
@@ -85,6 +89,7 @@ const LEGACY_DATA_AGGREGATES: Record<string, string> = {
   avatars: 'Avatars/avatars',
   flags: 'Flags/flags',
   equipment: `${RESOURCE_CATEGORIES.equipment}/equipment`,
+  potions: `${RESOURCE_CATEGORIES.potions}/potions`,
 };
 
 /**
@@ -121,6 +126,7 @@ export function normalizeClientMediaPath(relativePath: string): string {
       underCustom.startsWith('Insects/') ||
       underCustom.startsWith('Bullets/') ||
       underCustom.startsWith('Equipment/') ||
+      underCustom.startsWith('Potions/') ||
       underCustom.startsWith('Missions/') ||
       underCustom.startsWith('Maps/') ||
       underCustom.startsWith('Screen/') ||
@@ -142,6 +148,7 @@ export function normalizeClientMediaPath(relativePath: string): string {
     normalized.startsWith('Insects/') ||
     normalized.startsWith('Bullets/') ||
     normalized.startsWith('Equipment/') ||
+    normalized.startsWith('Potions/') ||
     normalized.startsWith('Missions/') ||
     normalized.startsWith('Maps/') ||
     normalized.startsWith('Screen/') ||
