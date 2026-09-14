@@ -200,6 +200,7 @@ export function mergePotion(
     displayName: client.displayName ?? server?.displayName,
     description: client.description ?? server?.description,
     rarity: client.rarity ?? server?.rarity,
+    category: client.category ?? server?.category,
     effect: mergePreferPrimary(client.effect, server?.effect) ?? client.effect,
     client: mergePreferPrimary(client.client, server?.client) ?? client.client,
     server: mergePreferPrimary(client.server, server?.server) ?? client.server,

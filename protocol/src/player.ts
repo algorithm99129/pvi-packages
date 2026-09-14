@@ -64,8 +64,10 @@ export interface PlayerProfile extends UserProfile, UserProgression {
   wallet: WalletResources;
   /** Owned enhancement potion stacks (shop inventory). */
   potions: UserPotionStack[];
-  /** Timed potion buffs currently in effect (garden production / raid combat). */
+  /** Timed garden potion buffs currently in effect. */
   activePotionBuffs: ActivePotionBuff[];
+  /** Five battle loadout slots (potion ids or null). */
+  battlePotionSlots: Array<EntityId | null>;
   /** Combat strength from plants, insects, and garden. */
   strength: number;
   /** Current team id when the player belongs to a team; otherwise null. */
