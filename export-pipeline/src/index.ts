@@ -119,6 +119,8 @@ export function toClientInsect(insect: InsectDefinition): ClientInsectExport {
     schemaVersion: insect.schemaVersion,
     client: insect.client,
     stats: insect.stats,
+    // Pass through full server config so Unity can read sunCost / recharge / deployTarget.
+    server: insect.server,
     extraAttributes: insect.extraAttributes,
   };
 }

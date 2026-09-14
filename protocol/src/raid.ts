@@ -13,9 +13,6 @@ export const RAID_INSECT_CARDS_PER_STAR = RAID_INSECT_LEAVES_PER_STAR;
 /** Default scout preview length before combat auto-starts. */
 export const GARDEN_RAID_SCOUT_TIMEOUT_SEC = 10;
 
-/** Attacker starting sun for village (garden) raids. */
-export const GARDEN_RAID_STARTING_SUN = 2000;
-
 /** Default battle countdown after scout ends. */
 export const GARDEN_RAID_BATTLE_DURATION_SEC = 90;
 
@@ -70,6 +67,11 @@ export interface GardenRaidCompleteRequest {
   defenderUserId?: string;
   /** Client-reported loot stolen from defender plants (capped server-side). */
   stolenLoot?: GardenRaidStolenPlantLoot[];
+  /**
+   * Leaves spent deploying insects this raid (debited from wallet.leaf).
+   * Capped server-side to wallet + stolen leaf on victory, or wallet alone on defeat.
+   */
+  leavesSpent?: number;
   /** Battle recording for defender history / replay (garden raids). */
   replay?: GardenRaidReplay;
   /** When set, apply team-match war scoring (formation attempts / stars). */
@@ -134,7 +136,6 @@ export interface GardenRaidScoutSnapshot {
   placedPlants: GardenRaidPlacedPlant[];
   itemBox?: GardenRaidItemBox;
   scoutTimeoutSec: number;
-  startingSun: number;
   battleDurationSec: number;
 }
 

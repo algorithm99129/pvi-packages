@@ -318,6 +318,12 @@ export interface InsectServerConfig {
    */
   rechargeSeconds?: number;
   /**
+   * Deploy cost for the attacker loadout card.
+   * Missions spend sun; garden attacks spend the same amount as leaves.
+   * Prefer explicit authorship; client falls back to archetype heuristics when omitted.
+   */
+  sunCost?: number;
+  /**
    * How the attacker picks a deploy cell.
    * - `lane` (default): click / drop on a lane (spawn at insect column).
    * - `plant`: click a plant to drop onto that cell (Bungee-style).
@@ -347,6 +353,41 @@ export function resolveInsectRechargeSeconds(insect: {
   return INSECT_RECHARGE_DEFAULT;
 }
 
+/** Default deploy cost when not authored (matches client archetype heuristics). */
+export const INSECT_DEPLOY_COST_DEFAULT = 50;
+
+/** Resolve insect deploy cost (sun in missions / leaf in garden attack). */
+export function resolveInsectDeployCost(insect: {
+  id?: string;
+  archetype?: InsectArchetype;
+  server?: Pick<InsectServerConfig, 'sunCost'>;
+}): number {
+  const authored = insect.server?.sunCost;
+  if (typeof authored === 'number' && Number.isFinite(authored) && authored > 0)
+    return Math.floor(authored);
+
+  const id = String(insect.id ?? '').trim().toLowerCase();
+  if (id.includes('football') || id.includes('gargantuar')) return 175;
+  if (id.includes('bucket') || id.includes('screen_door') || id.includes('door')) return 125;
+  if (id.includes('cone') || id.includes('newspaper') || id.includes('ladder')) return 75;
+
+  switch (insect.archetype) {
+    case 'siege':
+      return 150;
+    case 'tank':
+      return 125;
+    case 'support':
+      return 75;
+    case 'flyer':
+    case 'burrower':
+      return 100;
+    case 'runner':
+    case 'swarm':
+    default:
+      return INSECT_DEPLOY_COST_DEFAULT;
+  }
+}
+
 export interface ServerInsectExport {
   id: EntityId;
   displayName: string;
@@ -370,5 +411,7 @@ export interface ClientInsectExport {
   schemaVersion?: number;
   client: InsectClientAssets;
   stats: InsectStatCurve;
+  /** Pass through for deploy cost / recharge / lane behavior on the Unity client. */
+  server?: InsectServerConfig;
   extraAttributes?: ExtraAttributes;
 }
