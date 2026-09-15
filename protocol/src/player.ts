@@ -66,8 +66,15 @@ export interface PlayerProfile extends UserProfile, UserProgression {
   potions: UserPotionStack[];
   /** Timed garden potion buffs currently in effect. */
   activePotionBuffs: ActivePotionBuff[];
-  /** Five battle loadout slots (potion ids or null). */
-  battlePotionSlots: Array<EntityId | null>;
+  /** Plant-side battle loadout (5 slots; potion ids or null). */
+  defenderBattlePotionSlots: Array<EntityId | null>;
+  /** Insect-side battle loadout (5 slots; potion ids or null). */
+  attackerBattlePotionSlots: Array<EntityId | null>;
+  /**
+   * @deprecated Flat concat of defender + attacker. Kept for one-release readers;
+   * prefer role-specific arrays.
+   */
+  battlePotionSlots?: Array<EntityId | null>;
   /** Combat strength from plants, insects, and garden. */
   strength: number;
   /** Current team id when the player belongs to a team; otherwise null. */

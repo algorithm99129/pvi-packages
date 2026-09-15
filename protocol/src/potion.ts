@@ -123,7 +123,22 @@ export const DEFAULT_POTION_DURATION_SEC = 5;
 /** Default garden buff length: 24 hours. */
 export const DEFAULT_GARDEN_POTION_DURATION_SEC = 86_400;
 export const CURRENT_POTION_SCHEMA_VERSION = 3;
-export const BATTLE_POTION_SLOT_COUNT = 5;
+/** Plant-side (defender) battle loadout size. */
+export const DEFENDER_BATTLE_POTION_SLOT_COUNT = 5;
+/** Insect-side (attacker) battle loadout size. */
+export const ATTACKER_BATTLE_POTION_SLOT_COUNT = 5;
+/** Total battle slots across both roles (5 defend + 5 attack). */
+export const BATTLE_POTION_SLOT_COUNT =
+  DEFENDER_BATTLE_POTION_SLOT_COUNT + ATTACKER_BATTLE_POTION_SLOT_COUNT;
+
+/** Which battle loadout row is active for the current raid. */
+export type BattlePotionRole = 'defender' | 'attacker';
+
+export function battlePotionSlotCountForRole(role: BattlePotionRole): number {
+  return role === 'attacker'
+    ? ATTACKER_BATTLE_POTION_SLOT_COUNT
+    : DEFENDER_BATTLE_POTION_SLOT_COUNT;
+}
 
 const PLANT_ROLES: ReadonlyArray<PlantRole> = [
   'shooter',
@@ -710,8 +725,10 @@ export interface ActivePotionBuff {
 /** Request body for POST /api/potions/:potionId/use */
 export interface UsePotionRequest {
   context: PotionUseContext;
-  /** Battle loadout slot index (0–4) when using from the raid tray. */
+  /** Index within the role loadout when using from the raid tray. */
   slotIndex?: number;
+  /** Which loadout the slot belongs to (defaults to defender when omitted). */
+  role?: BattlePotionRole;
 }
 
 /** Response from POST /api/potions/:potionId/use */
@@ -721,7 +738,13 @@ export interface UsePotionResult {
   quantity: number;
   inventory: UserPotionStack[];
   activeBuffs: ActivePotionBuff[];
-  battlePotionSlots: (EntityId | null)[];
+  defenderBattlePotionSlots: (EntityId | null)[];
+  attackerBattlePotionSlots: (EntityId | null)[];
+  /**
+   * @deprecated Flat concat of defender + attacker for one-release clients.
+   * Prefer role-specific arrays.
+   */
+  battlePotionSlots?: (EntityId | null)[];
   /** Effect applied by this use (for instant heal / client apply). */
   effect: PotionEffect;
 }
@@ -735,25 +758,47 @@ export interface PurchasePotionResult {
 
 /** Request body for PUT /api/potions/loadout */
 export interface SetPotionLoadoutRequest {
-  /** Exactly {@link BATTLE_POTION_SLOT_COUNT} entries; null/empty clears a slot. */
-  slots: Array<EntityId | null | ''>;
+  /** Exactly {@link DEFENDER_BATTLE_POTION_SLOT_COUNT} entries; null/empty clears a slot. */
+  defenderSlots?: Array<EntityId | null | ''>;
+  /** Exactly {@link ATTACKER_BATTLE_POTION_SLOT_COUNT} entries; null/empty clears a slot. */
+  attackerSlots?: Array<EntityId | null | ''>;
+  /**
+   * @deprecated Legacy flat shared loadout. Accepted for one release when role arrays
+   * are omitted — copies into defender; attacker starts empty.
+   */
+  slots?: Array<EntityId | null | ''>;
 }
 
 /** Response from PUT /api/potions/loadout */
 export interface SetPotionLoadoutResult {
-  battlePotionSlots: (EntityId | null)[];
+  defenderBattlePotionSlots: (EntityId | null)[];
+  attackerBattlePotionSlots: (EntityId | null)[];
+  /**
+   * @deprecated Flat concat of defender + attacker for one-release clients.
+   */
+  battlePotionSlots?: (EntityId | null)[];
 }
 
+export function emptyDefenderBattlePotionSlots(): (EntityId | null)[] {
+  return Array.from({ length: DEFENDER_BATTLE_POTION_SLOT_COUNT }, () => null);
+}
+
+export function emptyAttackerBattlePotionSlots(): (EntityId | null)[] {
+  return Array.from({ length: ATTACKER_BATTLE_POTION_SLOT_COUNT }, () => null);
+}
+
+/** @deprecated Prefer emptyDefender / emptyAttacker. Flat concat empty array. */
 export function emptyBattlePotionSlots(): (EntityId | null)[] {
   return Array.from({ length: BATTLE_POTION_SLOT_COUNT }, () => null);
 }
 
-export function normalizeBattlePotionSlots(
+function normalizeFixedBattlePotionSlots(
   raw: Array<EntityId | null | '' | undefined> | null | undefined,
+  count: number,
 ): (EntityId | null)[] {
-  const out = emptyBattlePotionSlots();
+  const out = Array.from({ length: count }, () => null as EntityId | null);
   if (!Array.isArray(raw)) return out;
-  for (let i = 0; i < BATTLE_POTION_SLOT_COUNT; i++) {
+  for (let i = 0; i < count; i++) {
     const v = raw[i];
     if (v == null || v === '') {
       out[i] = null;
@@ -763,6 +808,72 @@ export function normalizeBattlePotionSlots(
     out[i] = id.length > 0 ? id : null;
   }
   return out;
+}
+
+export function normalizeDefenderBattlePotionSlots(
+  raw: Array<EntityId | null | '' | undefined> | null | undefined,
+): (EntityId | null)[] {
+  return normalizeFixedBattlePotionSlots(raw, DEFENDER_BATTLE_POTION_SLOT_COUNT);
+}
+
+export function normalizeAttackerBattlePotionSlots(
+  raw: Array<EntityId | null | '' | undefined> | null | undefined,
+): (EntityId | null)[] {
+  return normalizeFixedBattlePotionSlots(raw, ATTACKER_BATTLE_POTION_SLOT_COUNT);
+}
+
+/** @deprecated Prefer role-specific normalize helpers. */
+export function normalizeBattlePotionSlots(
+  raw: Array<EntityId | null | '' | undefined> | null | undefined,
+): (EntityId | null)[] {
+  return normalizeFixedBattlePotionSlots(raw, BATTLE_POTION_SLOT_COUNT);
+}
+
+/**
+ * Resolve dual role loadouts.
+ * - Prefer role arrays when present (pads shorter arrays / truncates longer).
+ * - Else migrate legacy flat `battlePotionSlots`: copy into defender; attacker starts empty
+ *   (legacy was a single 5-slot shared loadout).
+ */
+export function migrateBattlePotionSlots(raw: {
+  defenderBattlePotionSlots?: Array<EntityId | null | '' | undefined> | null;
+  attackerBattlePotionSlots?: Array<EntityId | null | '' | undefined> | null;
+  battlePotionSlots?: Array<EntityId | null | '' | undefined> | null;
+} | null | undefined): {
+  defenderBattlePotionSlots: (EntityId | null)[];
+  attackerBattlePotionSlots: (EntityId | null)[];
+} {
+  const hasDefender = Array.isArray(raw?.defenderBattlePotionSlots);
+  const hasAttacker = Array.isArray(raw?.attackerBattlePotionSlots);
+  if (hasDefender || hasAttacker) {
+    return {
+      defenderBattlePotionSlots: normalizeDefenderBattlePotionSlots(
+        raw?.defenderBattlePotionSlots,
+      ),
+      attackerBattlePotionSlots: normalizeAttackerBattlePotionSlots(
+        raw?.attackerBattlePotionSlots,
+      ),
+    };
+  }
+
+  // Legacy single flat loadout → defender; attacker empty.
+  return {
+    defenderBattlePotionSlots: normalizeDefenderBattlePotionSlots(
+      raw?.battlePotionSlots,
+    ),
+    attackerBattlePotionSlots: emptyAttackerBattlePotionSlots(),
+  };
+}
+
+/** Flat concat used only for legacy response fields. */
+export function flattenBattlePotionSlots(
+  defender: Array<EntityId | null | undefined> | null | undefined,
+  attacker: Array<EntityId | null | undefined> | null | undefined,
+): (EntityId | null)[] {
+  return [
+    ...normalizeDefenderBattlePotionSlots(defender),
+    ...normalizeAttackerBattlePotionSlots(attacker),
+  ];
 }
 
 export function potionMatchesUseContext(
