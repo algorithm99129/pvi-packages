@@ -46,3 +46,4 @@ export * from './admin-api';
 export * from './chat';
 export * from './live-events';
 export * from './strength';
+export * from './client-update';
