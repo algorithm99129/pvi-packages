@@ -42,6 +42,14 @@ export function unitAvatarPath(category: ResourceCategory, folderName: string): 
   return `${unitResourceDir(category, folderName)}/avatar`;
 }
 
+/**
+ * Static battle still at unit root (`skeleton.png`).
+ * Used in battle only when Spine is not present; with Spine this path is the atlas texture.
+ */
+export function unitBattleStillPath(category: ResourceCategory, folderName: string): string {
+  return `${unitResourceDir(category, folderName)}/skeleton`;
+}
+
 /** @deprecated Use unitAvatarPath */
 export function unitCardResourcePath(category: ResourceCategory, folderName: string): string {
   return unitAvatarPath(category, folderName);
