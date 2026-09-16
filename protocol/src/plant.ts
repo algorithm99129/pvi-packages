@@ -596,7 +596,6 @@ const SLOW_PLANT_IDS = new Set([
   'garlic',
   'hypno_shroom',
   'egg_eater',
-  'grave_buster',
   'coffee_bean',
 ]);
 

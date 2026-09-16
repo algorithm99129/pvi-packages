@@ -426,7 +426,6 @@ export type StateActionKind =
   | 'steal_metal'
   | 'digest_metal'
   | 'destroy_egg_group'
-  | 'destroy_grave'
   | 'leave_crater'
   | 'summon_insect'
   | 'throw_unit'
@@ -819,12 +818,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'destroy_egg_group',
     label: 'Destroy egg group',
-    hint: 'Remove the dirty egg group under this plant (Egg Eater)',
-  },
-  {
-    type: 'destroy_grave',
-    label: 'Destroy egg group (legacy)',
-    hint: 'Legacy alias for destroy_egg_group',
+    hint: 'Remove the dirty egg group under this plant (Nest Breaker / Egg Eater)',
     kind: 'plant',
   },
   {
@@ -1916,21 +1910,6 @@ export function createEggEaterStateGraph(opts?: {
   };
 }
 
-/** @deprecated Use {@link createEggEaterStateGraph}. */
-export function createGraveBusterStateGraph(opts?: {
-  idleAnim?: string;
-  attackAnim?: string;
-  dieAnim?: string;
-  digSeconds?: number;
-}): EntityStateGraph {
-  return createEggEaterStateGraph({
-    idleAnim: opts?.idleAnim,
-    attackAnim: opts?.attackAnim,
-    dieAnim: opts?.dieAnim,
-    chewSeconds: opts?.digSeconds,
-  });
-}
-
 /** Tangle Kelp / one-shot melee consume. */
 export function createMeleeConsumeStateGraph(opts?: {
   idleAnim?: string;
@@ -2908,6 +2887,7 @@ export function migrateInsectClientToGraph(client: {
 
 const ACTION_ALIASES: Record<string, StateActionKind> = {
   launch_bullet: 'fire_bullet',
+  destroy_grave: 'destroy_egg_group',
   fire_bullet: 'fire_bullet',
   deal_contact_damage: 'deal_contact_damage',
   deal_area_damage: 'deal_area_damage',
@@ -2937,7 +2917,6 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   steal_metal: 'steal_metal',
   digest_metal: 'digest_metal',
   destroy_egg_group: 'destroy_egg_group',
-  destroy_grave: 'destroy_grave',
   leave_crater: 'leave_crater',
   summon_insect: 'summon_insect',
   throw_unit: 'throw_unit',
