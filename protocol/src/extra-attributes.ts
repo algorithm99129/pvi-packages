@@ -191,6 +191,27 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     type: 'string',
     defaultValue: 'backup_gnat',
   },
+  {
+    key: 'crushesPlantsWhileMoving',
+    label: 'Crushes plants while moving',
+    hint: 'Frost Roller: flatten plants underfoot without stopping to chew (>0 = on)',
+    type: 'number',
+    defaultValue: 1,
+  },
+  {
+    key: 'vehicleHits',
+    label: 'Vehicle hits',
+    hint: 'Spikeweed/Spikerock: how many rollers/vehicles this hazard pops before exploding',
+    type: 'number',
+    defaultValue: 1,
+  },
+  {
+    key: 'chillOnContactSeconds',
+    label: 'Chill on contact seconds',
+    hint: 'Frost Roller: chill duration applied when crushing a plant',
+    type: 'number',
+    defaultValue: 4,
+  },
 ];
 
 export function extraPath(key: string): string {
