@@ -132,7 +132,8 @@ export function normalizeClientMediaPath(relativePath: string): string {
       underCustom.startsWith('Screen/') ||
       underCustom.startsWith('Avatars/') ||
       underCustom.startsWith('Flags/') ||
-      underCustom.startsWith('Special/')
+      underCustom.startsWith('Special/') ||
+      underCustom.startsWith('Config/')
     ) {
       return underCustom;
     }
@@ -155,7 +156,8 @@ export function normalizeClientMediaPath(relativePath: string): string {
     normalized.startsWith('Avatars/') ||
     normalized.startsWith('Flags/') ||
     normalized.startsWith('Special/') ||
-    normalized.startsWith('Rewards/')
+    normalized.startsWith('Rewards/') ||
+    normalized.startsWith('Config/')
   ) {
     return normalized;
   }

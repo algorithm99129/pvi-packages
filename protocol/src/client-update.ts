@@ -12,7 +12,7 @@ export interface AndroidObbDescriptor {
   contentVersion: number;
 }
 
-/** Response from GET /api/client/android-update */
+/** Dropbox-hosted (or legacy API) android-update.json */
 export interface AndroidUpdateManifest {
   latestVersionCode: number;
   latestVersionName: string;
@@ -23,6 +23,52 @@ export interface AndroidUpdateManifest {
   releaseNotes?: string;
   mainObb: AndroidObbDescriptor;
 }
+
+/** Editor secrets for Dropbox Android release publishing (token never sent to Nest). */
+export interface EditorDropboxReleaseSecrets {
+  dropboxAccessToken?: string;
+  /** Dropbox folder path inside the app folder, e.g. /android-releases */
+  folderPath?: string;
+  /** Last known direct URL for android-update.json (written into the Unity client). */
+  manifestUrl?: string;
+}
+
+export interface EditorDropboxReleasePublicConfig {
+  hasAccessToken: boolean;
+  accessTokenPreview?: string;
+  folderPath: string;
+  manifestUrl?: string;
+}
+
+export interface AndroidDropboxPublishRequest {
+  apkPath: string;
+  obbPath: string;
+  latestVersionCode: number;
+  latestVersionName: string;
+  minSupportedVersionCode?: number;
+  releaseNotes?: string;
+  /** Optional override; otherwise uses saved token. */
+  dropboxAccessToken?: string;
+  folderPath?: string;
+}
+
+export interface AndroidDropboxPublishResult {
+  manifest: AndroidUpdateManifest;
+  manifestUrl: string;
+  apkUrl: string;
+  obbUrl: string;
+  /** Path written under the Unity client Resources folder. */
+  clientSourcePath: string;
+}
+
+/** Unity Resources/Config/android-update-source.json */
+export interface AndroidUpdateSourceConfig {
+  /** Direct Dropbox URL for android-update.json */
+  manifestUrl: string;
+}
+
+export const DEFAULT_DROPBOX_RELEASE_FOLDER = '/android-releases';
+export const ANDROID_UPDATE_SOURCE_RELATIVE = 'Config/android-update-source.json';
 
 export function normalizeAndroidUpdateManifest(
   raw: Partial<AndroidUpdateManifest> | null | undefined,
