@@ -44,7 +44,7 @@ export function unitAvatarPath(category: ResourceCategory, folderName: string): 
 
 /**
  * Static battle still at unit root (`skeleton.png`).
- * Used in battle only when Spine is not present; with Spine this path is the atlas texture.
+ * Used in battle / roster only when Spine under `anim/` is not present.
  */
 export function unitBattleStillPath(category: ResourceCategory, folderName: string): string {
   return `${unitResourceDir(category, folderName)}/skeleton`;
@@ -55,20 +55,28 @@ export function unitCardResourcePath(category: ResourceCategory, folderName: str
   return unitAvatarPath(category, folderName);
 }
 
-/** Basename for Spine skeleton files at unit root. */
-export const SPINE_SKELETON_BASENAME = 'skeleton';
+/** Subfolder under each unit that holds Spine export files. */
+export const SPINE_ANIM_DIR = 'anim';
+
+/** Basename for Spine skeleton files inside `anim/` (e.g. character.json). */
+export const SPINE_SKELETON_BASENAME = 'character';
+
+/** `{Category}/{Folder}/anim` */
+export function unitSpineDir(category: ResourceCategory, folderName: string): string {
+  return `${unitResourceDir(category, folderName)}/${SPINE_ANIM_DIR}`;
+}
 
 export function unitSpineSkeletonJsonPath(category: ResourceCategory, folderName: string): string {
-  return `${unitResourceDir(category, folderName)}/${SPINE_SKELETON_BASENAME}.json`;
+  return `${unitSpineDir(category, folderName)}/${SPINE_SKELETON_BASENAME}.json`;
 }
 
 export function unitSpineAtlasPath(category: ResourceCategory, folderName: string): string {
-  return `${unitResourceDir(category, folderName)}/${SPINE_SKELETON_BASENAME}.atlas.txt`;
+  return `${unitSpineDir(category, folderName)}/${SPINE_SKELETON_BASENAME}.atlas.txt`;
 }
 
 /** Atlas file candidates — Unity Spine exports use `.atlas.txt`; legacy `.atlas` is supported. */
 export function unitSpineAtlasCandidates(category: ResourceCategory, folderName: string): string[] {
-  const dir = unitResourceDir(category, folderName);
+  const dir = unitSpineDir(category, folderName);
   return [
     `${dir}/${SPINE_SKELETON_BASENAME}.atlas.txt`,
     `${dir}/${SPINE_SKELETON_BASENAME}.atlas`,
@@ -76,7 +84,7 @@ export function unitSpineAtlasCandidates(category: ResourceCategory, folderName:
 }
 
 export function unitSpineTexturePath(category: ResourceCategory, folderName: string): string {
-  return `${unitResourceDir(category, folderName)}/${SPINE_SKELETON_BASENAME}.png`;
+  return `${unitSpineDir(category, folderName)}/${SPINE_SKELETON_BASENAME}.png`;
 }
 
 /** Legacy frame-clip animations (Bullets, Screen). */

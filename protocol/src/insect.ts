@@ -130,6 +130,10 @@ export interface InsectClientAssets {
   /** PascalCase unit folder under Insects/, e.g. WorkerBeetle */
   folder: string;
   /**
+   * @deprecated Prefer `stateGraph`. Mirrored from the idle node when present.
+   */
+  idle?: string;
+  /**
    * @deprecated Prefer `stateGraph`. Mirrored from the walk / entry node.
    */
   walk: string;
@@ -137,6 +141,8 @@ export interface InsectClientAssets {
   attack?: string;
   /** @deprecated Prefer stateGraph.die.spineAnim. */
   die?: string;
+  /** @deprecated Prefer stateGraph.die.explodeSpineAnim. */
+  dieExplode?: string;
   /** Status graph — statuses, AND conditions, and predefined engine actions. */
   stateGraph?: EntityStateGraph;
   /**
@@ -194,9 +200,11 @@ export function withInsectStateGraph(
   return {
     ...client,
     stateGraph: graph,
+    idle: clips.idle,
     walk: clips.walk || client.walk || client.folder,
     attack: clips.attack,
     die: clips.die,
+    dieExplode: clips.dieExplode,
   };
 }
 

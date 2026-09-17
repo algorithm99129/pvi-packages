@@ -13,8 +13,8 @@
  * runtime implements each action once; new units are authored by composing
  * statuses + conditions + actions — not by writing per-plant code.
  *
- * Die is special: not edged. HP ≤ 0 always enters die (plays die.spineAnim if
- * set, then despawns).
+ * Die is special: not edged. HP ≤ 0 always enters die (plays die.spineAnim or
+ * die.explodeSpineAnim, then despawns when the clip ends).
  */
 
 import {
@@ -41,6 +41,7 @@ export type PlantGraphStatus =
 
 /** Built-in insect statuses. */
 export type InsectGraphStatus =
+  | 'idle'
   | 'walk'
   | 'attack'
   | 'enrage'
@@ -85,6 +86,7 @@ export const INSECT_GRAPH_STATUSES: ReadonlyArray<{
   hint: string;
   defaultLoop: boolean;
 }> = [
+  { id: 'idle', label: 'Idle', hint: 'Standing / waiting (no march)', defaultLoop: true },
   { id: 'walk', label: 'Walk', hint: 'Lane locomotion', defaultLoop: true },
   { id: 'attack', label: 'Attack', hint: 'Bite / smash', defaultLoop: false },
   { id: 'enrage', label: 'Enrage', hint: 'Faster after armor break', defaultLoop: true },
@@ -115,6 +117,8 @@ export type StateConditionKind =
   | 'no_metal_in_range'
   | 'holding_metal'
   | 'no_holding_metal'
+  | 'has_equipment'
+  | 'no_equipment'
   | 'attack_interval_ready'
   | 'anim_ended'
   | 'after_seconds'
@@ -140,6 +144,8 @@ export type StateCondition =
   | { type: 'no_metal_in_range' }
   | { type: 'holding_metal' }
   | { type: 'no_holding_metal' }
+  | { type: 'has_equipment' }
+  | { type: 'no_equipment' }
   | { type: 'attack_interval_ready' }
   | { type: 'anim_ended' }
   | { type: 'after_seconds'; value: StateDurationValue }
@@ -315,6 +321,16 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
     type: 'no_holding_metal',
     label: 'Not holding metal',
     hint: 'Magnet is not currently holding stolen metal',
+  },
+  {
+    type: 'has_equipment',
+    label: 'Has equipment',
+    hint: 'This insect still has its armor / equipment piece (bucket, cone, …)',
+  },
+  {
+    type: 'no_equipment',
+    label: 'No equipment',
+    hint: 'Armor / equipment is gone (broken, magnet-stolen, or never had any)',
   },
   {
     type: 'attack_interval_ready',
@@ -900,10 +916,25 @@ export interface EntityStateNode {
   status: EntityGraphStatus;
   /** Optional editor label; defaults to status name. */
   label?: string;
-  /** Spine animation played while in this status (same skeleton for all statuses). */
+  /**
+   * Spine animation while in this status.
+   * When the unit has equipment, this is the **with-equipment** clip.
+   * Units without equipment (or after armor break) use {@link spineAnimUnarmed} when set.
+   */
   spineAnim?: string;
+  /**
+   * Spine clip after equipment is lost (bucket / cone / door / balloon).
+   * Omit when the status uses the same clip with or without equipment.
+   */
+  spineAnimUnarmed?: string;
   /** Defaults from status catalog when omitted. */
   loop?: boolean;
+  /**
+   * @deprecated Prefer {@link spineAnim} + {@link spineAnimUnarmed} on one node.
+   * When true/false, this node is only matched while equipment is present/absent
+   * (legacy dual-node graphs). Omit for always-available nodes.
+   */
+  requiresEquipment?: boolean;
   modifiers?: StateStatModifiers;
   /** Predefined engine actions run while / around this status. */
   actions?: StateAction[];
@@ -936,7 +967,14 @@ export interface EntityStateEdge {
 
 /** Always-on death config — not an edged status. */
 export interface EntityDieConfig {
+  /** Normal death clip (HP depleted by bullets, bites, etc.). */
   spineAnim?: string;
+  /** Death clip when killed by an explode blast (Cherry Bomb, Jalapeno, mine, …). */
+  explodeSpineAnim?: string;
+  /** Normal death after equipment is gone (bucket / cone / door). */
+  spineAnimUnarmed?: string;
+  /** Explode death after equipment is gone. */
+  explodeSpineAnimUnarmed?: string;
 }
 
 export interface EntityStateGraph {
@@ -1294,25 +1332,35 @@ export function createChomperStateGraph(opts?: {
   };
 }
 
-/** Insect lane walker: walk ↔ attack. */
+/** Insect lane walker: Idle (entry) ↔ Walk ↔ Attack (general insect flow). */
 export function createInsectWalkerStateGraph(opts?: {
+  idleAnim?: string;
   walkAnim?: string;
   attackAnim?: string;
   dieAnim?: string;
+  dieExplodeAnim?: string;
 }): EntityStateGraph {
+  const idleId = createStateNodeId();
   const walkId = createStateNodeId();
   const attackId = createStateNodeId();
   return {
     version: 1,
-    entryNodeId: walkId,
+    entryNodeId: idleId,
     nodes: [
+      {
+        id: idleId,
+        status: 'idle',
+        spineAnim: opts?.idleAnim,
+        loop: true,
+        position: { x: 80, y: 200 },
+      },
       {
         id: walkId,
         status: 'walk',
         spineAnim: opts?.walkAnim,
         loop: true,
         actions: [{ type: 'start_moving', when: 'on_enter' }],
-        position: { x: 80, y: 160 },
+        position: { x: 320, y: 80 },
       },
       {
         id: attackId,
@@ -1324,10 +1372,22 @@ export function createInsectWalkerStateGraph(opts?: {
           { type: 'deal_contact_damage', when: 'after_anim' },
           { type: 'reset_attack_timer', when: 'after_anim' },
         ],
-        position: { x: 360, y: 160 },
+        position: { x: 560, y: 200 },
       },
     ],
     edges: [
+      {
+        id: createStateEdgeId(),
+        from: idleId,
+        to: walkId,
+        conditions: cond({ type: 'no_enemy_in_range' }),
+      },
+      {
+        id: createStateEdgeId(),
+        from: idleId,
+        to: attackId,
+        conditions: cond({ type: 'enemy_in_range' }, { type: 'attack_interval_ready' }),
+      },
       {
         id: createStateEdgeId(),
         from: walkId,
@@ -1337,11 +1397,105 @@ export function createInsectWalkerStateGraph(opts?: {
       {
         id: createStateEdgeId(),
         from: attackId,
-        to: walkId,
+        to: idleId,
         conditions: cond({ type: 'anim_ended' }),
       },
     ],
-    die: { spineAnim: opts?.dieAnim },
+    die: {
+      spineAnim: opts?.dieAnim,
+      explodeSpineAnim: opts?.dieExplodeAnim || opts?.dieAnim,
+    },
+  };
+}
+
+/**
+ * Armored walker (Bucket Weevil, cone, screen-door, …): one node per status with
+ * optional dual clips — `spineAnim` (equipped) + `spineAnimUnarmed` (bare).
+ * Runtime picks the clip from current equipment; armor break refreshes playback.
+ */
+export function createInsectArmoredWalkerStateGraph(opts?: {
+  idleAnim?: string;
+  walkArmedAnim?: string;
+  walkUnarmedAnim?: string;
+  attackArmedAnim?: string;
+  attackUnarmedAnim?: string;
+  dieArmedAnim?: string;
+  dieUnarmedAnim?: string;
+  dieExplodeArmedAnim?: string;
+  dieExplodeUnarmedAnim?: string;
+}): EntityStateGraph {
+  const idleId = createStateNodeId();
+  const walkId = createStateNodeId();
+  const attackId = createStateNodeId();
+  return {
+    version: 1,
+    entryNodeId: idleId,
+    nodes: [
+      {
+        id: idleId,
+        status: 'idle',
+        label: 'Idle',
+        spineAnim: opts?.idleAnim,
+        loop: true,
+        position: { x: 80, y: 200 },
+      },
+      {
+        id: walkId,
+        status: 'walk',
+        label: 'Walk',
+        spineAnim: opts?.walkArmedAnim,
+        spineAnimUnarmed: opts?.walkUnarmedAnim,
+        loop: true,
+        actions: [{ type: 'start_moving', when: 'on_enter' }],
+        position: { x: 320, y: 80 },
+      },
+      {
+        id: attackId,
+        status: 'attack',
+        label: 'Attack',
+        spineAnim: opts?.attackArmedAnim,
+        spineAnimUnarmed: opts?.attackUnarmedAnim,
+        loop: false,
+        actions: [
+          { type: 'stop_moving', when: 'on_enter' },
+          { type: 'deal_contact_damage', when: 'after_anim' },
+          { type: 'reset_attack_timer', when: 'after_anim' },
+        ],
+        position: { x: 560, y: 200 },
+      },
+    ],
+    edges: [
+      {
+        id: createStateEdgeId(),
+        from: idleId,
+        to: walkId,
+        conditions: cond({ type: 'no_enemy_in_range' }),
+      },
+      {
+        id: createStateEdgeId(),
+        from: idleId,
+        to: attackId,
+        conditions: cond({ type: 'enemy_in_range' }, { type: 'attack_interval_ready' }),
+      },
+      {
+        id: createStateEdgeId(),
+        from: walkId,
+        to: attackId,
+        conditions: cond({ type: 'enemy_in_range' }, { type: 'attack_interval_ready' }),
+      },
+      {
+        id: createStateEdgeId(),
+        from: attackId,
+        to: idleId,
+        conditions: cond({ type: 'anim_ended' }),
+      },
+    ],
+    die: {
+      spineAnim: opts?.dieArmedAnim,
+      spineAnimUnarmed: opts?.dieUnarmedAnim,
+      explodeSpineAnim: opts?.dieExplodeArmedAnim || opts?.dieArmedAnim,
+      explodeSpineAnimUnarmed: opts?.dieExplodeUnarmedAnim || opts?.dieUnarmedAnim,
+    },
   };
 }
 
@@ -2800,6 +2954,7 @@ export function mirrorPlantClipsFromGraph(graph: EntityStateGraph): {
   aim?: string;
   init?: string;
   die?: string;
+  dieExplode?: string;
 } {
   const byStatus = (s: EntityGraphStatus) =>
     graph.nodes.find((n) => n.status === s)?.spineAnim?.trim() || undefined;
@@ -2813,13 +2968,16 @@ export function mirrorPlantClipsFromGraph(graph: EntityStateGraph): {
     aim: byStatus('aim'),
     init: byStatus('init'),
     die: graph.die.spineAnim?.trim() || undefined,
+    dieExplode: graph.die.explodeSpineAnim?.trim() || undefined,
   };
 }
 
 export function mirrorInsectClipsFromGraph(graph: EntityStateGraph): {
+  idle?: string;
   walk: string;
   attack?: string;
   die?: string;
+  dieExplode?: string;
 } {
   const byStatus = (s: EntityGraphStatus) =>
     graph.nodes.find((n) => n.status === s)?.spineAnim?.trim() || undefined;
@@ -2828,9 +2986,11 @@ export function mirrorInsectClipsFromGraph(graph: EntityStateGraph): {
     graph.nodes.find((n) => n.id === graph.entryNodeId)?.spineAnim?.trim() ||
     '';
   return {
+    idle: byStatus('idle'),
     walk,
     attack: byStatus('attack'),
     die: graph.die.spineAnim?.trim() || byStatus('die') || undefined,
+    dieExplode: graph.die.explodeSpineAnim?.trim() || undefined,
   };
 }
 
@@ -2874,14 +3034,18 @@ export function migratePlantClientToGraph(client: {
 }
 
 export function migrateInsectClientToGraph(client: {
+  idle?: string;
   walk?: string;
   attack?: string;
   die?: string;
+  dieExplode?: string;
 }): EntityStateGraph {
   return createInsectWalkerStateGraph({
+    idleAnim: client.idle || client.walk,
     walkAnim: client.walk,
     attackAnim: client.attack,
     dieAnim: client.die,
+    dieExplodeAnim: client.dieExplode || client.die,
   });
 }
 
@@ -3006,6 +3170,8 @@ function normalizeCondition(raw: unknown): StateCondition | null {
     case 'no_metal_in_range':
     case 'holding_metal':
     case 'no_holding_metal':
+    case 'has_equipment':
+    case 'no_equipment':
     case 'attack_interval_ready':
     case 'anim_ended':
     case 'prepare_complete':
@@ -3061,10 +3227,18 @@ export function normalizeEntityStateGraph(
       status: n.status as EntityGraphStatus,
       label: typeof n.label === 'string' ? n.label : undefined,
       spineAnim: typeof n.spineAnim === 'string' ? n.spineAnim : undefined,
+      spineAnimUnarmed:
+        typeof (n as EntityStateNode).spineAnimUnarmed === 'string'
+          ? (n as EntityStateNode).spineAnimUnarmed
+          : undefined,
       loop:
         typeof n.loop === 'boolean'
           ? n.loop
           : defaultLoopForStatus(kind, n.status as EntityGraphStatus),
+      requiresEquipment:
+        typeof (n as EntityStateNode).requiresEquipment === 'boolean'
+          ? (n as EntityStateNode).requiresEquipment
+          : undefined,
       modifiers: normalizeStatModifiers(n.modifiers),
       actions: Array.isArray(n.actions)
         ? n.actions.map(normalizeAction).filter((a): a is StateAction => Boolean(a))
@@ -3075,8 +3249,17 @@ export function normalizeEntityStateGraph(
       },
     }));
   if (nodes.length === 0) return null;
-  const playable = nodes.filter((n) => n.status !== 'die');
+  const collapsed = collapseLegacyEquipmentNodes(nodes);
+  const playable = collapsed.filter((n) => n.status !== 'die');
   if (playable.length === 0) return null;
+
+  const idRemap = new Map<string, string>();
+  for (const n of nodes) {
+    if (playable.some((p) => p.id === n.id)) continue;
+    // Legacy unarmed/armed sibling removed — point edges at the kept armed/primary node.
+    const keep = playable.find((p) => p.status === n.status);
+    if (keep) idRemap.set(n.id, keep.id);
+  }
 
   const edges = (Array.isArray(g.edges) ? g.edges : [])
     .filter((e) => e && typeof e.id === 'string' && typeof e.from === 'string' && typeof e.to === 'string')
@@ -3101,10 +3284,18 @@ export function normalizeEntityStateGraph(
       } else if (legacy.trigger) {
         conditions = migrateLegacyTrigger(legacy.trigger);
       }
+      // After collapsing dual armed/bare nodes, equipment gates on those edges are redundant.
+      if (idRemap.size > 0) {
+        conditions = conditions.filter(
+          (c) => c.type !== 'has_equipment' && c.type !== 'no_equipment',
+        );
+      }
+      const from = idRemap.get(e.from!) ?? e.from!;
+      const to = idRemap.get(e.to!) ?? e.to!;
       return {
         id: e.id!,
-        from: e.from!,
-        to: e.to!,
+        from,
+        to,
         conditions,
         fromPort: normalizePort(legacy.fromPort),
         toPort: normalizePort(legacy.toPort),
@@ -3113,25 +3304,91 @@ export function normalizeEntityStateGraph(
     .filter(
       (e) =>
         e.conditions.length > 0 &&
+        e.from !== e.to &&
         playable.some((n) => n.id === e.from) &&
         playable.some((n) => n.id === e.to),
     );
 
+  // Deduplicate edges that became identical after remap.
+  const seenEdge = new Set<string>();
+  const uniqueEdges = edges.filter((e) => {
+    const key = `${e.from}->${e.to}:${e.conditions.map((c) => c.type).join('+')}`;
+    if (seenEdge.has(key)) return false;
+    seenEdge.add(key);
+    return true;
+  });
+
+  const entryRaw =
+    typeof g.entryNodeId === 'string' ? idRemap.get(g.entryNodeId) ?? g.entryNodeId : '';
   const entryNodeId =
-    typeof g.entryNodeId === 'string' && playable.some((n) => n.id === g.entryNodeId)
-      ? g.entryNodeId
-      : playable[0].id;
+    entryRaw && playable.some((n) => n.id === entryRaw) ? entryRaw : playable[0].id;
   const dieAnim =
     typeof g.die?.spineAnim === 'string'
       ? g.die.spineAnim
       : nodes.find((n) => n.status === 'die')?.spineAnim;
+  const explodeDieAnim =
+    typeof g.die?.explodeSpineAnim === 'string' ? g.die.explodeSpineAnim : undefined;
+  const dieUnarmed =
+    typeof g.die?.spineAnimUnarmed === 'string' ? g.die.spineAnimUnarmed : undefined;
+  const explodeUnarmed =
+    typeof g.die?.explodeSpineAnimUnarmed === 'string'
+      ? g.die.explodeSpineAnimUnarmed
+      : undefined;
   return {
     version: 1,
     entryNodeId,
     nodes: playable,
-    edges,
-    die: { spineAnim: dieAnim || undefined },
+    edges: uniqueEdges,
+    die: {
+      spineAnim: dieAnim || undefined,
+      explodeSpineAnim: explodeDieAnim?.trim() || undefined,
+      spineAnimUnarmed: dieUnarmed?.trim() || undefined,
+      explodeSpineAnimUnarmed: explodeUnarmed?.trim() || undefined,
+    },
   };
+}
+
+/**
+ * Merge legacy pairs of status nodes that only differed by `requiresEquipment`
+ * into one node with `spineAnim` (armed) + `spineAnimUnarmed` (bare).
+ */
+function collapseLegacyEquipmentNodes(nodes: EntityStateNode[]): EntityStateNode[] {
+  const byStatus = new Map<string, EntityStateNode[]>();
+  for (const n of nodes) {
+    const list = byStatus.get(n.status) ?? [];
+    list.push(n);
+    byStatus.set(n.status, list);
+  }
+
+  const out: EntityStateNode[] = [];
+  for (const [, group] of byStatus) {
+    const armed = group.find((n) => n.requiresEquipment === true);
+    const bare = group.find((n) => n.requiresEquipment === false);
+    if (armed && bare) {
+      out.push({
+        ...armed,
+        label: armed.label?.replace(/\s*\(armed\)\s*/i, '').trim() || undefined,
+        spineAnim: armed.spineAnim,
+        spineAnimUnarmed: bare.spineAnim || armed.spineAnimUnarmed,
+        requiresEquipment: undefined,
+      });
+      // Keep any extra ungated siblings for this status.
+      for (const n of group) {
+        if (n === armed || n === bare) continue;
+        if (n.requiresEquipment == null) out.push({ ...n, requiresEquipment: undefined });
+      }
+      continue;
+    }
+
+    for (const n of group) {
+      out.push({
+        ...n,
+        requiresEquipment: undefined,
+        spineAnimUnarmed: n.spineAnimUnarmed,
+      });
+    }
+  }
+  return out;
 }
 
 function normalizeStatModifiers(raw: unknown): StateStatModifiers | undefined {
@@ -3214,6 +3471,10 @@ export function conditionLabel(condition: StateCondition): string {
       return 'Holding stolen metal';
     case 'no_holding_metal':
       return 'Not holding metal';
+    case 'has_equipment':
+      return 'Has equipment';
+    case 'no_equipment':
+      return 'No equipment';
     case 'attack_interval_ready':
       return 'Cooldown elapsed';
     case 'anim_ended':

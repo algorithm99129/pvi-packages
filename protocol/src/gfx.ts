@@ -107,7 +107,7 @@ export interface CreateGfxClipRequest {
   frameFilePaths: string[];
 }
 
-/** Import Spine skeleton trio into a unit folder root as skeleton.json / .atlas.txt / .png. */
+/** Import Spine skeleton trio into `{unit}/anim/` as character.json / .atlas.txt / .png. */
 export interface ImportGfxSpineRequest {
   category: 'Plants' | 'Insects' | 'Bullets';
   unitFolder: string;

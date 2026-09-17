@@ -406,6 +406,8 @@ export interface PlantClientAssets {
   attack?: string;
   /** @deprecated Prefer stateGraph.die.spineAnim. */
   die?: string;
+  /** @deprecated Prefer stateGraph.die.explodeSpineAnim. */
+  dieExplode?: string;
   /**
    * Status graph — primary authoring for gameplay statuses, conditions, and
    * predefined engine actions. Spine clips are optional per status.
@@ -459,6 +461,7 @@ export function withPlantStateGraph(
     aim: clips.aim,
     attack: clips.attack,
     die: clips.die,
+    dieExplode: clips.dieExplode,
   };
 }
 
