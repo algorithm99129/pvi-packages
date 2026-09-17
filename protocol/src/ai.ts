@@ -102,6 +102,14 @@ export interface AiGenerateImageRequest {
   mode?: AiImageGenerationMode;
   /** Local file path for edit / inpaint reference */
   referenceAbsolutePath?: string;
+  /** Extra local file paths (multi-ref edit). Combined with {@link referenceAbsolutePath}. */
+  referenceAbsolutePaths?: string[];
+  /**
+   * Resources-relative stems or files (e.g. `Plants/Peashooter/avatar`, `Maps/front_yard/bg.png`).
+   * Resolved under the client Resources root. When present with mode `generate`, the main
+   * process uses `/v1/images/edits` so OpenAI can match these characters/maps.
+   */
+  referenceRelativePaths?: string[];
   /** Gallery image id for edit / inpaint reference */
   referenceGalleryId?: string;
   /** PNG data URL — transparent regions are inpainted (alpha 0 = edit area) */
