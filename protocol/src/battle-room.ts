@@ -147,8 +147,27 @@ export interface BattleRoomStatusSnapshot {
   sun: number;
   timeRemainingSec: number;
   outcome: BattleRoomCombatOutcome;
+  /**
+   * Attacker star score from lanes destroyed: floor(destroyed * 3 / laneCount).
+   * 0 = attacker defeated / defender held; 1–3 = attacker victory tiers (3/6 lanes → 1★).
+   */
+  stars?: number;
+  /** How many house lanes the attacker destroyed (0..laneCount). */
+  lanesDestroyed?: number;
   plants: BattleRoomStatusPlant[];
   insects: BattleRoomStatusInsect[];
+}
+
+/** Attacker stars from lanes destroyed on a live / casual PvP board (3★ = all lanes). */
+export function starsFromLaneClearPercent(
+  lanesDestroyed: number,
+  laneCount: number,
+  maxStars = 3,
+): number {
+  const destroyed = Math.max(0, Math.floor(lanesDestroyed));
+  const total = Math.max(1, Math.floor(laneCount));
+  const cap = Math.max(0, Math.floor(maxStars));
+  return Math.min(cap, Math.floor((destroyed * cap) / total));
 }
 
 /** Client→server / peer relay for live combat inputs. */
