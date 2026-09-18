@@ -26,6 +26,8 @@ export interface BattleRoomSummary {
   battleDurationSec: number;
   playerCount: number;
   status: BattleRoomStatus;
+  /** Whether the host account is an AI bot. */
+  hostPlayerType: 'human' | 'ai';
 }
 
 export interface BattleRoomPlayer {
@@ -112,6 +114,8 @@ export const BATTLE_ROOM_SOCKET_EVENTS = {
 export const BATTLE_ROOM_DEFAULT_STARTING_SUN = 2000;
 /** Default max battle length: 5 minutes. */
 export const BATTLE_ROOM_DEFAULT_BATTLE_DURATION_SEC = 300;
+/** Lobby expires if battle has not started within this many seconds after create. */
+export const BATTLE_ROOM_LOBBY_EXPIRE_SEC = 180;
 export const BATTLE_ROOM_MAX_PLAYERS = 2;
 
 export function normalizeBattleRoomDurationSec(value: unknown): BattleRoomDurationSec {
