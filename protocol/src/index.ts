@@ -43,6 +43,7 @@ export * from './schema-version';
 export * from './migrations';
 export * from './analysis';
 export * from './admin-api';
+export * from './metrics';
 export * from './chat';
 export * from './live-events';
 export * from './strength';

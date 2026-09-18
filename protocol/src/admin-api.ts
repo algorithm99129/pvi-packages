@@ -4,6 +4,7 @@ import type {
   AdminCreateGiftRequest,
   AdminCreateGiftResult,
 } from './live-events';
+import type { AdminMetricsSummary, CatalogUsageKind, CatalogUsageRow } from './metrics';
 import type { UserRole } from './user';
 
 export type { AdminCreateGiftRequest, AdminCreateGiftResult };
@@ -60,5 +61,18 @@ export interface AdminForceGardenProductionRequest {
 export interface AdminForceGardenProductionResult {
   ok: boolean;
   result?: ForceGardenProductionResult;
+  error?: string;
+}
+
+export interface AdminMetricsSummaryResult {
+  ok: boolean;
+  summary?: AdminMetricsSummary;
+  error?: string;
+}
+
+export interface AdminPopularityResult {
+  ok: boolean;
+  rows?: CatalogUsageRow[];
+  kind?: CatalogUsageKind;
   error?: string;
 }

@@ -1,4 +1,4 @@
-/** Self-hosted Android client update manifest (APK + OBB). */
+/** Dropbox-hosted Android client update manifest (APK + OBB). */
 
 export interface AndroidObbDescriptor {
   /** Canonical file name, e.g. main.1.com.gardensiege.game.obb */
@@ -12,7 +12,7 @@ export interface AndroidObbDescriptor {
   contentVersion: number;
 }
 
-/** Dropbox-hosted (or legacy API) android-update.json */
+/** Dropbox-hosted android-update.json */
 export interface AndroidUpdateManifest {
   latestVersionCode: number;
   latestVersionName: string;

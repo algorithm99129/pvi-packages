@@ -1,3 +1,5 @@
+import type { UserRole } from './user';
+
 /** Default MongoDB URI — same database Nest API uses for player/user documents. */
 export const DEFAULT_MONGODB_URI = 'mongodb://localhost:27017/garden-siege';
 
@@ -7,6 +9,8 @@ export interface AnalysisUserSummary {
   email: string;
   displayName: string;
   avatarId?: string;
+  /** Account privilege — player (default) or admin. */
+  role?: UserRole;
   wallet: { coin: number; gem: number; leaf: number };
   plantCount: number;
   unlockedPlantCount: number;
