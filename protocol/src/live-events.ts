@@ -4,10 +4,16 @@ import type { GoldCupConfig, SeasonMode } from './strength';
 import { defaultGoldCupConfig } from './strength';
 
 /** Timed live-ops content stored in MongoDB (`live_events` collection). */
-export type LiveEventKind = 'event' | 'season' | 'news';
+export type LiveEventKind = 'event' | 'season' | 'news' | 'gift';
 
-/** Who can see and claim the entry. */
-export type LiveEventAudience = 'individual' | 'team' | 'all';
+/**
+ * Who can see and claim the entry.
+ * - `all` — every player
+ * - `team` — players currently on a team
+ * - `users` — only `recipientUserIds`
+ * - `individual` — legacy alias for `all` (kept for existing Mongo docs)
+ */
+export type LiveEventAudience = 'individual' | 'team' | 'all' | 'users';
 
 export type LiveEventRewardStatus = 'none' | 'locked' | 'claimable' | 'claimed';
 
@@ -19,6 +25,8 @@ export interface LiveEventRecord {
   id: EntityId;
   kind: LiveEventKind;
   audience: LiveEventAudience;
+  /** Required when audience is `users`. */
+  recipientUserIds?: EntityId[];
   name: string;
   description: string;
   /** ISO-8601; defaults to createdAt when omitted on create. */
@@ -153,6 +161,29 @@ export interface LiveEventClaimResult {
 
 export interface LiveEventReadResult {
   unreadCount: number;
+}
+
+/** POST /live-events/admin/gifts — admin-only resource gift into the news feed. */
+export interface AdminCreateGiftRequest {
+  title: string;
+  description?: string;
+  /** `all` or explicit recipient user ids. */
+  recipient: 'all' | { userIds: string[] };
+  reward: Pick<HubRewardGrant, 'coin' | 'gem' | 'leaf'>;
+  pinned?: boolean;
+}
+
+export interface AdminCreateGiftResult {
+  id: EntityId;
+  kind: 'gift';
+  audience: LiveEventAudience;
+  recipientUserIds?: EntityId[];
+  name: string;
+  description: string;
+  startsAt: string;
+  endsAt: string;
+  published: boolean;
+  reward?: HubRewardGrant;
 }
 
 export interface SeasonTeamLockState {

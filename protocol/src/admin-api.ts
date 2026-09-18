@@ -1,5 +1,12 @@
 import type { ForceGardenProductionResult } from './garden';
 import type { GardenRaidHistoryEntry } from './raid';
+import type {
+  AdminCreateGiftRequest,
+  AdminCreateGiftResult,
+} from './live-events';
+import type { UserRole } from './user';
+
+export type { AdminCreateGiftRequest, AdminCreateGiftResult };
 
 /** Default local Nest API base (includes /api prefix). */
 export const DEFAULT_API_BASE_URL = 'http://localhost:3000/api';
@@ -22,6 +29,14 @@ export interface AdminApiStatus {
   apiBaseUrl: string;
   healthMessage?: string;
   loggedInAs?: string;
+  /** Role from login/profile when authenticated. */
+  role?: UserRole;
+  error?: string;
+}
+
+export interface AdminSendGiftResult {
+  ok: boolean;
+  gift?: AdminCreateGiftResult;
   error?: string;
 }
 
