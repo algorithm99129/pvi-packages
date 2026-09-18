@@ -41,7 +41,14 @@ export function mergePreferPrimary<T>(primary: T | undefined, fallback: T | unde
 export function clientPresentationScore(client: unknown): number {
   if (!isPlainObject(client)) return 0;
   let score = 0;
-  if (client.stateGraph != null) score += 4;
+  if (client.stateGraph != null) {
+    score += 4;
+    // Prefer the graph with more nodes so attribute.json can restore
+    // temporal/cooldown holds wiped from a stale aggregate insects.json.
+    if (isPlainObject(client.stateGraph) && Array.isArray(client.stateGraph.nodes)) {
+      score += client.stateGraph.nodes.length;
+    }
+  }
   if (Array.isArray(client.bulletShots) && client.bulletShots.length > 0) score += 3;
   if (client.bulletSpawn != null) score += 1;
   if (typeof client.idle === 'string' && client.idle.length > 0) score += 1;

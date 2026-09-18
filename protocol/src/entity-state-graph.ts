@@ -37,6 +37,7 @@ export type PlantGraphStatus =
   | 'digest'
   | 'hide'
   | 'produce'
+  | 'temporal'
   | 'die';
 
 /** Built-in insect statuses. */
@@ -54,9 +55,27 @@ export type InsectGraphStatus =
   | 'summon'
   | 'throw'
   | 'special'
+  | 'temporal'
   | 'die';
 
 export type EntityGraphStatus = PlantGraphStatus | InsectGraphStatus;
+
+/** Hold-only status: no Spine clip, no engine actions — wait on edge conditions. */
+export function isTemporalStatus(status: string | null | undefined): boolean {
+  return status === 'temporal';
+}
+
+/**
+ * Plants normally allow one node per status; insects may duplicate.
+ * Temporal is always multi-instance (several cooldown / delay holds in one graph).
+ */
+export function allowsDuplicateGraphStatus(
+  kind: EntityGraphKind,
+  status: EntityGraphStatus,
+): boolean {
+  if (isTemporalStatus(status)) return true;
+  return kind === 'insect';
+}
 
 export const PLANT_GRAPH_STATUSES: ReadonlyArray<{
   id: PlantGraphStatus;
@@ -77,6 +96,12 @@ export const PLANT_GRAPH_STATUSES: ReadonlyArray<{
   },
   { id: 'hide', label: 'Hide', hint: 'Withdrawn (Scaredy-shroom)', defaultLoop: true },
   { id: 'produce', label: 'Produce', hint: 'Sun / resource pulse', defaultLoop: false },
+  {
+    id: 'temporal',
+    label: 'Temporal',
+    hint: 'Hold only — no animation or actions; exit via cooldown / after_seconds / range',
+    defaultLoop: true,
+  },
   { id: 'die', label: 'Die', hint: 'Special — HP≤0 only; not edged', defaultLoop: false },
 ];
 
@@ -104,6 +129,12 @@ export const INSECT_GRAPH_STATUSES: ReadonlyArray<{
   { id: 'summon', label: 'Summon', hint: 'Call backup insects', defaultLoop: false },
   { id: 'throw', label: 'Throw', hint: 'Hurl Imp / projectile', defaultLoop: false },
   { id: 'special', label: 'Special', hint: 'One-shot ability (ladder, etc.)', defaultLoop: false },
+  {
+    id: 'temporal',
+    label: 'Temporal',
+    hint: 'Hold only — no animation or actions; exit via cooldown / after_seconds / range',
+    defaultLoop: true,
+  },
   { id: 'die', label: 'Die', hint: 'Special — HP≤0 only; not edged', defaultLoop: false },
 ];
 
@@ -920,14 +951,16 @@ export interface EntityStateNode {
    * Spine animation while in this status.
    * When the unit has equipment, this is the **with-equipment** clip.
    * Units without equipment (or after armor break) use {@link spineAnimUnarmed} when set.
+   * Ignored for {@link isTemporalStatus temporal} nodes (never play a clip).
    */
   spineAnim?: string;
   /**
    * Spine clip after equipment is lost (bucket / cone / door / balloon).
    * Omit when the status uses the same clip with or without equipment.
+   * Ignored for temporal nodes.
    */
   spineAnimUnarmed?: string;
-  /** Defaults from status catalog when omitted. */
+  /** Defaults from status catalog when omitted. Temporal nodes always loop (hold). */
   loop?: boolean;
   /**
    * @deprecated Prefer {@link spineAnim} + {@link spineAnimUnarmed} on one node.
@@ -936,7 +969,10 @@ export interface EntityStateNode {
    */
   requiresEquipment?: boolean;
   modifiers?: StateStatModifiers;
-  /** Predefined engine actions run while / around this status. */
+  /**
+   * Predefined engine actions run while / around this status.
+   * Temporal nodes never run actions (stripped on normalize).
+   */
   actions?: StateAction[];
   /** Canvas position in the status graph editor. */
   position: { x: number; y: number };
@@ -1343,6 +1379,7 @@ export function createInsectWalkerStateGraph(opts?: {
   const idleId = createStateNodeId();
   const walkId = createStateNodeId();
   const attackId = createStateNodeId();
+  const cooldownId = createStateNodeId();
   return {
     version: 1,
     entryNodeId: idleId,
@@ -1374,6 +1411,13 @@ export function createInsectWalkerStateGraph(opts?: {
         ],
         position: { x: 560, y: 200 },
       },
+      {
+        id: cooldownId,
+        status: 'temporal',
+        label: 'Attack cooldown',
+        loop: true,
+        position: { x: 560, y: 360 },
+      },
     ],
     edges: [
       {
@@ -1397,8 +1441,20 @@ export function createInsectWalkerStateGraph(opts?: {
       {
         id: createStateEdgeId(),
         from: attackId,
-        to: idleId,
+        to: cooldownId,
         conditions: cond({ type: 'anim_ended' }),
+      },
+      {
+        id: createStateEdgeId(),
+        from: cooldownId,
+        to: attackId,
+        conditions: cond({ type: 'enemy_in_range' }, { type: 'attack_interval_ready' }),
+      },
+      {
+        id: createStateEdgeId(),
+        from: cooldownId,
+        to: idleId,
+        conditions: cond({ type: 'no_enemy_in_range' }, { type: 'attack_interval_ready' }),
       },
     ],
     die: {
@@ -1427,6 +1483,7 @@ export function createInsectArmoredWalkerStateGraph(opts?: {
   const idleId = createStateNodeId();
   const walkId = createStateNodeId();
   const attackId = createStateNodeId();
+  const cooldownId = createStateNodeId();
   return {
     version: 1,
     entryNodeId: idleId,
@@ -1463,6 +1520,13 @@ export function createInsectArmoredWalkerStateGraph(opts?: {
         ],
         position: { x: 560, y: 200 },
       },
+      {
+        id: cooldownId,
+        status: 'temporal',
+        label: 'Attack cooldown',
+        loop: true,
+        position: { x: 560, y: 360 },
+      },
     ],
     edges: [
       {
@@ -1486,8 +1550,20 @@ export function createInsectArmoredWalkerStateGraph(opts?: {
       {
         id: createStateEdgeId(),
         from: attackId,
-        to: idleId,
+        to: cooldownId,
         conditions: cond({ type: 'anim_ended' }),
+      },
+      {
+        id: createStateEdgeId(),
+        from: cooldownId,
+        to: attackId,
+        conditions: cond({ type: 'enemy_in_range' }, { type: 'attack_interval_ready' }),
+      },
+      {
+        id: createStateEdgeId(),
+        from: cooldownId,
+        to: idleId,
+        conditions: cond({ type: 'no_enemy_in_range' }, { type: 'attack_interval_ready' }),
       },
     ],
     die: {
@@ -3222,32 +3298,44 @@ export function normalizeEntityStateGraph(
   if (!Array.isArray(g.nodes) || g.nodes.length === 0) return null;
   const nodes = g.nodes
     .filter((n) => n && typeof n.id === 'string' && typeof n.status === 'string')
-    .map((n) => ({
-      id: n.id,
-      status: n.status as EntityGraphStatus,
-      label: typeof n.label === 'string' ? n.label : undefined,
-      spineAnim: typeof n.spineAnim === 'string' ? n.spineAnim : undefined,
-      spineAnimUnarmed:
-        typeof (n as EntityStateNode).spineAnimUnarmed === 'string'
-          ? (n as EntityStateNode).spineAnimUnarmed
-          : undefined,
-      loop:
-        typeof n.loop === 'boolean'
-          ? n.loop
-          : defaultLoopForStatus(kind, n.status as EntityGraphStatus),
-      requiresEquipment:
-        typeof (n as EntityStateNode).requiresEquipment === 'boolean'
-          ? (n as EntityStateNode).requiresEquipment
-          : undefined,
-      modifiers: normalizeStatModifiers(n.modifiers),
-      actions: Array.isArray(n.actions)
-        ? n.actions.map(normalizeAction).filter((a): a is StateAction => Boolean(a))
-        : undefined,
-      position: {
-        x: Number.isFinite(n.position?.x) ? (n.position!.x as number) : 80,
-        y: Number.isFinite(n.position?.y) ? (n.position!.y as number) : 120,
-      },
-    }));
+    .map((n) => {
+      const status = n.status as EntityGraphStatus;
+      const temporal = isTemporalStatus(status);
+      return {
+        id: n.id,
+        status,
+        label: typeof n.label === 'string' ? n.label : undefined,
+        spineAnim: temporal
+          ? undefined
+          : typeof n.spineAnim === 'string'
+            ? n.spineAnim
+            : undefined,
+        spineAnimUnarmed: temporal
+          ? undefined
+          : typeof (n as EntityStateNode).spineAnimUnarmed === 'string'
+            ? (n as EntityStateNode).spineAnimUnarmed
+            : undefined,
+        loop: temporal
+          ? true
+          : typeof n.loop === 'boolean'
+            ? n.loop
+            : defaultLoopForStatus(kind, status),
+        requiresEquipment:
+          typeof (n as EntityStateNode).requiresEquipment === 'boolean'
+            ? (n as EntityStateNode).requiresEquipment
+            : undefined,
+        modifiers: temporal ? undefined : normalizeStatModifiers(n.modifiers),
+        actions: temporal
+          ? undefined
+          : Array.isArray(n.actions)
+            ? n.actions.map(normalizeAction).filter((a): a is StateAction => Boolean(a))
+            : undefined,
+        position: {
+          x: Number.isFinite(n.position?.x) ? (n.position!.x as number) : 80,
+          y: Number.isFinite(n.position?.y) ? (n.position!.y as number) : 120,
+        },
+      };
+    });
   if (nodes.length === 0) return null;
   const collapsed = collapseLegacyEquipmentNodes(nodes);
   const playable = collapsed.filter((n) => n.status !== 'die');
