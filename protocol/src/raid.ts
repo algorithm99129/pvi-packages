@@ -23,11 +23,21 @@ export const GARDEN_RAID_BATTLE_DURATION_SEC = 90;
 export const GARDEN_UNDER_ATTACK_TTL_SEC =
   GARDEN_RAID_SCOUT_TIMEOUT_SEC + GARDEN_RAID_BATTLE_DURATION_SEC + 30;
 
-/** Safe-mode / shield duration after a garden raid ends (24h). */
-export const GARDEN_SAFE_MODE_DURATION_MS = 24 * 60 * 60 * 1000;
+/**
+ * Editor Constants id — hours of post-raid garden safe mode (shield).
+ * Tunable in `Systems/logic.json` / Constants page; API reads via FormulaService.
+ */
+export const GARDEN_SAFE_MODE_HOURS_ID = 'GARDEN_SAFE_MODE_HOURS';
 
-/** Window for garden defense history shown in the client (24h). */
-export const GARDEN_RAID_HISTORY_WINDOW_MS = GARDEN_SAFE_MODE_DURATION_MS;
+/** Default safe-mode duration when the constant is missing (1 hour). */
+export const GARDEN_SAFE_MODE_HOURS_DEFAULT = 1;
+
+/** Fallback safe-mode duration in ms (matches {@link GARDEN_SAFE_MODE_HOURS_DEFAULT}). */
+export const GARDEN_SAFE_MODE_DURATION_MS =
+  GARDEN_SAFE_MODE_HOURS_DEFAULT * 60 * 60 * 1000;
+
+/** Window for garden defense history shown in the client (always 24h). */
+export const GARDEN_RAID_HISTORY_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 /** True when `until` is a future ISO timestamp. */
 export function isFutureIsoTimestamp(
@@ -171,6 +181,8 @@ export interface GardenRaidHistoryEntry {
   stars: number;
   stolenCoin: number;
   stolenGem: number;
+  /** Leaves stolen from garden production (pending leaf / leaf queues). */
+  stolenLeaf: number;
   attackedAt: string;
   /** Present when a full battle was recorded (player or simulated AI raid). */
   replay?: GardenRaidReplay;
