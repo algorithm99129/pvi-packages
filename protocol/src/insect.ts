@@ -113,7 +113,7 @@ import type {
 } from './plant';
 import { graphHasAction } from './plant-behavior';
 
-/** Legacy entity ids → Garden Siege insect ids (saved progress / old content). */
+/** Legacy entity ids → Greenkeep insect ids (saved progress / old content). */
 export const LEGACY_INSECT_ID_ALIASES: Record<string, string> = {
   normal_zombie: 'worker_beetle',
   conehead_zombie: 'horn_beetle',

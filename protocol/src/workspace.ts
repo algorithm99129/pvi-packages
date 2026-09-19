@@ -26,7 +26,7 @@ export interface EditorWorkspaceConfig {
 
 export const DEFAULT_WORKSPACE: EditorWorkspaceConfig = {
   version: 1,
-  name: 'Garden Siege',
+  name: 'Greenkeep',
   clientDirectory: 'apps/client',
   serverDirectory: 'apps/api',
   galleryDirectory: DEFAULT_GALLERY_DIRECTORY,

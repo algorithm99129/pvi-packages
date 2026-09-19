@@ -12,6 +12,6 @@ export const LOADING_SCREEN_IMAGE_PATH = 'Screen/LoadingScreen';
 export const LOADING_SCREEN_UPLOAD_PATH = 'Screen/LoadingScreen.png';
 
 export const DEFAULT_BRANDING: ClientBrandingConfig = {
-  gameTitle: 'Garden Siege',
+  gameTitle: 'Greenkeep',
   loadingScreenImage: LOADING_SCREEN_IMAGE_PATH,
 };
