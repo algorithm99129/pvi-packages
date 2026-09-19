@@ -150,6 +150,9 @@ export function toServerMission(mission: MissionDefinition): ServerMissionExport
     waves: mission.waves,
     starCriteria: mission.starCriteria,
     rewards: mission.rewards,
+    difficulty: mission.difficulty,
+    recommendedPlantLevel: mission.recommendedPlantLevel,
+    recommendedPotions: mission.recommendedPotions,
   };
 }
 
@@ -181,6 +184,9 @@ export function toClientMission(mission: MissionDefinition): ClientMissionExport
     unlockInsectId: firstClear?.unlockInsectId,
     thumbnailImage: mission.client?.thumbnailImage,
     previewImage: mission.client?.previewImage,
+    difficulty: mission.difficulty,
+    recommendedPlantLevel: mission.recommendedPlantLevel,
+    recommendedPotions: mission.recommendedPotions,
   };
 }
 

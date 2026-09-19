@@ -168,24 +168,24 @@ export function hubRewardGrantToWalletDelta(grant: HubRewardGrant | null | undef
   };
 }
 
-/** Default authorable plan matching the mockup structure. */
+/** Default authorable plan matching progression v0.2 (slower F2P gems). */
 export function createDefaultHubRewardPlan(): HubRewardPlan {
   return {
     schemaVersion: 1,
     dailyLogin: [
-      { day: 1, grant: { coin: 100 }, image: 'Rewards/daily_day_1' },
-      { day: 2, grant: { gem: 3 }, image: 'Rewards/daily_day_2' },
-      { day: 3, grant: { coin: 150 }, displayHint: 'Bonus', image: 'Rewards/daily_day_3' },
-      { day: 4, grant: { gem: 5, leaf: 2 }, displayHint: 'Pack', image: 'Rewards/daily_day_4' },
-      { day: 5, grant: { gem: 5 }, image: 'Rewards/daily_day_5' },
-      { day: 6, grant: { coin: 200 }, image: 'Rewards/daily_day_6' },
-      { day: 7, grant: { gem: 10, coin: 100 }, displayHint: 'Chest', image: 'Rewards/daily_day_7' },
+      { day: 1, grant: { coin: 80 }, image: 'Rewards/daily_day_1' },
+      { day: 2, grant: { gem: 2 }, image: 'Rewards/daily_day_2' },
+      { day: 3, grant: { coin: 100 }, image: 'Rewards/daily_day_3' },
+      { day: 4, grant: { gem: 3, leaf: 1 }, displayHint: 'Pack', image: 'Rewards/daily_day_4' },
+      { day: 5, grant: { gem: 2 }, image: 'Rewards/daily_day_5' },
+      { day: 6, grant: { coin: 120 }, image: 'Rewards/daily_day_6' },
+      { day: 7, grant: { gem: 5, coin: 50 }, displayHint: 'Chest', image: 'Rewards/daily_day_7' },
     ],
     streakBonuses: [
-      { id: 'streak_3', streakDays: 3, displayName: '3 Days', grant: { leaf: 5 }, image: 'Rewards/streak_3' },
-      { id: 'streak_7', streakDays: 7, displayName: '7 Days', grant: { gem: 10 }, image: 'Rewards/streak_7' },
-      { id: 'streak_14', streakDays: 14, displayName: '14 Days', grant: { gem: 15, coin: 200 }, image: 'Rewards/streak_14' },
-      { id: 'streak_30', streakDays: 30, displayName: '30 Days', grant: { gem: 30, coin: 500 }, image: 'Rewards/streak_30' },
+      { id: 'streak_3', streakDays: 3, displayName: '3 Days', grant: { leaf: 3 }, image: 'Rewards/streak_3' },
+      { id: 'streak_7', streakDays: 7, displayName: '7 Days', grant: { gem: 5 }, image: 'Rewards/streak_7' },
+      { id: 'streak_14', streakDays: 14, displayName: '14 Days', grant: { gem: 8, coin: 100 }, image: 'Rewards/streak_14' },
+      { id: 'streak_30', streakDays: 30, displayName: '30 Days', grant: { gem: 15, coin: 200 }, image: 'Rewards/streak_30' },
     ],
     dailyQuests: [
       {
@@ -193,7 +193,7 @@ export function createDefaultHubRewardPlan(): HubRewardPlan {
         displayName: 'Win 3 levels',
         description: 'Complete any 3 missions today.',
         objective: { type: 'mission_wins', target: 3 },
-        grant: { coin: 150, gem: 2 },
+        grant: { coin: 105, gem: 1 },
         goScene: 'missions',
       },
       {
@@ -201,7 +201,7 @@ export function createDefaultHubRewardPlan(): HubRewardPlan {
         displayName: 'Upgrade any plant 2 times',
         description: 'Spend upgrades on your plants.',
         objective: { type: 'upgrade_plant', target: 2 },
-        grant: { gem: 3 },
+        grant: { gem: 1 },
         goScene: 'plants',
       },
       {
@@ -209,7 +209,7 @@ export function createDefaultHubRewardPlan(): HubRewardPlan {
         displayName: 'Upgrade any insect once',
         description: 'Improve one insect in your roster.',
         objective: { type: 'upgrade_insect', target: 1 },
-        grant: { coin: 100, leaf: 2 },
+        grant: { coin: 70, leaf: 2 },
         goScene: 'insects',
       },
       {
@@ -217,35 +217,35 @@ export function createDefaultHubRewardPlan(): HubRewardPlan {
         displayName: 'Defeat 15 insects',
         description: 'Knock out insects in raids.',
         objective: { type: 'defeat_insects', target: 15 },
-        grant: { coin: 200, gem: 2 },
+        grant: { coin: 140, gem: 1 },
         goScene: 'missions',
       },
     ],
-    dailyQuestsAllClearGrant: { gem: 5, coin: 100 },
+    dailyQuestsAllClearGrant: { gem: 2, coin: 60 },
     achievements: [
       {
         id: 'ach_level_5',
         displayName: 'Reach player level 5',
         condition: { type: 'user_level', value: 5 },
-        grant: { coin: 300, gem: 5 },
+        grant: { coin: 300, gem: 2 },
       },
       {
         id: 'ach_level_10',
         displayName: 'Reach player level 10',
         condition: { type: 'user_level', value: 10 },
-        grant: { coin: 500, gem: 10 },
+        grant: { coin: 500, gem: 5 },
       },
       {
         id: 'ach_village_3',
         displayName: 'Village level 3',
         condition: { type: 'village_level', value: 3 },
-        grant: { leaf: 10, gem: 5 },
+        grant: { leaf: 10, gem: 2 },
       },
       {
         id: 'ach_wins_10',
         displayName: 'Win 10 missions',
         condition: { type: 'mission_wins', value: 10 },
-        grant: { coin: 400, gem: 8 },
+        grant: { coin: 400, gem: 4 },
       },
     ],
   };

@@ -304,6 +304,15 @@ export interface MissionDefinition {
     firstClear: MissionReward;
     perStar?: Partial<Record<1 | 2 | 3, MissionReward>>;
   };
+  /**
+   * Authored difficulty band for UX / soft gates (`easy` | `medium` | `hard`).
+   * Independent of the Easy/Medium/Hard star-try selector in battle.
+   */
+  difficulty?: 'easy' | 'medium' | 'hard' | string;
+  /** Suggested plant/insect level for a fair clear (UX copy). */
+  recommendedPlantLevel?: number;
+  /** Suggested potion uses for a fair hard clear (UX copy). */
+  recommendedPotions?: number;
   /** Client presentation (thumbnail art, etc.). */
   client?: MissionClientAssets;
 }
@@ -322,6 +331,9 @@ export interface ServerMissionExport {
   waves?: MissionWave[];
   starCriteria: MissionDefinition['starCriteria'];
   rewards: MissionDefinition['rewards'];
+  difficulty?: MissionDefinition['difficulty'];
+  recommendedPlantLevel?: number;
+  recommendedPotions?: number;
 }
 
 /** Client — display strings + map reference + offline battle scenario */
@@ -356,4 +368,7 @@ export interface ClientMissionExport {
   thumbnailImage?: string;
   /** Wide detail preview (Resources path, no extension). 3:1 banner ({@link MISSION_PREVIEW_SIZE}). */
   previewImage?: string;
+  difficulty?: MissionDefinition['difficulty'];
+  recommendedPlantLevel?: number;
+  recommendedPotions?: number;
 }

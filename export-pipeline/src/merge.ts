@@ -139,6 +139,9 @@ export function mergeMission(client: ClientMissionExport, server?: ServerMission
         unlockInsectId: client.unlockInsectId,
       },
     },
+    difficulty: client.difficulty ?? server?.difficulty,
+    recommendedPlantLevel: client.recommendedPlantLevel ?? server?.recommendedPlantLevel,
+    recommendedPotions: client.recommendedPotions ?? server?.recommendedPotions,
     schemaVersion: client.schemaVersion ?? server?.schemaVersion,
   };
   return migrateMissionDefinition(merged);

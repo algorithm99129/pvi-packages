@@ -150,8 +150,8 @@ export const GEM_ONLY_INSECT_IDS: EntityId[] = [
 /** Default roster upgrade base for gem-only units (coin replaced by gem). */
 export const GEM_ONLY_UPGRADE_BASE: WalletResources = {
   coin: 0,
-  gem: 25,
-  leaf: 2,
+  gem: 5,
+  leaf: 1,
 };
 
 /** Rarity → gem buyout when `server.unlockGemCost` is omitted (non-starters). */

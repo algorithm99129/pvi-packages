@@ -81,7 +81,8 @@ export const DEFAULT_PLANT_UPGRADE: PlantUpgradeConfig = {
   maxLevel: PLANT_MAX_LEVEL,
   statFormulaId: 'plant_stat_at_level',
   costFormulaId: 'plant_upgrade_resource_cost',
-  baseUpgradeCost: { coin: 100, gem: 0, leaf: 2 },
+  /** v0.2 gem-primary upgrades — matches authored attribute `upgrade.baseUpgradeCost`. */
+  baseUpgradeCost: { coin: 35, gem: 5, leaf: 1 },
 };
 
 export function resolvePlantUpgrade(plant: Pick<PlantDefinition, 'upgrade'>): PlantUpgradeConfig {
