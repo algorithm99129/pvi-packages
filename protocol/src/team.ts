@@ -37,8 +37,12 @@ export interface TeamMemberView {
   userLevel: number;
   /** Account trophy / score proxy (userLevel * 1000 for MVP). */
   score: number;
-  /** Combat strength for team match / Gold Cup. */
+  /** Combat strength for team match / Gold Cup (legacy aggregate). */
   strength: number;
+  /** Attack strength (top insects + attack W/L). */
+  attackStrength: number;
+  /** Defense strength (top plants + garden + defense W/L). */
+  defenseStrength: number;
   /** ISO timestamp or empty when unknown. */
   lastActiveAt: string;
   joinedAt: string;

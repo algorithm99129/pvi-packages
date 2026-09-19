@@ -15,6 +15,12 @@ export const STR_GARDEN_PLANT_WEIGHT_DEFAULT = 0.35;
 /** How many top roster plants (and insects) count toward player strength. */
 export const STR_TOP_UNITS_DEFAULT = 10;
 
+/**
+ * Soft matchmaking band: prefer defenders whose defenseStrength is within this
+ * percent of the attacker's attackStrength.
+ */
+export const STR_MATCHMAKE_BAND_PCT_DEFAULT = 15;
+
 /** Relative strength gap (%) treated as a draw when auto-resolving. */
 export const GOLD_CUP_DRAW_BAND_PCT_DEFAULT = 5;
 
@@ -129,6 +135,66 @@ export function playerStrengthFromParts(
         + Math.max(0, gardenStrength),
     ),
   );
+}
+
+/** Laplace-smoothed win rate; 0/0 → 0.5. */
+export function strengthRecordFactor(wins: number, losses: number): number {
+  const w = Math.max(0, Math.floor(wins));
+  const l = Math.max(0, Math.floor(losses));
+  return (w + 1) / (w + l + 2);
+}
+
+/**
+ * Attack / defense strength from roster power + W/L record.
+ * `recordFactor` defaults to 0.5 (no games played).
+ */
+export function sideStrengthFromRoster(
+  rosterStrength: number,
+  wins: number,
+  losses: number,
+): number {
+  const roster = Math.max(0, rosterStrength);
+  const factor = strengthRecordFactor(wins, losses);
+  return Math.max(0, Math.round(roster * (0.7 + 0.6 * factor)));
+}
+
+export function attackRosterFromInsects(
+  insectStrengths: number[],
+  topN = STR_TOP_UNITS_DEFAULT,
+): number {
+  return sumTopN(insectStrengths, topN);
+}
+
+export function defenseRosterFromPlants(
+  plantStrengths: number[],
+  gardenStrength: number,
+  topN = STR_TOP_UNITS_DEFAULT,
+): number {
+  return Math.max(0, Math.round(sumTopN(plantStrengths, topN) + Math.max(0, gardenStrength)));
+}
+
+/** Legacy aggregate for Gold Cup / old UI. */
+export function aggregatePlayerStrength(
+  attackStrength: number,
+  defenseStrength: number,
+): number {
+  return Math.max(
+    0,
+    Math.round((Math.max(0, attackStrength) + Math.max(0, defenseStrength)) / 2),
+  );
+}
+
+/** True when |a-b|/max ≤ bandPct/100. */
+export function strengthsWithinBand(
+  a: number,
+  b: number,
+  bandPct = STR_MATCHMAKE_BAND_PCT_DEFAULT,
+): boolean {
+  const x = Math.max(0, a);
+  const y = Math.max(0, b);
+  const max = Math.max(x, y, 1);
+  const band = Math.max(0, Math.min(100, bandPct)) / 100;
+  return Math.abs(x - y) / max <= band;
 }
 
 /** Auto-resolve outcome from two team strengths. */

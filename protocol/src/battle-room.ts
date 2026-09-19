@@ -20,8 +20,12 @@ export interface BattleRoomSummary {
   hostAvatarId: string;
   /** Account level for the lv. badge. */
   hostLevel: number;
-  /** Combat strength shown under the creator name. */
+  /** Combat strength shown under the creator name (legacy aggregate). */
   hostStrength: number;
+  /** Host attack strength for lobby comparison. */
+  hostAttackStrength?: number;
+  /** Host defense strength for lobby comparison. */
+  hostDefenseStrength?: number;
   mapTemplateId: string;
   rewardCoin: number;
   rewardGem: number;
@@ -48,6 +52,10 @@ export interface BattleRoomPlayer {
   plantIds?: string[];
   /** Alias of selectedIds when side is attacker (optional convenience). */
   insectIds?: string[];
+  /** Top insects + attack W/L — used for ATK vs DEF lobby comparison. */
+  attackStrength?: number;
+  /** Top plants + garden + defense W/L. */
+  defenseStrength?: number;
 }
 
 export interface BattleRoomDetail extends BattleRoomSummary {

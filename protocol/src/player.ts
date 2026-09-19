@@ -75,8 +75,18 @@ export interface PlayerProfile extends UserProfile, UserProgression {
    * prefer role-specific arrays.
    */
   battlePotionSlots?: Array<EntityId | null>;
-  /** Combat strength from plants, insects, and garden. */
+  /** Combat strength from plants, insects, and garden (legacy aggregate). */
   strength: number;
+  /** Top insects + attack W/L — used when this player is the attacker. */
+  attackStrength: number;
+  /** Top plants + garden + defense W/L — used when this player is the defender. */
+  defenseStrength: number;
+  /** Lifetime garden/room attack wins. */
+  attackWins: number;
+  attackLosses: number;
+  /** Lifetime garden/room defense wins. */
+  defenseWins: number;
+  defenseLosses: number;
   /** Current team id when the player belongs to a team; otherwise null. */
   teamId: string | null;
   /**

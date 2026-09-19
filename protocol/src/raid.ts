@@ -2,7 +2,7 @@ import type { EntityId } from './index';
 import type { GardenProductionPickup } from './garden';
 
 /**
- * Leaves granted per insect type used, multiplied by stars (1–3).
+ * Leaves granted per insect type used, multiplied by stars (1–5).
  * Same numeric rate as the retired upgrade-card grant.
  */
 export const RAID_INSECT_LEAVES_PER_STAR = 2;
@@ -10,11 +10,33 @@ export const RAID_INSECT_LEAVES_PER_STAR = 2;
 /** @deprecated Use {@link RAID_INSECT_LEAVES_PER_STAR}. */
 export const RAID_INSECT_CARDS_PER_STAR = RAID_INSECT_LEAVES_PER_STAR;
 
+/** Max stars for garden / live lane-clear scoring. */
+export const GARDEN_RAID_MAX_STARS = 5;
+
+/**
+ * Leaf spend refund multipliers by star (index = stars).
+ * Index 0 unused; ≥2★ aims for positive EV vs leavesSpent.
+ */
+export const GARDEN_RAID_LEAF_REFUND_BY_STAR: readonly number[] = [
+  0, 0.5, 1.1, 1.35, 1.6, 2.0,
+];
+
+/**
+ * Fraction of eligible defender pending production stealable by star.
+ * `share = STEAL_BASE + STEAL_PER_STAR * stars` (still capped by available).
+ */
+export const GARDEN_RAID_STEAL_BASE = 0.2;
+export const GARDEN_RAID_STEAL_PER_STAR = 0.15;
+
+/** Item-box bomb recharge: next = base * 2^uses + elapsedSec * RAMP (capped). */
+export const GARDEN_ITEM_BOX_RECHARGE_RAMP = 0.5;
+export const GARDEN_ITEM_BOX_RECHARGE_CAP_SEC = 180;
+
 /** Default scout preview length before combat auto-starts. */
 export const GARDEN_RAID_SCOUT_TIMEOUT_SEC = 10;
 
-/** Default battle countdown after scout ends. */
-export const GARDEN_RAID_BATTLE_DURATION_SEC = 90;
+/** Default battle countdown after scout ends (3 minutes). */
+export const GARDEN_RAID_BATTLE_DURATION_SEC = 180;
 
 /**
  * How long a defender stays "under attack" after matchmake (scout + battle + buffer).
@@ -70,8 +92,10 @@ export interface GardenRaidStolenSummary {
 export interface GardenRaidCompleteRequest {
   /** Insect types deployed (or loadout) during the village attack. */
   insectIds: EntityId[];
-  /** Stars earned this raid (0–3). */
+  /** Stars earned this raid (0–5). */
   stars: number;
+  /** Lanes where the lawn mower fired (secured, not fully destroyed). */
+  lanesSecured?: number;
   victory: boolean;
   /** Optional defender account id (must not be the attacker). */
   defenderUserId?: string;
@@ -141,6 +165,8 @@ export interface GardenRaidScoutSnapshot {
   avatarId: string;
   isAi: boolean;
   trophyScore: number;
+  /** Defender defenseStrength for scout chip / parity. */
+  defenseStrength?: number;
   mapTemplateId: EntityId;
   gardenLevel: number;
   placedPlants: GardenRaidPlacedPlant[];
@@ -194,6 +220,57 @@ export interface GardenRaidHistoryEntry {
 
 export interface GardenRaidHistoryResponse {
   entries: GardenRaidHistoryEntry[];
+}
+
+/**
+ * Garden / live plunder stars from secured (mower) + destroyed (house) lanes.
+ * destroyed weight 2, secured weight 1; maps onto 0..maxStars.
+ */
+export function starsFromLaneProgress(input: {
+  lanesDestroyed: number;
+  lanesSecured: number;
+  laneCount: number;
+  maxStars?: number;
+}): number {
+  const destroyed = Math.max(0, Math.floor(input.lanesDestroyed));
+  const secured = Math.max(0, Math.floor(input.lanesSecured));
+  const total = Math.max(1, Math.floor(input.laneCount));
+  const maxStars = Math.max(1, Math.floor(input.maxStars ?? GARDEN_RAID_MAX_STARS));
+  // Secured lanes that were later destroyed should not double-count — caller
+  // should pass disjoint sets. Clamp secured so points never exceed maxPoints.
+  const securedOnly = Math.min(secured, Math.max(0, total - destroyed));
+  const points = destroyed * 2 + securedOnly;
+  const maxPoints = total * 2;
+  return Math.min(maxStars, Math.floor((points * maxStars) / maxPoints));
+}
+
+/** Next item-box bomb recharge after `useCount` prior fires this raid. */
+export function gardenItemBoxNextRechargeSec(input: {
+  baseRechargeSec: number;
+  useCount: number;
+  battleElapsedSec: number;
+  ramp?: number;
+  capSec?: number;
+}): number {
+  const base = Math.max(1, input.baseRechargeSec);
+  const uses = Math.max(0, Math.floor(input.useCount));
+  const elapsed = Math.max(0, input.battleElapsedSec);
+  const ramp = Number.isFinite(input.ramp) ? Number(input.ramp) : GARDEN_ITEM_BOX_RECHARGE_RAMP;
+  const cap = Number.isFinite(input.capSec) ? Number(input.capSec) : GARDEN_ITEM_BOX_RECHARGE_CAP_SEC;
+  const raw = base * Math.pow(2, uses) + elapsed * ramp;
+  return Math.min(Math.max(1, raw), Math.max(1, cap));
+}
+
+/** Steal share of eligible pending production for a given star count (0–5). */
+export function gardenRaidStealShare(stars: number): number {
+  const s = Math.max(0, Math.min(GARDEN_RAID_MAX_STARS, Math.floor(stars)));
+  return Math.max(0, Math.min(1, GARDEN_RAID_STEAL_BASE + GARDEN_RAID_STEAL_PER_STAR * s));
+}
+
+/** Leaf spend refund multiplier for a given star count. */
+export function gardenRaidLeafRefundMultiplier(stars: number): number {
+  const s = Math.max(0, Math.min(GARDEN_RAID_MAX_STARS, Math.floor(stars)));
+  return GARDEN_RAID_LEAF_REFUND_BY_STAR[s] ?? 0;
 }
 
 /** POST /api/raids/garden/test/ai-attack — run a full AI garden raid (testing). */
