@@ -113,13 +113,26 @@ import type {
 } from './plant';
 import { graphHasAction } from './plant-behavior';
 
-/** Legacy PvZ zombie entity ids → Garden Siege insect ids (saved progress / old content). */
+/** Legacy entity ids → Garden Siege insect ids (saved progress / old content). */
 export const LEGACY_INSECT_ID_ALIASES: Record<string, string> = {
   normal_zombie: 'worker_beetle',
   conehead_zombie: 'horn_beetle',
   buckethead_zombie: 'bucket_weevil',
   flag_zombie: 'banner_wasp',
   newspaper_zombie: 'ledger_roach',
+  // Pre-rename PopCap-adjacent catalog ids
+  gargantuar_beetle: 'colossus_beetle',
+  red_gargantuar_beetle: 'red_colossus_beetle',
+  imp_ant: 'hatchling_ant',
+  jack_in_the_box_flea: 'surprise_flea',
+  bungee_spider: 'drop_spider',
+  pogo_hopper: 'spring_hopper',
+  snorkel_skimmer: 'dive_skimmer',
+  screen_door_beetle: 'mesh_beetle',
+  football_scarab: 'blitz_scarab',
+  worker_beetle_duck_tube: 'worker_beetle_float_tube',
+  horn_beetle_duck_tube: 'horn_beetle_float_tube',
+  bucket_weevil_duck_tube: 'bucket_weevil_float_tube',
 };
 
 /** Resolve a possibly-legacy insect id to the canonical catalog id. */
@@ -335,12 +348,12 @@ export interface InsectServerConfig {
   /**
    * How the attacker picks a deploy cell.
    * - `lane` (default): click / drop on a lane (spawn at insect column).
-   * - `plant`: click a plant to drop onto that cell (Bungee-style).
+   * - `plant`: click a plant to drop onto that cell (Drop Spider-style).
    */
   deployTarget?: 'lane' | 'plant';
   /**
    * When this insect would spawn on water terrain, remap to this catalog id
-   * (e.g. land beetle → duck-tube variant).
+   * (e.g. land beetle → float-tube variant).
    */
   waterVariantId?: string;
 }
@@ -376,8 +389,9 @@ export function resolveInsectDeployCost(insect: {
     return Math.floor(authored);
 
   const id = String(insect.id ?? '').trim().toLowerCase();
-  if (id.includes('football') || id.includes('gargantuar')) return 175;
-  if (id.includes('bucket') || id.includes('screen_door') || id.includes('door')) return 125;
+  if (id.includes('blitz') || id.includes('football') || id.includes('colossus')) return 175;
+  if (id.includes('bucket') || id.includes('mesh') || id.includes('screen_door') || id.includes('door'))
+    return 125;
   if (id.includes('cone') || id.includes('newspaper') || id.includes('ladder')) return 75;
 
   switch (insect.archetype) {

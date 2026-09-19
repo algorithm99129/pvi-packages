@@ -139,11 +139,11 @@ export const GEM_ONLY_PLANT_IDS: EntityId[] = [
  * Author `server.unlockSource: 'event'` + `unlockGemCost` and gem `upgrade.baseUpgradeCost`.
  */
 export const GEM_ONLY_INSECT_IDS: EntityId[] = [
-  'jack_in_the_box_flea',
-  'bungee_spider',
+  'surprise_flea',
+  'drop_spider',
   'digger_cricket',
   'frost_roller_beetle',
-  'red_gargantuar_beetle',
+  'red_colossus_beetle',
   'dancing_firefly',
 ];
 

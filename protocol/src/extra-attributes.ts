@@ -180,9 +180,9 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
   {
     key: 'throwInsectId',
     label: 'Throw insect id',
-    hint: 'Catalog id spawned by throw_unit (Gargantuar → imp_ant)',
+    hint: 'Catalog id spawned by throw_unit (Colossus → hatchling_ant)',
     type: 'string',
-    defaultValue: 'imp_ant',
+    defaultValue: 'hatchling_ant',
   },
   {
     key: 'summonInsectId',

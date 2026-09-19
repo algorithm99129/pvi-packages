@@ -520,7 +520,7 @@ export interface PlantServerConfig {
   blocksVault?: boolean;
   /** Ignites or extinguishes peas that pass through this plant. */
   transformsPeas?: boolean;
-  /** Protects nearby plants from aerial steal (Bungee). Radius via extra.aerialProtectRadius. */
+  /** Protects nearby plants from aerial steal (Drop Spider). Radius via extra.aerialProtectRadius. */
   blocksAerialSteal?: boolean;
   /**
    * Grid cells occupied horizontally (default 1). Cob Cannon is 2.

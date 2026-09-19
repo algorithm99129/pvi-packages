@@ -118,12 +118,12 @@ export const INSECT_GRAPH_STATUSES: ReadonlyArray<{
   { id: 'vault', label: 'Vault', hint: 'Jump first plant', defaultLoop: false },
   { id: 'burrow', label: 'Burrow', hint: 'Underground travel', defaultLoop: true },
   { id: 'emerge', label: 'Emerge', hint: 'Surface from burrow', defaultLoop: false },
-  { id: 'swim', label: 'Swim', hint: 'Underwater / pool travel (Snorkel)', defaultLoop: true },
+  { id: 'swim', label: 'Swim', hint: 'Underwater / pool travel (Dive Skimmer)', defaultLoop: true },
   { id: 'fly', label: 'Fly', hint: 'Air locomotion', defaultLoop: true },
   {
     id: 'aim',
     label: 'Aim / hang',
-    hint: 'Wind-up while dangling over a plant (Bungee Spider)',
+    hint: 'Wind-up while dangling over a plant (Drop Spider)',
     defaultLoop: true,
   },
   { id: 'summon', label: 'Summon', hint: 'Call backup insects', defaultLoop: false },
@@ -428,7 +428,7 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
   {
     type: 'throw_ready',
     label: 'Throw ready',
-    hint: 'Has Imp and has not thrown yet; also requires ~6 columns from the house (classic Gargantuar)',
+    hint: 'Has Imp and has not thrown yet; also requires ~6 columns from the house (classic Colossus)',
   },
   {
     type: 'special_ready',
@@ -478,8 +478,8 @@ export type StateActionKind =
   | 'throw_unit'
   | 'place_ladder'
   | 'steal_plant'
-  | 'bungee_drop'
-  | 'bungee_aim'
+  | 'aerial_drop'
+  | 'aerial_aim'
   | 'apply_freeze'
   | 'smash_plant';
 
@@ -883,7 +883,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'throw_unit',
     label: 'Throw / lob unit',
-    hint: 'Hurl Imp / lobbed projectile ahead (Gargantuar, Catapult)',
+    hint: 'Hurl Imp / lobbed projectile ahead (Colossus, Catapult)',
     kind: 'insect',
   },
   {
@@ -893,21 +893,21 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     kind: 'insect',
   },
   {
-    type: 'bungee_drop',
-    label: 'Bungee drop',
-    hint: 'Pick a plant cell and drop from the sky onto it (Bungee Spider)',
+    type: 'aerial_drop',
+    label: 'Aerial drop',
+    hint: 'Pick a plant cell and drop from the sky onto it (Drop Spider)',
     kind: 'insect',
   },
   {
-    type: 'bungee_aim',
-    label: 'Bungee aim',
-    hint: 'Hang / aim animation while locked onto a plant (Bungee Spider)',
+    type: 'aerial_aim',
+    label: 'Aerial aim',
+    hint: 'Hang / aim animation while locked onto a plant (Drop Spider)',
     kind: 'insect',
   },
   {
     type: 'steal_plant',
     label: 'Steal plant',
-    hint: 'Grab the plant underfoot and lift it away (Bungee Spider). Blocked by Umbrella Leaf.',
+    hint: 'Grab the plant underfoot and lift it away (Drop Spider). Blocked by Umbrella Leaf.',
     kind: 'insect',
   },
   {
@@ -918,7 +918,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'smash_plant',
     label: 'Smash plant',
-    hint: 'Instantly destroy the plant being chewed (Gargantuar smash)',
+    hint: 'Instantly destroy the plant being chewed (Colossus smash)',
     kind: 'insect',
   },
 ];
@@ -2189,8 +2189,8 @@ export function createMeleeConsumeStateGraph(opts?: {
   };
 }
 
-/** Snorkel: swim submerged → surface to bite → re-submerge. */
-export function createSnorkelStateGraph(opts?: {
+/** Dive Skimmer: swim submerged → surface to bite → re-submerge. */
+export function createDiveStateGraph(opts?: {
   swimAnim?: string;
   attackAnim?: string;
   dieAnim?: string;
@@ -2576,7 +2576,7 @@ export function createInsectEnrageStateGraph(opts?: {
   };
 }
 
-/** Jack-in-the-box style: walk then explode. */
+/** Surprise-flea style: walk then explode. */
 export function createInsectExplodeStateGraph(opts?: {
   walkAnim?: string;
   attackAnim?: string;
@@ -2786,7 +2786,7 @@ export function createInsectCatapultStateGraph(opts?: {
   };
 }
 
-/** Gargantuar: walk ↔ attack (smash), throw Imp when health low (priority over smash). */
+/** Colossus: walk ↔ attack (smash), throw Imp when health low (priority over smash). */
 export function createInsectThrowStateGraph(opts?: {
   walkAnim?: string;
   attackAnim?: string;
@@ -2836,7 +2836,7 @@ export function createInsectThrowStateGraph(opts?: {
       },
     ],
     edges: [
-      // Throw has priority over smash when HP is low (classic UpdateZombieGargantuar order).
+      // Throw has priority over smash when HP is low (classic UpdateZombieColossus order).
       {
         id: createStateEdgeId(),
         from: walkId,
@@ -2945,8 +2945,11 @@ export function createInsectLadderStateGraph(opts?: {
   };
 }
 
-/** Bungee Spider: drop onto a plant → aim / hang → steal upward (or leave empty-handed). */
-export function createInsectBungeeStateGraph(opts?: {
+/** @deprecated Use {@link createDiveStateGraph}. */
+export const createSnorkelStateGraph = createDiveStateGraph;
+
+/** Drop Spider: drop onto a plant → aim / hang → steal upward (or leave empty-handed). */
+export function createInsectAerialStealStateGraph(opts?: {
   flyAnim?: string;
   aimAnim?: string;
   stealAnim?: string;
@@ -2973,7 +2976,7 @@ export function createInsectBungeeStateGraph(opts?: {
         actions: [
           { type: 'enter_fly', when: 'on_enter' },
           { type: 'stop_moving', when: 'on_enter' },
-          { type: 'bungee_drop', when: 'on_enter' },
+          { type: 'aerial_drop', when: 'on_enter' },
         ],
         position: { x: 40, y: 200 },
       },
@@ -2985,7 +2988,7 @@ export function createInsectBungeeStateGraph(opts?: {
         loop: true,
         actions: [
           { type: 'stop_moving', when: 'on_enter' },
-          { type: 'bungee_aim', when: 'on_enter' },
+          { type: 'aerial_aim', when: 'on_enter' },
         ],
         position: { x: 240, y: 200 },
       },
@@ -3010,7 +3013,7 @@ export function createInsectBungeeStateGraph(opts?: {
         to: aimId,
         conditions: cond({ type: 'after_seconds', value: literalDuration(0.05) }),
       },
-      // Bungee is flying (SkipsPlantContact), so do not gate on enemy_in_range —
+      // Drop Spider is flying (SkipsPlantContact), so do not gate on enemy_in_range —
       // steal_plant resolves the plant underfoot (or retreats empty-handed).
       {
         id: createStateEdgeId(),
@@ -3022,6 +3025,9 @@ export function createInsectBungeeStateGraph(opts?: {
     die: { spineAnim: opts?.dieAnim },
   };
 }
+
+/** @deprecated Use {@link createInsectAerialStealStateGraph}. */
+export const createInsectBungeeStateGraph = createInsectAerialStealStateGraph;
 
 /** Mirror flat legacy clip fields from the graph for older readers. */
 export function mirrorPlantClipsFromGraph(graph: EntityStateGraph): {
@@ -3162,8 +3168,10 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   throw_unit: 'throw_unit',
   place_ladder: 'place_ladder',
   steal_plant: 'steal_plant',
-  bungee_drop: 'bungee_drop',
-  bungee_aim: 'bungee_aim',
+  aerial_drop: 'aerial_drop',
+  aerial_aim: 'aerial_aim',
+  bungee_drop: 'aerial_drop',
+  bungee_aim: 'aerial_aim',
   apply_freeze: 'apply_freeze',
   smash_plant: 'smash_plant',
 };
