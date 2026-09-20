@@ -23,6 +23,13 @@ export interface AnalysisUserSummary {
   gardenPlantCount: number;
   /** True when this account was seeded as an AI raid defender. */
   isAi?: boolean;
+  /**
+   * False until the sign-up email code is confirmed.
+   * Older accounts and bots are treated as verified (true).
+   */
+  emailVerified?: boolean;
+  /** True when an admin has suspended the account (cannot sign in). */
+  suspended?: boolean;
   /** Lifetime account XP (user level track). */
   totalXp?: number;
   /** Derived account level from totalXp. */

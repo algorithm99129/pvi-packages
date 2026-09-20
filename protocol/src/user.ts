@@ -36,6 +36,8 @@ export interface UserProfile {
    * Omitted or true for accounts created before verification, and for bots.
    */
   emailVerified?: boolean;
+  /** True when an admin has suspended the account (cannot sign in). */
+  suspended?: boolean;
   createdAt: string;
   updatedAt: string;
 }
