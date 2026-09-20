@@ -102,6 +102,9 @@ export function toClientPlant(plant: PlantDefinition): ClientPlantExport {
     // Pass through full server config. Slimming stripped combat fields
     // (upgradeFromPlantId, validTerrain, stackRole, …) from Unity plants.json.
     server: plant.server,
+    // Roster upgrade costs — must survive client aggregates or the next load
+    // drops them and autosave wipes attribute.json.
+    upgrade: plant.upgrade ?? undefined,
   };
 }
 
@@ -133,6 +136,7 @@ export function toClientInsect(insect: InsectDefinition): ClientInsectExport {
     stats: insect.stats,
     // Pass through full server config so Unity can read sunCost / recharge / deployTarget.
     server: insect.server,
+    upgrade: insect.upgrade ?? undefined,
     extraAttributes: insect.extraAttributes,
   };
 }

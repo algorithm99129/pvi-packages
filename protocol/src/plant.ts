@@ -710,4 +710,6 @@ export interface ClientPlantExport {
    * Keep in sync with authored `server` — do not slim on export.
    */
   server?: PlantServerConfig;
+  /** Roster upgrade costs — keep in sync with attribute.json / server export. */
+  upgrade?: PlantUpgradeConfig;
 }

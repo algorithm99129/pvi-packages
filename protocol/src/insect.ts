@@ -436,5 +436,7 @@ export interface ClientInsectExport {
   stats: InsectStatCurve;
   /** Pass through for deploy cost / recharge / lane behavior on the Unity client. */
   server?: InsectServerConfig;
+  /** Roster upgrade costs — keep in sync with attribute.json / server export. */
+  upgrade?: InsectUpgradeConfig;
   extraAttributes?: ExtraAttributes;
 }

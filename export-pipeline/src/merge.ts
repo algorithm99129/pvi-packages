@@ -90,7 +90,9 @@ export function mergePlant(client: ClientPlantExport, server?: ServerPlantExport
       DEFAULT_PLANT_SERVER,
     behavior: mergePreferPrimary(client.behavior, server?.behavior),
     extraAttributes: mergePreferPrimary(client.extraAttributes, server?.extraAttributes),
-    upgrade: server?.upgrade,
+    // Upgrade costs live on both aggregates and attribute.json — never server-only.
+    upgrade:
+      mergePreferPrimary(client.upgrade, server?.upgrade) ?? server?.upgrade ?? client.upgrade,
     schemaVersion: client.schemaVersion ?? server?.schemaVersion,
   };
   return migratePlantDefinition(merged);
@@ -105,8 +107,13 @@ export function mergeInsect(client: ClientInsectExport, server?: ServerInsectExp
     rarity: client.rarity ?? server?.rarity ?? 'common',
     stats: mergePreferPrimary(client.stats, server?.stats) ?? client.stats,
     client: mergePreferPrimary(client.client, server?.client) ?? client.client,
-    server: server?.server ?? DEFAULT_INSECT_SERVER,
+    server:
+      mergePreferPrimary(client.server, server?.server) ??
+      server?.server ??
+      DEFAULT_INSECT_SERVER,
     extraAttributes: mergePreferPrimary(client.extraAttributes, server?.extraAttributes),
+    upgrade:
+      mergePreferPrimary(client.upgrade, server?.upgrade) ?? server?.upgrade ?? client.upgrade,
     schemaVersion: client.schemaVersion ?? server?.schemaVersion,
   };
   return migrateInsectDefinition(merged);
