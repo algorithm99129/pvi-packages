@@ -31,6 +31,11 @@ export interface UserProfile {
   playerType: PlayerType;
   /** Current team id when the player belongs to a team; otherwise null/omitted. */
   teamId?: string | null;
+  /**
+   * False until the sign-up email code is confirmed.
+   * Omitted or true for accounts created before verification, and for bots.
+   */
+  emailVerified?: boolean;
   createdAt: string;
   updatedAt: string;
 }
