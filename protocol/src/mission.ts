@@ -1,4 +1,5 @@
 import type { EntityId } from './index';
+import { DEFAULT_MAP_GRID_COLUMNS } from './map';
 
 export interface MissionReward {
   photosynthesis?: number;
@@ -167,7 +168,7 @@ export function resolveMissionSide(side?: MissionSide): MissionSide {
 }
 
 export function defaultRulesForSide(side: MissionSide, mode: MissionMode = 'adventure'): MissionRules {
-  const battlefield = defaultBattlefieldForGrid(11);
+  const battlefield = defaultBattlefieldForGrid(DEFAULT_MAP_GRID_COLUMNS);
   if (side === 'attacker') {
     return {
       mode: mode === 'adventure' ? 'i_zombie' : mode,
