@@ -105,6 +105,27 @@ export function resolvePlantUpgrade(plant: Pick<PlantDefinition, 'upgrade'>): Pl
   };
 }
 
+/**
+ * Repeating attackers get faster as they level. The interval eases from the
+ * authored value at level 1 to attackIntervalMinScale × that value at max level.
+ */
+export function resolvePlantAttackIntervalMs(
+  plant: Pick<PlantDefinition, 'stats' | 'upgrade'>,
+  level: number,
+): number {
+  const base = plant.stats.attackIntervalMs;
+  if (!(base > 0)) return base;
+  const minScale = plant.stats.levelScaling?.attackIntervalMinScale;
+  if (minScale == null || !Number.isFinite(minScale) || minScale <= 0 || minScale >= 0.999) {
+    return base;
+  }
+  const upgrade = resolvePlantUpgrade(plant);
+  const maxLevel = Math.max(2, upgrade.maxLevel);
+  const t = Math.min(1, Math.max(0, (Math.max(1, Math.floor(level) || 1) - 1) / (maxLevel - 1)));
+  const scale = 1 - t * (1 - minScale);
+  return Math.max(50, Math.round(base * scale));
+}
+
 export interface PlantStatCurve {
   baseHealth: number;
   /**
@@ -119,6 +140,12 @@ export interface PlantStatCurve {
     healthPerLevel: number;
     /** Used for non-shooters; shooters use bullet.stats.damagePerLevel. */
     damagePerLevel: number;
+    /**
+     * At max upgrade level, repeating attackers fire at this fraction of
+     * attackIntervalMs (0.7 = 30% faster). Omitted or ≥ 1 leaves the interval unchanged.
+     * Shooters use this instead of health growth.
+     */
+    attackIntervalMinScale?: number;
     milestones?: Record<number, { trait?: string; bonusDamage?: number; pierce?: number }>;
   };
 }
