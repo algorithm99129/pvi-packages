@@ -37,6 +37,7 @@ export type PlantGraphStatus =
   | 'digest'
   | 'hide'
   | 'produce'
+  | 'special'
   | 'temporal'
   | 'die';
 
@@ -94,8 +95,14 @@ export const PLANT_GRAPH_STATUSES: ReadonlyArray<{
     hint: 'Recovery after chomp, or holding stolen metal (Magnet-shroom)',
     defaultLoop: true,
   },
-  { id: 'hide', label: 'Hide', hint: 'Withdrawn (Scaredy-shroom)', defaultLoop: true },
-  { id: 'produce', label: 'Produce', hint: 'Sun / resource pulse', defaultLoop: false },
+  { id: 'hide', label: 'Hide', hint: 'Withdrawn / folded / dormant curl', defaultLoop: true },
+  { id: 'produce', label: 'Produce', hint: 'Sun / resource / support pulse', defaultLoop: false },
+  {
+    id: 'special',
+    label: 'Special',
+    hint: 'Brace, reflect pulse, or other non-attack ability (Ironwood Guard)',
+    defaultLoop: false,
+  },
   {
     id: 'temporal',
     label: 'Temporal',
@@ -448,6 +455,7 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
  */
 export type StateActionKind =
   | 'fire_bullet'
+  | 'begin_charge'
   | 'deal_contact_damage'
   | 'deal_area_damage'
   | 'squash_crush'
@@ -481,7 +489,21 @@ export type StateActionKind =
   | 'aerial_drop'
   | 'aerial_aim'
   | 'apply_freeze'
-  | 'smash_plant';
+  | 'smash_plant'
+  | 'heal_ally'
+  | 'buff_attack_speed'
+  | 'knockback_insects'
+  | 'grant_shield'
+  | 'sip_economy'
+  | 'summon_temp_plant'
+  | 'brace'
+  | 'chain_damage'
+  | 'leave_slick'
+  | 'reduce_ally_cooldown'
+  | 'pull_insect'
+  | 'apply_slow'
+  | 'buff_move_speed'
+  | 'weaken_attack'
 
 export type StateActionWhen = 'on_enter' | 'after_anim' | 'on_exit';
 
@@ -512,6 +534,14 @@ export interface StateAction {
   splashColumnRange?: StateDurationValue;
   /** squash_crush: splash lane radius around impact. */
   splashLaneRange?: StateDurationValue;
+  /** knockback_insects: how many cells to push the insect back along the lane. */
+  knockbackCells?: StateDurationValue;
+  /** knockback_insects: damage dealt with the shove. Prefer stats.baseDamage. */
+  damage?: StateDurationValue;
+  /** knockback_insects: push only on every Nth attack. 1 = every attack. */
+  knockbackEvery?: StateDurationValue;
+  /** knockback_insects: only insects with no equipment. */
+  unequippedOnly?: boolean;
   /**
    * squash_crush: how the plant reaches the target.
    * Prefer this over hardcoding by plant id in the client (Squash hop vs Tangle Kelp pull).
@@ -553,7 +583,7 @@ export function normalizeSquashCrushStyle(raw: unknown): SquashCrushStyle | unde
   if (!s) return undefined;
   if (SQUASH_CRUSH_STYLE_SET.has(s)) return s as SquashCrushStyle;
   if (s === 'kelp' || s === 'pull' || s === 'drown' || s === 'drag') return 'pull_under';
-  if (s === 'jump' || s === 'leap' || s === 'squash') return 'hop';
+  if (s === 'jump' || s === 'leap' || s === 'mallet_mushroom') return 'hop';
   return undefined;
 }
 
@@ -596,9 +626,9 @@ export function normalizeExplodeVfxStyle(raw: unknown): ExplodeVfxStyle | undefi
   if (!s) return undefined;
   const lower = s.toLowerCase().replace(/-/g, '_');
   if (EXPLODE_VFX_STYLE_SET.has(lower)) return lower as ExplodeVfxStyle;
-  if (lower === 'jalapenoexplode' || lower === 'jalapeno' || lower === 'lanefire') return 'lane_fire';
-  if (lower === 'fireexplosion' || lower === 'cherry' || lower === 'cherry_bomb') return 'fire';
-  if (lower === 'iceshroomsnow' || lower === 'ice_shroom' || lower === 'freeze') return 'ice';
+  if (lower === 'jalapenoexplode' || lower === 'storm_tulip' || lower === 'lanefire') return 'lane_fire';
+  if (lower === 'fireexplosion' || lower === 'cherry' || lower === 'storm_tulip') return 'fire';
+  if (lower === 'iceshroomsnow' || lower === 'mint_mist' || lower === 'freeze') return 'ice';
   if (lower === 'explosion' || lower === 'default') return 'boom';
   return undefined;
 }
@@ -612,7 +642,10 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     | 'freezeDuration'
     | 'chillDuration'
     | 'splashColumnRange'
-    | 'splashLaneRange';
+    | 'splashLaneRange'
+    | 'knockbackCells'
+    | 'damage'
+    | 'knockbackEvery';
   label: string;
   hint: string;
   /** Default Extra attribute path when inserting the action. */
@@ -688,6 +721,27 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     hint: 'Chebyshev fog clear radius (1 = classic Plantern 3×3)',
     defaultAttribute: 'extra.fogClearRadius',
   },
+  {
+    action: 'knockback_insects',
+    key: 'knockbackCells',
+    label: 'Knockback distance (cells)',
+    hint: 'How many cells the insect is pushed back. It keeps marching afterward.',
+    defaultAttribute: 'extra.knockbackCells',
+  },
+  {
+    action: 'knockback_insects',
+    key: 'damage',
+    label: 'Knockback damage',
+    hint: 'Damage dealt with the shove. Attribute stats.baseDamage uses this plant’s damage.',
+    defaultAttribute: 'stats.baseDamage',
+  },
+  {
+    action: 'knockback_insects',
+    key: 'knockbackEvery',
+    label: 'Every Nth attack',
+    hint: 'Push only on this attack count. 1 pushes every attack. 3 pushes on the 3rd, 6th, and so on.',
+    defaultAttribute: 'extra.knockbackEvery',
+  },
 ];
 
 export function actionParamFieldsFor(type: StateActionKind) {
@@ -723,6 +777,12 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     kind: 'both',
   },
   {
+    type: 'begin_charge',
+    label: 'Begin charge',
+    hint: 'Start the prepare timer again. The plant cannot fire until prepare completes.',
+    kind: 'plant',
+  },
+  {
     type: 'deal_contact_damage',
     label: 'Deal contact damage',
     hint: 'Melee hit against current target',
@@ -730,7 +790,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'deal_area_damage',
     label: 'Deal area damage',
-    hint: 'Pierce damage to all enemies in range (Gloom-shroom)',
+    hint: 'Damage every enemy in range (close area pulse)',
     kind: 'plant',
   },
   {
@@ -742,7 +802,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'chomp_devour',
     label: 'Chomp devour',
-    hint: 'Instantly eat one target (Chomper)',
+    hint: 'Swallow one target, then recover (Pitcher Snare)',
     kind: 'plant',
   },
   {
@@ -759,25 +819,25 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'clear_fog',
     label: 'Clear fog',
-    hint: 'Punch a clear hole in raid fog while this status is active (Plantern)',
+    hint: 'Reveal a hole in raid fog while this status is active (Lantern Lily)',
     kind: 'plant',
   },
   {
     type: 'clear_all_fog',
     label: 'Clear all fog',
-    hint: 'Permanently wipe the entire fog bank (Blover)',
+    hint: 'Wipe the entire fog bank (Gale Bloom)',
     kind: 'plant',
   },
   {
     type: 'blow_away_flying',
     label: 'Blow away flying',
-    hint: 'Remove every flying insect on the board (Blover)',
+    hint: 'Remove every flying insect on the board (Gale Bloom)',
     kind: 'plant',
   },
   {
     type: 'blow_away',
     label: 'Blow away',
-    hint: 'Clear all fog and remove flying insects (Blover combo)',
+    hint: 'Clear all fog and remove flying insects (Gale Bloom combo)',
     kind: 'plant',
   },
   {
@@ -823,103 +883,185 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'reverse_march',
     label: 'Reverse march',
-    hint: 'Turn around and walk back toward the spawn edge (Digger after surfacing)',
+    hint: 'Turn around and walk back toward the spawn edge (Earthworm Tunneler after surfacing)',
     kind: 'insect',
   },
   {
     type: 'enter_fly',
     label: 'Enter fly',
-    hint: 'Switch travel layer to flying (Balloon Moth with balloon equipment)',
+    hint: 'Switch travel layer to flying (Butterfly Glider while lifted)',
     kind: 'insect',
   },
   {
     type: 'exit_fly',
     label: 'Exit fly / land',
-    hint: 'Drop to ground travel layer after balloon is lost',
+    hint: 'Drop to the ground travel layer after lift is lost',
     kind: 'insect',
   },
   {
     type: 'redirect_lane',
     label: 'Redirect lane',
-    hint: 'Send biting insect to an adjacent lane (Garlic)',
+    hint: 'Send the biting insect into an adjacent lane (Lane Warden)',
     kind: 'plant',
   },
   {
     type: 'charm_insect',
     label: 'Charm insect',
-    hint: 'Convert biting insect to fight for the player (Hypno-shroom)',
+    hint: 'Turn the biting insect to fight for the garden (Turncoat Bloom)',
     kind: 'plant',
   },
   {
     type: 'steal_metal',
     label: 'Steal metal',
-    hint: 'Pull metal armor onto this plant and start holding it (Magnet-shroom)',
+    hint: 'Pull metal armor onto this plant and hold it (Lodestone Bloom)',
     kind: 'plant',
   },
   {
     type: 'digest_metal',
     label: 'Digest metal',
-    hint: 'Destroy held metal after the hold and free the magnet for another steal',
+    hint: 'Destroy held metal after the hold so this plant can steal again',
     kind: 'plant',
   },
   {
     type: 'destroy_egg_group',
     label: 'Destroy egg group',
-    hint: 'Remove the dirty egg group under this plant (Nest Breaker / Egg Eater)',
+    hint: 'Remove the dirty egg group under this plant (Nest Breaker)',
     kind: 'plant',
   },
   {
     type: 'leave_crater',
     label: 'Leave crater',
-    hint: 'Mark cells unplantable (Doom-shroom). Radius via extra.craterRadiusCells (0 = own cell).',
+    hint: 'Mark cells unplantable (Crater Cap). Radius via extra.craterRadiusCells (0 = own cell).',
     kind: 'plant',
   },
   {
     type: 'summon_insect',
     label: 'Summon insect',
-    hint: 'Spawn backup insects in this lane (Dancing Firefly)',
+    hint: 'Spawn allied insects in this lane (Firefly Lantern)',
     kind: 'insect',
   },
   {
     type: 'throw_unit',
     label: 'Throw / lob unit',
-    hint: 'Hurl Imp / lobbed projectile ahead (Colossus, Catapult)',
+    hint: 'Hurl a small ally or lobbed shot ahead (Bumble Queen, Damselfly Dancer)',
     kind: 'insect',
   },
   {
     type: 'place_ladder',
     label: 'Place ladder',
-    hint: 'Deploy a ladder on the blocking plant (Ladder Ant)',
+    hint: 'Deploy a ladder on the blocking plant (Ant Builder)',
     kind: 'insect',
   },
   {
     type: 'aerial_drop',
     label: 'Aerial drop',
-    hint: 'Pick a plant cell and drop from the sky onto it (Drop Spider)',
+    hint: 'Pick a plant cell and drop from the sky onto it (Silk Snatcher)',
     kind: 'insect',
   },
   {
     type: 'aerial_aim',
     label: 'Aerial aim',
-    hint: 'Hang / aim animation while locked onto a plant (Drop Spider)',
+    hint: 'Hang and aim while locked onto a plant (Silk Snatcher)',
     kind: 'insect',
   },
   {
     type: 'steal_plant',
     label: 'Steal plant',
-    hint: 'Grab the plant underfoot and lift it away (Drop Spider). Blocked by Umbrella Leaf.',
+    hint: 'Grab the plant underfoot and lift it away (Silk Snatcher). Blocked by Canopy Leaf.',
     kind: 'insect',
   },
   {
     type: 'apply_freeze',
     label: 'Apply freeze',
-    hint: 'Freeze / chill targets in blast or contact (Ice-shroom, Frost Roller)',
+    hint: 'Freeze or chill targets in the blast or on contact (Frost Bloom, Pebble Beetle roll)',
   },
   {
     type: 'smash_plant',
     label: 'Smash plant',
-    hint: 'Instantly destroy the plant being chewed (Colossus smash)',
+    hint: 'Instantly destroy the plant being chewed (Bumble Queen smash)',
     kind: 'insect',
+  },
+  {
+    type: 'heal_ally',
+    label: 'Heal ally',
+    hint: 'Heal the most damaged nearby plant (Nectar Nurse)',
+    kind: 'plant',
+  },
+  {
+    type: 'buff_attack_speed',
+    label: 'Buff attack speed',
+    hint: 'Briefly speed up nearby plants (Drum Gourd / Compass Fern)',
+    kind: 'plant',
+  },
+  {
+    type: 'knockback_insects',
+    label: 'Knockback insects',
+    hint: 'Push insects in this lane back a set number of cells and deal damage. They keep walking. Can be limited to unequipped insects and every Nth attack.',
+    kind: 'plant',
+  },
+  {
+    type: 'grant_shield',
+    label: 'Grant shield',
+    hint: 'Give this plant and the plant behind it a temporary absorb shield (Bubble Aloe)',
+    kind: 'plant',
+  },
+  {
+    type: 'sip_economy',
+    label: 'Sip economy',
+    hint: 'Temporarily reduce an economy plant’s production (Aphid Nibbler)',
+    kind: 'insect',
+  },
+  {
+    type: 'summon_temp_plant',
+    label: 'Summon temp plant',
+    hint: 'Spawn a short-lived ally sprout ahead in the lane (Seedling Swarm / Dandelion Courier)',
+    kind: 'plant',
+  },
+  {
+    type: 'brace',
+    label: 'Brace',
+    hint: 'Temporarily reduce incoming damage (Ironwood Guard / Snail Shellback)',
+  },
+  {
+    type: 'chain_damage',
+    label: 'Chain damage',
+    hint: 'Jump damage across nearby insects (Peppercoil)',
+    kind: 'plant',
+  },
+  {
+    type: 'leave_slick',
+    label: 'Leave slick',
+    hint: 'Leave a short slow trail in this lane (Slug Slimer)',
+    kind: 'insect',
+  },
+  {
+    type: 'reduce_ally_cooldown',
+    label: 'Reduce ally cooldown',
+    hint: 'Shorten nearby plants’ attack timers (Clockvine)',
+    kind: 'plant',
+  },
+  {
+    type: 'pull_insect',
+    label: 'Pull insect',
+    hint: 'Pull a light insect toward this plant (Cattail Harpooner)',
+    kind: 'plant',
+  },
+  {
+    type: 'apply_slow',
+    label: 'Apply slow',
+    hint: 'Slow insects in a small area (Mint Mist / Velcro hooks)',
+    kind: 'plant',
+  },
+  {
+    type: 'buff_move_speed',
+    label: 'Buff move speed',
+    hint: 'Briefly speed up nearby insects (Bumblebee Buzzer / Glowworm Trail)',
+    kind: 'insect',
+  },
+  {
+    type: 'weaken_attack',
+    label: 'Weaken attack',
+    hint: 'Delay nearby plant attacks or soften insect damage (Cricket Chirper / Spore Lantern)',
   },
 ];
 
@@ -3038,19 +3180,20 @@ export function mirrorPlantClipsFromGraph(graph: EntityStateGraph): {
   die?: string;
   dieExplode?: string;
 } {
+  const nodes = graph?.nodes ?? [];
   const byStatus = (s: EntityGraphStatus) =>
-    graph.nodes.find((n) => n.status === s)?.spineAnim?.trim() || undefined;
+    nodes.find((n) => n?.status === s)?.spineAnim?.trim() || undefined;
   const idle =
     byStatus('idle') ||
-    graph.nodes.find((n) => n.id === graph.entryNodeId)?.spineAnim?.trim() ||
+    nodes.find((n) => n?.id === graph?.entryNodeId)?.spineAnim?.trim() ||
     '';
   return {
     idle,
     attack: byStatus('attack'),
     aim: byStatus('aim'),
     init: byStatus('init'),
-    die: graph.die.spineAnim?.trim() || undefined,
-    dieExplode: graph.die.explodeSpineAnim?.trim() || undefined,
+    die: graph?.die?.spineAnim?.trim() || undefined,
+    dieExplode: graph?.die?.explodeSpineAnim?.trim() || undefined,
   };
 }
 
@@ -3061,18 +3204,19 @@ export function mirrorInsectClipsFromGraph(graph: EntityStateGraph): {
   die?: string;
   dieExplode?: string;
 } {
+  const nodes = graph?.nodes ?? [];
   const byStatus = (s: EntityGraphStatus) =>
-    graph.nodes.find((n) => n.status === s)?.spineAnim?.trim() || undefined;
+    nodes.find((n) => n?.status === s)?.spineAnim?.trim() || undefined;
   const walk =
     byStatus('walk') ||
-    graph.nodes.find((n) => n.id === graph.entryNodeId)?.spineAnim?.trim() ||
+    nodes.find((n) => n?.id === graph?.entryNodeId)?.spineAnim?.trim() ||
     '';
   return {
     idle: byStatus('idle'),
     walk,
     attack: byStatus('attack'),
-    die: graph.die.spineAnim?.trim() || byStatus('die') || undefined,
-    dieExplode: graph.die.explodeSpineAnim?.trim() || undefined,
+    die: graph?.die?.spineAnim?.trim() || byStatus('die') || undefined,
+    dieExplode: graph?.die?.explodeSpineAnim?.trim() || undefined,
   };
 }
 
@@ -3135,6 +3279,7 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   launch_bullet: 'fire_bullet',
   destroy_grave: 'destroy_egg_group',
   fire_bullet: 'fire_bullet',
+  begin_charge: 'begin_charge',
   deal_contact_damage: 'deal_contact_damage',
   deal_area_damage: 'deal_area_damage',
   squash_crush: 'squash_crush',
@@ -3174,6 +3319,20 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   bungee_aim: 'aerial_aim',
   apply_freeze: 'apply_freeze',
   smash_plant: 'smash_plant',
+  heal_ally: 'heal_ally',
+  buff_attack_speed: 'buff_attack_speed',
+  knockback_insects: 'knockback_insects',
+  grant_shield: 'grant_shield',
+  sip_economy: 'sip_economy',
+  summon_temp_plant: 'summon_temp_plant',
+  brace: 'brace',
+  chain_damage: 'chain_damage',
+  leave_slick: 'leave_slick',
+  reduce_ally_cooldown: 'reduce_ally_cooldown',
+  pull_insect: 'pull_insect',
+  apply_slow: 'apply_slow',
+  buff_move_speed: 'buff_move_speed',
+  weaken_attack: 'weaken_attack',
 };
 
 function normalizeAction(raw: unknown): StateAction | null {
@@ -3191,6 +3350,9 @@ function normalizeAction(raw: unknown): StateAction | null {
     'chillDuration',
     'splashColumnRange',
     'splashLaneRange',
+    'knockbackCells',
+    'damage',
+    'knockbackEvery',
   ] as const;
   for (const key of paramKeys) {
     if (a[key] != null) {
@@ -3198,6 +3360,7 @@ function normalizeAction(raw: unknown): StateAction | null {
       if (parsed) (action as unknown as Record<string, StateDurationValue>)[key] = parsed;
     }
   }
+  if (a.unequippedOnly === true) action.unequippedOnly = true;
   if (type === 'explode') {
     const style = normalizeExplodeVfxStyle(a.vfxStyle ?? a.explodeGfx);
     if (style) action.vfxStyle = style;

@@ -508,7 +508,7 @@ export interface PlantServerConfig {
   /**
    * Classic plant-on-plant upgrade: this packet cannot plant on empty cells.
    * It must be planted onto a living plant with this id, which is replaced.
-   * Examples: Gatling Pea → `repeater_pea`, Cattail → `lily_pad`.
+   * Examples: Burr Gatler → `twinpod_hazel`, Cattail Harpooner → `mangrove_bridge`.
    */
   upgradeFromPlantId?: EntityId;
   /**
@@ -581,25 +581,25 @@ export const PLANT_RECHARGE_SLOW = 30;
 export const PLANT_RECHARGE_VERY_SLOW = 50;
 
 const VERY_SLOW_PLANT_IDS = new Set([
-  'cherry_bomb',
-  'jalapeno',
-  'ice_shroom',
-  'doom_shroom',
-  'squash',
+  'storm_tulip',
+  'storm_tulip',
+  'mint_mist',
+  'storm_tulip',
+  'mallet_mushroom',
 ]);
 
 const SLOW_PLANT_IDS = new Set([
-  'wall_nut',
-  'tall_nut',
-  'pumpkin',
-  'chomper',
-  'potato_mine',
-  'spikeweed',
-  'spikerock',
-  'torchwood',
-  'garlic',
-  'hypno_shroom',
-  'egg_eater',
+  'bramble_bulwark',
+  'ironwood_guard',
+  'bubble_aloe',
+  'pitcher_snare',
+  'burrow_beetroot',
+  'bamboo_lancer',
+  'thistle_duelist',
+  'amber_sapling',
+  'vine_relay',
+  'echo_orchid',
+  'pitcher_snare',
   'coffee_bean',
 ]);
 
@@ -657,18 +657,18 @@ export function resolveHitsTravelLayers(plant: {
   }
 
   const id = plant.id ?? '';
-  if (id === 'spikeweed' || id === 'spikerock') return [...GROUND_ONLY];
+  if (id === 'bamboo_lancer' || id === 'thistle_duelist') return [...GROUND_ONLY];
 
   if (plant.role === 'anti_air') return [...GROUND_AND_AIR];
 
   if (
     plant.role === 'splash' ||
     plant.behavior?.kind === 'instant_explode' ||
-    id === 'cherry_bomb' ||
-    id === 'jalapeno' ||
-    id === 'ice_shroom' ||
-    id === 'doom_shroom' ||
-    id === 'squash'
+    id === 'storm_tulip' ||
+    id === 'storm_tulip' ||
+    id === 'mint_mist' ||
+    id === 'storm_tulip' ||
+    id === 'mallet_mushroom'
   ) {
     return [...ALL_TRAVEL];
   }

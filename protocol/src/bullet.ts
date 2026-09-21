@@ -12,6 +12,23 @@ export type BulletStatusKind = 'image' | 'spine';
 
 export type BulletStatusName = 'flying';
 
+/** How the flying sprite is oriented while the projectile moves. */
+export type BulletFlyingPose = 'none' | 'tangent' | 'rotate';
+
+export const BULLET_FLYING_POSE_OPTIONS: ReadonlyArray<{
+  id: BulletFlyingPose;
+  label: string;
+  hint: string;
+}> = [
+  { id: 'none', label: 'None', hint: 'Keep the sprite upright' },
+  {
+    id: 'tangent',
+    label: 'Tangent',
+    hint: 'Sprite top stays tangent to the flight path',
+  },
+  { id: 'rotate', label: 'Rotate', hint: 'Spin the sprite while it flies' },
+];
+
 export interface BulletStatusPresentation {
   kind: BulletStatusKind;
   /**
@@ -21,10 +38,77 @@ export interface BulletStatusPresentation {
   asset?: string;
 }
 
+export interface BulletVibration {
+  /** Perpendicular offset from the path, in grid cells. */
+  amplitude: number;
+  /** Oscillation cycles per second. */
+  frequency: number;
+  /**
+   * Random ± added to amplitude when a shot spawns.
+   * Each bullet wobbles a different amount, so the path is not a fixed sine.
+   */
+  amplitudeDelta: number;
+}
+
+/**
+ * The shot flies a limited distance, fading and shrinking along the way.
+ * Used for pulses such as a sonic wave that dies out at the shooter's range.
+ */
+export interface BulletSpread {
+  /** Travel the firing unit's range. Otherwise use distanceCells. */
+  useShooterRange: boolean;
+  /** Fixed travel distance in grid cells, when not using the shooter range. */
+  distanceCells: number;
+  /** Opacity at the end of the travel. 0 fades away, 1 stays solid. */
+  endAlpha: number;
+  /** Size at the end, relative to the start size. 1 stays the same. */
+  endScale: number;
+}
+
+/**
+ * The nose of the projectile sticks into the ground or a target and rides with it,
+ * then detonates. Omitted when unused.
+ */
+export interface BulletEmbed {
+  /** Fraction of the sprite buried from the nose (the top) and hidden. 0–1. */
+  length: number;
+  /** Seconds after sticking before the embedded section detonates. */
+  fuseSeconds: number;
+}
+
+export interface BulletBeam {
+  /** Seconds the beam stays on screen before it disappears. */
+  durationSeconds: number;
+}
+
 export interface BulletClientAssets {
   /** PascalCase unit folder under Bullets/, e.g. Pea */
   folder: string;
   flying: BulletStatusPresentation;
+  /**
+   * none — sprite stays upright.
+   * tangent — the top of the sprite follows the flight path.
+   * rotate — sprite spins while flying.
+   */
+  flyingPose?: BulletFlyingPose;
+  /**
+   * Sideways wobble while flying. Omitted when amplitude, frequency, and delta are all zero.
+   */
+  vibration?: BulletVibration;
+  /**
+   * Limited flight that fades and shrinks. Omitted when the shot flies on with no fade.
+   */
+  spread?: BulletSpread;
+  /**
+   * Nose sticks into the ground or a hit target and detonates after the fuse.
+   * Omitted when unused.
+   */
+  embed?: BulletEmbed;
+  /**
+   * When set, the shot is a light beam from the shooter to the edge of the screen
+   * instead of a flying projectile.
+   */
+  beam?: BulletBeam;
   /** Fraction of grid cell width (0–1). Default 0.4. Height follows sprite aspect. */
   cellWidthFill?: number;
   /** Extra multiplier applied after cell-width fitting. */
@@ -326,11 +410,76 @@ function normalizeBulletClient(
   });
 
   const next: BulletClientAssets = { folder, flying };
+  next.flyingPose = normalizeFlyingPose(client.flyingPose);
+  const vibration = normalizeVibration(client.vibration);
+  if (vibration) next.vibration = vibration;
+  const spread = normalizeSpread(client.spread);
+  if (spread) next.spread = spread;
+  const embed = normalizeEmbed(client.embed);
+  if (embed) next.embed = embed;
+  const beam = normalizeBeam(client.beam);
+  if (beam) next.beam = beam;
   next.cellWidthFill = resolveCellWidthFill(client.cellWidthFill, DEFAULT_BULLET_CELL_WIDTH_FILL);
   const scale =
     client.scale != null && Number.isFinite(client.scale) && client.scale > 0 ? client.scale : 1;
   next.scale = scale;
   return next;
+}
+
+function normalizeFlyingPose(value: unknown): BulletFlyingPose {
+  if (value === 'tangent' || value === 'rotate' || value === 'none') return value;
+  return 'none';
+}
+
+function normalizeVibration(value: unknown): BulletVibration | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const raw = value as Partial<BulletVibration>;
+  const amplitude = finiteNonNegative(raw.amplitude);
+  const frequency = finiteNonNegative(raw.frequency);
+  const amplitudeDelta = finiteNonNegative(raw.amplitudeDelta);
+  if (amplitude <= 0 && frequency <= 0 && amplitudeDelta <= 0) return undefined;
+  return { amplitude, frequency, amplitudeDelta };
+}
+
+function normalizeSpread(value: unknown): BulletSpread | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const raw = value as Partial<BulletSpread>;
+  const distanceCells = finiteNonNegative(raw.distanceCells);
+  const endAlpha = clamp01(raw.endAlpha, 1);
+  const endScale = clamp01(raw.endScale, 1);
+  const fades = endAlpha < 0.999 || endScale < 0.999;
+  const useShooterRange = raw.useShooterRange === true || (distanceCells <= 0 && fades);
+  if (!useShooterRange && distanceCells <= 0) return undefined;
+  return { useShooterRange, distanceCells, endAlpha, endScale };
+}
+
+function normalizeEmbed(value: unknown): BulletEmbed | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const raw = value as Partial<BulletEmbed>;
+  const length = clamp01(raw.length, 0);
+  const fuseSeconds = finiteNonNegative(raw.fuseSeconds);
+  if (length <= 0 || fuseSeconds <= 0) return undefined;
+  return { length, fuseSeconds };
+}
+
+function normalizeBeam(value: unknown): BulletBeam | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const raw = value as Partial<BulletBeam>;
+  const durationSeconds = finiteNonNegative(raw.durationSeconds);
+  if (durationSeconds <= 0) return undefined;
+  return { durationSeconds };
+}
+
+function clamp01(value: unknown, fallback: number): number {
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(1, Math.max(0, n));
+}
+
+function finiteNonNegative(value: unknown): number {
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return n;
 }
 
 function normalizeStatusPresentation(

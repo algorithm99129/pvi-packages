@@ -136,17 +136,17 @@ export const PLANT_CARD_SLUG: Record<string, string> = {
   SunShroom: 'sunshroom',
   WallNut: 'wallnut',
   CherryBomb: 'cherrybomb',
-  Chomper: 'chomper',
+  Chomper: 'pitcher_snare',
   HypnoShroom: 'hypnoshroom',
   IceShroom: 'iceshroom',
-  Jalapeno: 'jalapeno',
+  Jalapeno: 'storm_tulip',
   PotatoMine: 'potatomine',
   PuffShroom: 'puffshroom',
   ScaredyShroom: 'scaredyshroom',
   SnowPea: 'snowpea',
-  Spikeweed: 'spikeweed',
-  Squash: 'squash',
-  Peashooter: 'peashooter',
+  Spikeweed: 'bamboo_lancer',
+  Squash: 'mallet_mushroom',
+  Peashooter: 'acorn_blaster',
 };
 
 /** Template plant gfx name → idle animation clip key */

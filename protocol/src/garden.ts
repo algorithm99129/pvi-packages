@@ -75,11 +75,9 @@ export const GARDEN_ITEM_BOX_GEM_UNLOCK_COSTS: readonly number[] = [0, 50, 100];
 
 /** Plant ids that live in the item box (never on the permanent lawn grid). */
 export const GARDEN_ITEM_BOX_PLANT_IDS = new Set([
-  'cherry_bomb',
-  'jalapeno',
-  'ice_shroom',
-  'doom_shroom',
-  'squash',
+  'storm_tulip',
+  'mint_mist',
+  'mallet_mushroom',
 ]);
 
 /**

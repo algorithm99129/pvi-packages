@@ -113,13 +113,13 @@ export interface MissionCompleteResult extends UserProgression {
 
 /** Plants unlocked when a new account is created (Peashooter + Sunflower). */
 export const STARTER_PLANT_IDS: EntityId[] = [
-  'peashooter',
-  'sun_flower',
+  'acorn_blaster',
+  'sunleaf_banker',
 ];
 
 /** Insects unlocked when a new account is created (classic: basic beetle only). */
 export const STARTER_INSECT_IDS: EntityId[] = [
-  'worker_beetle',
+  'aphid_nibbler',
 ];
 
 /**
@@ -127,11 +127,11 @@ export const STARTER_INSECT_IDS: EntityId[] = [
  * Author `server.unlockSource: 'event'` + `unlockGemCost` and gem `upgrade.baseUpgradeCost`.
  */
 export const GEM_ONLY_PLANT_IDS: EntityId[] = [
-  'gatling_pea',
-  'doom_shroom',
-  'winter_melon',
-  'spikerock',
-  'twin_sunflower',
+  'burr_gatler',
+  'storm_tulip',
+  'spore_lantern',
+  'thistle_duelist',
+  'honeycomb_clover',
 ];
 
 /**
@@ -139,12 +139,12 @@ export const GEM_ONLY_PLANT_IDS: EntityId[] = [
  * Author `server.unlockSource: 'event'` + `unlockGemCost` and gem `upgrade.baseUpgradeCost`.
  */
 export const GEM_ONLY_INSECT_IDS: EntityId[] = [
-  'surprise_flea',
-  'drop_spider',
-  'digger_cricket',
-  'frost_roller_beetle',
-  'red_colossus_beetle',
-  'dancing_firefly',
+  'pillbug_tumbler',
+  'silkworm_spinner',
+  'earthworm_tunneler',
+  'pebble_beetle',
+  'bumble_queen',
+  'firefly_lantern',
 ];
 
 /** Default roster upgrade base for gem-only units (coin replaced by gem). */

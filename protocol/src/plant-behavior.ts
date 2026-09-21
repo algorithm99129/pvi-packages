@@ -9,7 +9,7 @@ export type PlantBehaviorKind =
   | 'instant_explode'
   | 'armed_trap'
   | 'melee_trap'
-  | 'chomper'
+  | 'pitcher_snare'
   | 'disruptor';
 
 export interface PlantBehaviorConfig {
@@ -40,18 +40,45 @@ export interface PlantBehaviorConfig {
   hideProximityColumns?: number;
 }
 
-const INSTANT_EXPLODE_IDS = new Set(['cherry_bomb', 'jalapeno', 'ice_shroom', 'doom_shroom']);
-const PRODUCER_IDS = new Set(['sun_flower', 'sun_shroom', 'twin_sunflower']);
+const INSTANT_EXPLODE_IDS = new Set(['storm_tulip', 'storm_tulip', 'mint_mist', 'storm_tulip']);
+const PRODUCER_IDS = new Set(['sunleaf_banker', 'moonseed_slinger', 'honeycomb_clover']);
 
 export const DEFAULT_PLANT_BEHAVIOR: PlantBehaviorConfig = { kind: 'shooter' };
 
-/** True when the plant fires projectile bullets (not melee / traps / explosives). */
+const MELEE_ACTIONS: ReadonlyArray<StateActionKind> = [
+  'deal_contact_damage',
+  'deal_area_damage',
+  'squash_crush',
+  'chomp_devour',
+  'knockback_insects',
+];
+
+/**
+ * True when the plant strikes in place (contact, cone, crush, snare, knockback)
+ * and never launches a projectile.
+ */
+export function plantUsesMeleeAttack(input: {
+  client?: { stateGraph?: EntityStateGraph | null } | null;
+}): boolean {
+  const graph = input.client?.stateGraph;
+  if (!graph?.nodes?.length) return false;
+  if (graphHasAction(graph, 'fire_bullet')) return false;
+  return MELEE_ACTIONS.some((type) => graphHasAction(graph, type));
+}
+
+/**
+ * True when the plant fires projectile bullets.
+ * A status graph is authoritative: bullets are authored only if it contains `fire_bullet`.
+ * Melee, support, and trap graphs must not show projectile fields.
+ */
 export function plantShootsBullets(input: {
   id: string;
   role: PlantRole;
   client: PlantClientAssets;
   behavior?: PlantBehaviorConfig;
 }): boolean {
+  const graph = input.client?.stateGraph;
+  if (graph?.nodes?.length) return graphHasAction(graph, 'fire_bullet');
   return resolvePlantBehavior(input).kind === 'shooter';
 }
 
@@ -77,7 +104,7 @@ export function plantClearsFog(input: {
   client?: PlantClientAssets | null;
 }): boolean {
   if (graphHasAction(input.client?.stateGraph, 'clear_fog')) return true;
-  return input.id.trim().toLowerCase() === 'plantern';
+  return input.id.trim().toLowerCase() === 'lantern_lily';
 }
 
 /** Merge explicit JSON behavior with conventions from role, id, and animation clips. */
@@ -104,18 +131,18 @@ function inferPlantBehavior(input: {
   if (INSTANT_EXPLODE_IDS.has(id)) {
     return {
       kind: 'instant_explode',
-      detonateDelaySeconds: id === 'cherry_bomb' ? 0.65 : id === 'doom_shroom' ? 1 : 0.5,
-      triggerLaneRange: id === 'jalapeno' ? 0 : id === 'doom_shroom' ? 3 : 1,
-      triggerColumnRange: id === 'jalapeno' ? 9 : id === 'doom_shroom' ? 3.5 : 1.5,
+      detonateDelaySeconds: id === 'storm_tulip' ? 0.65 : id === 'storm_tulip' ? 1 : 0.5,
+      triggerLaneRange: id === 'storm_tulip' ? 0 : id === 'storm_tulip' ? 3 : 1,
+      triggerColumnRange: id === 'storm_tulip' ? 9 : id === 'storm_tulip' ? 3.5 : 1.5,
       removeOnTrigger: true,
       explodeGfx:
-        id === 'jalapeno'
+        id === 'storm_tulip'
           ? 'lane_fire'
-          : id === 'ice_shroom'
+          : id === 'mint_mist'
             ? 'ice'
-            : id === 'cherry_bomb'
+            : id === 'storm_tulip'
               ? 'fire'
-              : id === 'doom_shroom'
+              : id === 'storm_tulip'
                 ? 'boom'
                 : 'boom',
     };
@@ -126,7 +153,7 @@ function inferPlantBehavior(input: {
   }
 
   // Fog lantern / utility — not a shooter (fog clear is authored on the status graph).
-  if (id === 'plantern' || role === 'utility') {
+  if (id === 'lantern_lily' || role === 'utility') {
     return { kind: 'blocker' };
   }
 
@@ -135,7 +162,7 @@ function inferPlantBehavior(input: {
   }
 
   // Magnet-shroom, Garlic, Hypno-shroom, etc. — not projectile plants.
-  if (role === 'disruptor' || id === 'magnet_shroom') {
+  if (role === 'disruptor' || id === 'mirror_ivy') {
     return { kind: 'disruptor' };
   }
 
@@ -152,22 +179,22 @@ function inferPlantBehavior(input: {
   // Tangle Kelp is spine-only (no client.attack clip), so role+attack alone missed it
   // and incorrectly fell through to shooter / bullet UI.
   if (
-    id === 'squash' ||
-    id === 'tangle_kelp' ||
+    id === 'mallet_mushroom' ||
+    id === 'tangle_root' ||
     graphHasAction(client.stateGraph, 'squash_crush')
   ) {
     return {
       kind: 'melee_trap',
-      triggerColumnRange: id === 'tangle_kelp' ? 1 : 1.15,
+      triggerColumnRange: id === 'tangle_root' ? 1 : 1.15,
       removeOnTrigger: true,
-      aimBeforeAttack: Boolean(client.aim) || id === 'squash',
+      aimBeforeAttack: Boolean(client.aim) || id === 'mallet_mushroom',
     };
   }
 
   if (role === 'trap') {
-    if (id === 'chomper') {
+    if (id === 'pitcher_snare') {
       return {
-        kind: 'chomper',
+        kind: 'pitcher_snare',
         triggerColumnRange: 1.05,
         removeOnTrigger: false,
         digestSeconds: 42,
@@ -183,7 +210,7 @@ function inferPlantBehavior(input: {
   }
 
   if (role === 'shooter' || role === 'splash' || role === 'anti_air') {
-    if (id === 'scaredy_shroom') {
+    if (id === 'mimosa_flinch') {
       return { kind: 'shooter', hideProximityColumns: 1.5 };
     }
     return { kind: 'shooter' };

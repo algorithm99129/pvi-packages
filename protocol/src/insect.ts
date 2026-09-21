@@ -115,24 +115,24 @@ import { graphHasAction } from './plant-behavior';
 
 /** Legacy entity ids → Greenkeep insect ids (saved progress / old content). */
 export const LEGACY_INSECT_ID_ALIASES: Record<string, string> = {
-  normal_zombie: 'worker_beetle',
-  conehead_zombie: 'horn_beetle',
-  buckethead_zombie: 'bucket_weevil',
-  flag_zombie: 'banner_wasp',
-  newspaper_zombie: 'ledger_roach',
+  normal_zombie: 'aphid_nibbler',
+  conehead_zombie: 'caterpillar_muncher',
+  buckethead_zombie: 'treehopper_helmet',
+  flag_zombie: 'cricket_chirper',
+  newspaper_zombie: 'cicada_singer',
   // Pre-rename PopCap-adjacent catalog ids
-  gargantuar_beetle: 'colossus_beetle',
-  red_gargantuar_beetle: 'red_colossus_beetle',
-  imp_ant: 'hatchling_ant',
-  jack_in_the_box_flea: 'surprise_flea',
-  bungee_spider: 'drop_spider',
-  pogo_hopper: 'spring_hopper',
-  snorkel_skimmer: 'dive_skimmer',
-  screen_door_beetle: 'mesh_beetle',
-  football_scarab: 'blitz_scarab',
-  worker_beetle_duck_tube: 'worker_beetle_float_tube',
-  horn_beetle_duck_tube: 'horn_beetle_float_tube',
-  bucket_weevil_duck_tube: 'bucket_weevil_float_tube',
+  gargantuar_beetle: 'bumble_queen',
+  red_gargantuar_beetle: 'bumble_queen',
+  imp_ant: 'honeybee_courier',
+  jack_in_the_box_flea: 'pillbug_tumbler',
+  bungee_spider: 'silkworm_spinner',
+  pogo_hopper: 'inchworm_skipper',
+  snorkel_skimmer: 'katydid_leafstepper',
+  screen_door_beetle: 'ladybug_roller',
+  football_scarab: 'ant_forager',
+  worker_beetle_duck_tube: 'springtail_skipper',
+  horn_beetle_duck_tube: 'snail_shellback',
+  bucket_weevil_duck_tube: 'snail_shellback',
 };
 
 /** Resolve a possibly-legacy insect id to the canonical catalog id. */
