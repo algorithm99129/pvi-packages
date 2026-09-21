@@ -504,6 +504,8 @@ export type StateActionKind =
   | 'apply_slow'
   | 'buff_move_speed'
   | 'weaken_attack'
+  | 'dash'
+  | 'arm_burst'
 
 export type StateActionWhen = 'on_enter' | 'after_anim' | 'on_exit';
 
@@ -1062,6 +1064,18 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     type: 'weaken_attack',
     label: 'Weaken attack',
     hint: 'Delay nearby plant attacks or soften insect damage (Cricket Chirper / Spore Lantern)',
+  },
+  {
+    type: 'dash',
+    label: 'Dash',
+    hint: 'Speed up only this insect, then optionally slow it. Scales and times come from extra.dashSpeedScale, dashSeconds, dashRecoverScale, dashRecoverSeconds.',
+    kind: 'insect',
+  },
+  {
+    type: 'arm_burst',
+    label: 'Arm burst',
+    hint: 'Once, after extra.fuseSeconds, explode for extra.burstDamage and leave. Re-entering the status does not reset the fuse (Pillbug Tumbler).',
+    kind: 'insect',
   },
 ];
 
@@ -3333,6 +3347,8 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   apply_slow: 'apply_slow',
   buff_move_speed: 'buff_move_speed',
   weaken_attack: 'weaken_attack',
+  dash: 'dash',
+  arm_burst: 'arm_burst',
 };
 
 function normalizeAction(raw: unknown): StateAction | null {

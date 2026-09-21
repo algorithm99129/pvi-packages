@@ -66,14 +66,19 @@ export interface BulletSpread {
 }
 
 /**
- * The nose of the projectile sticks into the ground or a target and rides with it,
- * then detonates. Omitted when unused.
+ * The shot sticks to the target it hits, then detonates. It does not clip the sprite.
+ * Omitted when unused.
  */
 export interface BulletEmbed {
-  /** Fraction of the sprite buried from the nose (the top) and hidden. 0–1. */
+  /**
+   * Legacy nose fraction. The shot no longer clips or sinks by this amount.
+   * Kept so older bullets still enable sticking when a fuse is set.
+   */
   length: number;
-  /** Seconds after sticking before the embedded section detonates. */
+  /** Seconds after sticking before the stuck shot detonates. */
   fuseSeconds: number;
+  /** Odds of stunning the target that was hit. 0 never, 1 always. */
+  stunChance?: number;
 }
 
 export interface BulletBeam {
@@ -100,8 +105,8 @@ export interface BulletClientAssets {
    */
   spread?: BulletSpread;
   /**
-   * Nose sticks into the ground or a hit target and detonates after the fuse.
-   * Omitted when unused.
+   * The shot sticks to the target it hits and detonates after the fuse.
+   * A miss explodes in place. Omitted when unused.
    */
   embed?: BulletEmbed;
   /**
@@ -458,8 +463,11 @@ function normalizeEmbed(value: unknown): BulletEmbed | undefined {
   const raw = value as Partial<BulletEmbed>;
   const length = clamp01(raw.length, 0);
   const fuseSeconds = finiteNonNegative(raw.fuseSeconds);
-  if (length <= 0 || fuseSeconds <= 0) return undefined;
-  return { length, fuseSeconds };
+  if (fuseSeconds <= 0) return undefined;
+  const stunChance = clamp01(raw.stunChance, 0);
+  const embed: BulletEmbed = { length, fuseSeconds };
+  if (stunChance > 0) embed.stunChance = stunChance;
+  return embed;
 }
 
 function normalizeBeam(value: unknown): BulletBeam | undefined {
