@@ -602,7 +602,7 @@ export function normalizeSquashCrushStyle(raw: unknown): SquashCrushStyle | unde
 }
 
 /** Visual styles for the `explode` action (and behavior.explodeGfx fallback). */
-export type ExplodeVfxStyle = 'boom' | 'fire' | 'lane_fire' | 'ice';
+export type ExplodeVfxStyle = 'boom' | 'fire' | 'lane_fire' | 'sand_storm' | 'ice';
 
 export const EXPLODE_VFX_STYLE_OPTIONS: ReadonlyArray<{
   id: ExplodeVfxStyle;
@@ -625,6 +625,11 @@ export const EXPLODE_VFX_STYLE_OPTIONS: ReadonlyArray<{
     hint: 'Fire sweeps across the whole lane (Jalapeno)',
   },
   {
+    id: 'sand_storm',
+    label: 'Sand storm',
+    hint: 'Storm swirls race from the plant to blast cells (Storm Tulip)',
+  },
+  {
     id: 'ice',
     label: 'Ice blast',
     hint: 'Ice burst at the plant',
@@ -640,8 +645,9 @@ export function normalizeExplodeVfxStyle(raw: unknown): ExplodeVfxStyle | undefi
   if (!s) return undefined;
   const lower = s.toLowerCase().replace(/-/g, '_');
   if (EXPLODE_VFX_STYLE_SET.has(lower)) return lower as ExplodeVfxStyle;
-  if (lower === 'jalapenoexplode' || lower === 'storm_tulip' || lower === 'lanefire') return 'lane_fire';
-  if (lower === 'fireexplosion' || lower === 'cherry' || lower === 'storm_tulip') return 'fire';
+  if (lower === 'sandstorm' || lower === 'storm_tulip') return 'sand_storm';
+  if (lower === 'jalapenoexplode' || lower === 'lanefire') return 'lane_fire';
+  if (lower === 'fireexplosion' || lower === 'cherry') return 'fire';
   if (lower === 'iceshroomsnow' || lower === 'mint_mist' || lower === 'freeze') return 'ice';
   if (lower === 'explosion' || lower === 'default') return 'boom';
   return undefined;

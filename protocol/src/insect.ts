@@ -214,6 +214,11 @@ export interface InsectClientAssets {
   abilityVfxStyle?: AbilityVfxStyle;
   /** Ability flash size as a fraction of lawn cell width (1 = one cell). */
   abilityVfxCellSize?: number;
+  /**
+   * Maps authored Greenkeep Spine clip names to borrowed skeleton clips
+   * until art is renamed. Editable in data.
+   */
+  spineClipAliases?: Record<string, string>;
   /** Optional equipment catalog id (helmet, door, …). */
   equipmentId?: EntityId;
   /**

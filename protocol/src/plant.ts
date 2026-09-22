@@ -508,6 +508,11 @@ export interface PlantClientAssets {
    * Defaults to {@link DEFAULT_SPRITE_VFX_CELL_SIZE}.
    */
   abilityVfxCellSize?: number;
+  /**
+   * Maps authored Greenkeep Spine clip names to borrowed skeleton clips
+   * (e.g. `{ StormTulip: "Jalapeno" }`) until art is renamed. Editable in data.
+   */
+  spineClipAliases?: Record<string, string>;
 }
 
 /** Persist graph and keep legacy idle/attack/… fields mirrored. */
