@@ -1,6 +1,10 @@
 import type { EntityId } from './index';
 import type { WalletResources } from './wallet';
 import type { InsectTravelLayer } from './insect';
+import type { AbilityVfxStyle } from './sprite-vfx';
+
+export type { AbilityVfxStyle } from './sprite-vfx';
+export { ABILITY_VFX_STYLE_OPTIONS } from './sprite-vfx';
 
 export type PlantRole =
   | 'shooter'
@@ -473,6 +477,23 @@ export interface PlantClientAssets {
    * @deprecated Prefer `cellAnchor`. Extra multiplier after cell-width fitting.
    */
   scale?: number;
+  /**
+   * Melee strike sprite under `VFX/Sprites/` (Resources stem, e.g. `BambooLancerFx`).
+   * Only for contact / area melee — not support, explode, or aura abilities.
+   * When empty, combat may fall back to `{folder}Fx` for plants.
+   */
+  meleeVfx?: string;
+  /**
+   * Presentation for {@link meleeVfx}: slash (default) or impact (stun slam).
+   */
+  meleeVfxStyle?: AbilityVfxStyle;
+  /**
+   * Signature ability sprite under `VFX/Sprites/` (heal orb, reveal ring, trail, …).
+   * Played on the matching status-graph action — not on every contact hit.
+   */
+  abilityVfx?: string;
+  /** How {@link abilityVfx} animates. Defaults by action when omitted. */
+  abilityVfxStyle?: AbilityVfxStyle;
 }
 
 /** Persist graph and keep legacy idle/attack/… fields mirrored. */

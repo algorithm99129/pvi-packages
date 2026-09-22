@@ -1,6 +1,7 @@
 import type { EntityId } from './index';
 import type { WalletResources } from './wallet';
 import type { EquipmentHitbox } from './equipment';
+import type { AbilityVfxStyle } from './sprite-vfx';
 
 export type InsectArchetype =
   | 'swarm'
@@ -195,6 +196,20 @@ export interface InsectClientAssets {
    * @deprecated Prefer `cellAnchor`. Extra multiplier after cell-width fitting.
    */
   scale?: number;
+  /**
+   * Contact melee sprite under `VFX/Sprites/` (Resources stem).
+   * Only for true melee contact — not siphon, trail, aura, or burrow abilities.
+   */
+  meleeVfx?: string;
+  /** Presentation for {@link meleeVfx}. Defaults to slash. */
+  meleeVfxStyle?: AbilityVfxStyle;
+  /**
+   * Signature ability sprite under `VFX/Sprites/` (siphon trail, pollen aura, …).
+   * Played on the matching status-graph action — not on every contact hit.
+   */
+  abilityVfx?: string;
+  /** How {@link abilityVfx} animates. */
+  abilityVfxStyle?: AbilityVfxStyle;
   /** Optional equipment catalog id (helmet, door, …). */
   equipmentId?: EntityId;
   /**

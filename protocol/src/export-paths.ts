@@ -21,6 +21,8 @@ export const CLIENT_EXPORT_PATHS = {
   rewardsMediaDir: `${CLIENT_RESOURCES_ROOT}/Rewards`,
   avatars: `${CLIENT_RESOURCES_ROOT}/Avatars/avatars.json`,
   avatarsDir: `${CLIENT_RESOURCES_ROOT}/Avatars`,
+  /** Melee strike sprite flashes (PNG only — no catalog JSON). */
+  spriteVfxDir: `${CLIENT_RESOURCES_ROOT}/VFX/Sprites`,
   flags: `${CLIENT_RESOURCES_ROOT}/Flags/flags.json`,
   flagsDir: `${CLIENT_RESOURCES_ROOT}/Flags`,
   chat: `${CLIENT_RESOURCES_ROOT}/Chat/chat.json`,
@@ -32,8 +34,8 @@ export const CLIENT_EXPORT_PATHS = {
   balanceVersion: `${CLIENT_RESOURCES_ROOT}/balance-version.json`,
   /** Unity Resources root for path resolution */
   mediaRoot: CLIENT_RESOURCES_ROOT,
-  /** Editor uploads / generated art */
-  customMediaRoot: 'custom',
+  /** AI-generated scratch art under Resources/Generated */
+  generatedMediaRoot: 'Generated',
 } as const;
 
 /** NestJS API — balance JSON under Resources/ (mirrors client category layout) */
@@ -94,18 +96,25 @@ const LEGACY_DATA_AGGREGATES: Record<string, string> = {
 
 /**
  * Normalize a path relative to Assets/Resources.
- * Legacy gfx/, data/, and game/ prefixes are rewritten — never write under data/ or game/.
+ * Strips legacy gfx/, data/, game/, and custom/ prefixes — everything lives
+ * directly under Resources (never under a custom/ subtree).
  */
 export function normalizeClientMediaPath(relativePath: string): string {
-  const normalized = relativePath.replace(/\\/g, '/').replace(/^\/+/, '');
+  let normalized = relativePath.replace(/\\/g, '/').replace(/^\/+/, '');
   if (!normalized) return normalized;
 
-  if (normalized === 'data' || normalized === 'game') {
-    return CLIENT_EXPORT_PATHS.customMediaRoot;
+  if (normalized.startsWith('Assets/Resources/')) {
+    normalized = normalized.slice('Assets/Resources/'.length);
+  } else if (normalized === 'Assets/Resources') {
+    return '';
+  }
+
+  if (normalized === 'data' || normalized === 'game' || normalized === 'custom' || normalized === 'gfx') {
+    return '';
   }
 
   if (normalized.startsWith('game/')) {
-    return `${CLIENT_EXPORT_PATHS.customMediaRoot}/${normalized.slice('game/'.length)}`;
+    return normalized.slice('game/'.length);
   }
 
   if (normalized.startsWith('data/')) {
@@ -114,55 +123,18 @@ export function normalizeClientMediaPath(relativePath: string): string {
     if (LEGACY_DATA_AGGREGATES[aggregateKey]) {
       return LEGACY_DATA_AGGREGATES[aggregateKey];
     }
-    return `${CLIENT_EXPORT_PATHS.customMediaRoot}/${rest}`;
+    return rest;
   }
 
-  if (normalized.startsWith(`${CLIENT_EXPORT_PATHS.customMediaRoot}/`)) {
-    const underCustom = normalized.slice(`${CLIENT_EXPORT_PATHS.customMediaRoot}/`.length);
-    // Legacy mis-routes (before category was allowlisted) — lift into Resources root.
-    if (
-      underCustom.startsWith('Rewards/') ||
-      underCustom.startsWith('Plants/') ||
-      underCustom.startsWith('Insects/') ||
-      underCustom.startsWith('Bullets/') ||
-      underCustom.startsWith('Equipment/') ||
-      underCustom.startsWith('Potions/') ||
-      underCustom.startsWith('Missions/') ||
-      underCustom.startsWith('Maps/') ||
-      underCustom.startsWith('Screen/') ||
-      underCustom.startsWith('Avatars/') ||
-      underCustom.startsWith('Flags/') ||
-      underCustom.startsWith('Special/') ||
-      underCustom.startsWith('Config/')
-    ) {
-      return underCustom;
-    }
-    return normalized;
+  if (normalized.startsWith('custom/')) {
+    return normalized.slice('custom/'.length);
   }
 
   if (normalized.startsWith('gfx/')) {
     return normalized.slice('gfx/'.length);
   }
 
-  if (
-    normalized.startsWith('Plants/') ||
-    normalized.startsWith('Insects/') ||
-    normalized.startsWith('Bullets/') ||
-    normalized.startsWith('Equipment/') ||
-    normalized.startsWith('Potions/') ||
-    normalized.startsWith('Missions/') ||
-    normalized.startsWith('Maps/') ||
-    normalized.startsWith('Screen/') ||
-    normalized.startsWith('Avatars/') ||
-    normalized.startsWith('Flags/') ||
-    normalized.startsWith('Special/') ||
-    normalized.startsWith('Rewards/') ||
-    normalized.startsWith('Config/')
-  ) {
-    return normalized;
-  }
-
-  return `${CLIENT_EXPORT_PATHS.customMediaRoot}/${normalized}`;
+  return normalized;
 }
 
 /** Legacy workspaces may point serverDirectory at Resources or data/game — normalize to API project root */

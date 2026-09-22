@@ -54,16 +54,26 @@ const MELEE_ACTIONS: ReadonlyArray<StateActionKind> = [
 ];
 
 /**
- * True when the plant strikes in place (contact, cone, crush, snare, knockback)
+ * True when the unit strikes in place (contact, cone, crush, snare, knockback)
  * and never launches a projectile.
  */
-export function plantUsesMeleeAttack(input: {
+export function entityUsesMeleeAttack(input: {
   client?: { stateGraph?: EntityStateGraph | null } | null;
 }): boolean {
   const graph = input.client?.stateGraph;
   if (!graph?.nodes?.length) return false;
   if (graphHasAction(graph, 'fire_bullet')) return false;
   return MELEE_ACTIONS.some((type) => graphHasAction(graph, type));
+}
+
+/**
+ * True when the plant strikes in place (contact, cone, crush, snare, knockback)
+ * and never launches a projectile.
+ */
+export function plantUsesMeleeAttack(input: {
+  client?: { stateGraph?: EntityStateGraph | null } | null;
+}): boolean {
+  return entityUsesMeleeAttack(input);
 }
 
 /**

@@ -24,6 +24,7 @@ export * from './export-paths';
 export * from './ai';
 export * from './gallery';
 export * from './avatar';
+export * from './sprite-vfx';
 export * from './flag';
 export * from './special';
 export * from './branding';
