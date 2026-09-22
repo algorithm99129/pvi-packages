@@ -506,6 +506,18 @@ export type StateActionKind =
   | 'weaken_attack'
   | 'dash'
   | 'arm_burst'
+  | 'mark_priority_target'
+  | 'delay_plant_attack'
+  | 'column_skip'
+  | 'hop_evade'
+  | 'coil_roll'
+  | 'trap_skip'
+  | 'grant_leaf_screen'
+  | 'apply_camouflage'
+  | 'cleanse_move_debuff'
+  | 'leave_speed_trail'
+  | 'echo_special'
+  | 'reflect_projectile'
 
 export type StateActionWhen = 'on_enter' | 'after_anim' | 'on_exit';
 
@@ -867,7 +879,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'vault_over_plant',
     label: 'Vault over plant',
-    hint: 'Jump the first plant in lane',
+    hint: 'Jump the first plant in lane (Grasshopper Jumper only)',
     kind: 'insect',
   },
   {
@@ -951,7 +963,61 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'place_ladder',
     label: 'Place ladder',
-    hint: 'Deploy a ladder on the blocking plant (Ant Builder)',
+    hint: 'Legacy climb flag on a plant. Prefer grant_leaf_screen for Ant Builder leaf screens.',
+    kind: 'insect',
+  },
+  {
+    type: 'grant_leaf_screen',
+    label: 'Grant leaf screen',
+    hint: 'Give a nearby ally plant a leaf screen that absorbs up to 2 linear projectiles / 120 HP (Ant Builder)',
+    kind: 'insect',
+  },
+  {
+    type: 'delay_plant_attack',
+    label: 'Delay plant attack',
+    hint: 'Add delay to the next attack of nearby plants (Cricket Chirper / Cicada Singer)',
+    kind: 'insect',
+  },
+  {
+    type: 'column_skip',
+    label: 'Column skip',
+    hint: 'Advance one plant column without a full vault (Inchworm Skipper)',
+    kind: 'insect',
+  },
+  {
+    type: 'hop_evade',
+    label: 'Hop evade',
+    hint: 'Short hop past a plant and briefly raise projectile miss chance (Leafhopper Bouncer)',
+    kind: 'insect',
+  },
+  {
+    type: 'coil_roll',
+    label: 'Coil roll',
+    hint: 'Roll forward past the first plant (Pillbug Tumbler)',
+    kind: 'insect',
+  },
+  {
+    type: 'trap_skip',
+    label: 'Trap skip',
+    hint: 'Skip past the next ground hazard / trap in lane (Springtail Skipper)',
+    kind: 'insect',
+  },
+  {
+    type: 'apply_camouflage',
+    label: 'Apply camouflage',
+    hint: 'Lower auto-target priority so shooters prefer other insects (Katydid / Walking Leaf / Stickbug)',
+    kind: 'insect',
+  },
+  {
+    type: 'cleanse_move_debuff',
+    label: 'Cleanse move debuff',
+    hint: 'Clear chill/slow on self and nearby insect allies (Firefly Lantern)',
+    kind: 'insect',
+  },
+  {
+    type: 'leave_speed_trail',
+    label: 'Leave speed trail',
+    hint: 'Leave a short move-speed trail for allies in this lane (Glowworm Trail)',
     kind: 'insect',
   },
   {
@@ -992,7 +1058,25 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'buff_attack_speed',
     label: 'Buff attack speed',
-    hint: 'Briefly speed up nearby plants (Drum Gourd / Compass Fern)',
+    hint: 'Briefly speed up nearby plants (Drum Gourd)',
+    kind: 'plant',
+  },
+  {
+    type: 'mark_priority_target',
+    label: 'Mark priority target',
+    hint: 'Mark the highest-HP insect in range; nearby shooters prefer it and deal bonus damage (Compass Fern)',
+    kind: 'plant',
+  },
+  {
+    type: 'echo_special',
+    label: 'Echo special',
+    hint: 'Arm a delayed burst on this plant at half fuse damage (Echo Orchid). Prefer arm_burst + extras when identical.',
+    kind: 'plant',
+  },
+  {
+    type: 'reflect_projectile',
+    label: 'Reflect projectile',
+    hint: 'Briefly reflect incoming linear projectiles (Mirror Ivy). Can also be driven by extras.reflectProjectiles.',
     kind: 'plant',
   },
   {
@@ -1057,13 +1141,13 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'buff_move_speed',
     label: 'Buff move speed',
-    hint: 'Briefly speed up nearby insects (Bumblebee Buzzer / Glowworm Trail)',
+    hint: 'Mode via extra.speedBuffMode: aura | trail | cleanse_pulse | boss_pulse (Bumblebee / Glowworm / Firefly / Queen)',
     kind: 'insect',
   },
   {
     type: 'weaken_attack',
     label: 'Weaken attack',
-    hint: 'Delay nearby plant attacks or soften insect damage (Cricket Chirper / Spore Lantern)',
+    hint: 'Mode via extra.weakenMode: bite_slow | song_delay | silk_tether | damage_weaken (Caterpillar / Spore Lantern / Silkworm)',
   },
   {
     type: 'dash',
@@ -1074,7 +1158,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'arm_burst',
     label: 'Arm burst',
-    hint: 'Once, after extra.fuseSeconds, explode for extra.burstDamage and leave. Re-entering the status does not reset the fuse (Pillbug Tumbler).',
+    hint: 'Once, after extra.fuseSeconds, explode for extra.burstDamage and leave. Re-entering the status does not reset the fuse (Pillbug Tumbler / Echo Orchid reuse).',
     kind: 'insect',
   },
 ];
@@ -3349,6 +3433,18 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   weaken_attack: 'weaken_attack',
   dash: 'dash',
   arm_burst: 'arm_burst',
+  mark_priority_target: 'mark_priority_target',
+  delay_plant_attack: 'delay_plant_attack',
+  column_skip: 'column_skip',
+  hop_evade: 'hop_evade',
+  coil_roll: 'coil_roll',
+  trap_skip: 'trap_skip',
+  grant_leaf_screen: 'grant_leaf_screen',
+  apply_camouflage: 'apply_camouflage',
+  cleanse_move_debuff: 'cleanse_move_debuff',
+  leave_speed_trail: 'leave_speed_trail',
+  echo_special: 'echo_special',
+  reflect_projectile: 'reflect_projectile',
 };
 
 function normalizeAction(raw: unknown): StateAction | null {
