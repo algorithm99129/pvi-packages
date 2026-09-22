@@ -305,3 +305,107 @@ export function pairTeamsSwiss(input: {
 
   return pairs;
 }
+
+// ─── Balance version 2 (GDD 2.1 / PLAYER_STRENGTH.md) ───────────────────────
+
+/** Stamp for scout / profile / room / team DTOs and telemetry. */
+export const BALANCE_VERSION_STRENGTH = '2.1.0-gdd';
+
+/** Competitive DP/CP ceiling (spent defense budget). */
+export const COMPETITIVE_RAID_CP_CAP = 1500;
+
+/** Level power: 1 + 0.058 × (L − 1), L clamped 1–20. */
+export function levelPower(level: number): number {
+  const L = Math.max(1, Math.min(20, Math.floor(Number(level) || 1)));
+  return 1 + 0.058 * (L - 1);
+}
+
+export type InsectDeckSlot = {
+  insectId: string;
+  level: number;
+  /** CP cost for this insect (GDD deploy cost). */
+  cpCost: number;
+};
+
+export type PlacedPlantSlot = {
+  plantId: string;
+  level: number;
+  /** DP cost for this plant. */
+  dpCost: number;
+};
+
+/**
+ * Attack army power from insect deck CP shares against raid CP cap
+ * (= defender spent DP, capped at COMPETITIVE_RAID_CP_CAP).
+ * Equal CP shares across deck; optional per-card share cap (default 30%).
+ */
+export function computeAttackStrength(opts: {
+  raidCPCap: number;
+  deck: InsectDeckSlot[];
+  potionValue?: number;
+  maxSharePct?: number;
+}): number {
+  const cap = Math.max(
+    0,
+    Math.min(COMPETITIVE_RAID_CP_CAP, Math.floor(Number(opts.raidCPCap) || 0)),
+  );
+  const deck = Array.isArray(opts.deck) ? opts.deck : [];
+  if (deck.length === 0 || cap <= 0) {
+    return Math.round(Math.max(0, Number(opts.potionValue) || 0));
+  }
+
+  const maxShare = Math.max(0.01, Math.min(1, (opts.maxSharePct ?? 30) / 100));
+  const positive = deck.filter((s) => (Number(s.cpCost) || 0) > 0);
+  const slots = positive.length > 0 ? positive : deck;
+  const share = Math.min(1 / Math.max(1, slots.length), maxShare);
+
+  let deckPower = 0;
+  for (const slot of slots) {
+    deckPower += share * levelPower(slot.level);
+  }
+
+  const potion = Math.max(0, Number(opts.potionValue) || 0);
+  return Math.round(cap * deckPower + potion);
+}
+
+/**
+ * Defense army power from placed plants only (not unlocked inventory).
+ */
+export function computeDefenseStrength(opts: {
+  placed: PlacedPlantSlot[];
+  mapMechanicDP?: number;
+  itemBoxDP?: number;
+}): number {
+  let sum = 0;
+  for (const slot of opts.placed ?? []) {
+    const dp = Math.max(0, Number(slot.dpCost) || 0);
+    sum += dp * levelPower(slot.level);
+  }
+  sum += Math.max(0, Number(opts.mapMechanicDP) || 0);
+  sum += Math.max(0, Number(opts.itemBoxDP) || 0);
+  return Math.round(sum);
+}
+
+/** PvP stars from destroyed lanes (GDD §10.7). */
+export function starsFromDestroyedLanes(
+  destroyedLanes: number,
+  totalLanes: number,
+): number {
+  const total = Math.max(1, Math.floor(Number(totalLanes) || 1));
+  const destroyed = Math.max(0, Math.floor(Number(destroyedLanes) || 0));
+  return Math.max(0, Math.min(5, Math.floor((5 * destroyed) / total)));
+}
+
+/**
+ * Skill rating from W/L — separate from army strength (does not multiply ATK/DEF).
+ * Shrinks toward 0.5 for small samples.
+ */
+export function skillRatingFromRecord(wins: number, losses: number): number {
+  const w = Math.max(0, Math.floor(Number(wins) || 0));
+  const l = Math.max(0, Math.floor(Number(losses) || 0));
+  const n = w + l;
+  if (n <= 0) return 0.5;
+  const p = w / n;
+  const shrink = n / (n + 20);
+  return Math.round((0.5 + (p - 0.5) * shrink) * 1000) / 1000;
+}

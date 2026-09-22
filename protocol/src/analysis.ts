@@ -98,7 +98,9 @@ export type AnalysisBulkKind =
   | 'unlock_all_insects'
   | 'unlock_all_missions'
   | 'lock_non_starters'
-  | 'reset_wallet';
+  | 'reset_wallet'
+  /** Clear all placed lawn plants (and item-box plant slots); keeps map/level. */
+  | 'reset_garden';
 
 export interface AnalysisBulkPatch {
   kind: AnalysisBulkKind;

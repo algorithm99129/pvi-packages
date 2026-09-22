@@ -77,10 +77,14 @@ export interface PlayerProfile extends UserProfile, UserProgression {
   battlePotionSlots?: Array<EntityId | null>;
   /** Combat strength from plants, insects, and garden (legacy aggregate). */
   strength: number;
-  /** Top insects + attack W/L — used when this player is the attacker. */
+  /** Insect deck CP × levelPower vs raid CP cap — used when this player is the attacker. */
   attackStrength: number;
-  /** Top plants + garden + defense W/L — used when this player is the defender. */
+  /** Placed plant DP × levelPower — used when this player is the defender. */
   defenseStrength: number;
+  /** Strength / catalog balance version stamp (GDD 2.1). */
+  balanceVersion: string;
+  /** Skill rating from attack W/L (separate from army strength). */
+  skillRating: number;
   /** Lifetime garden/room attack wins. */
   attackWins: number;
   attackLosses: number;

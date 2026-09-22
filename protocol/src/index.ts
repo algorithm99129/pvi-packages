@@ -2,7 +2,7 @@
 export type EntityId = string;
 
 /** Balance data version — bump when server/client exports change */
-export const BALANCE_VERSION = '0.2.0-progression';
+export const BALANCE_VERSION = '2.1.0-gdd';
 
 export * from './resources';
 export * from './gfx';

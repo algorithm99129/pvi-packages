@@ -167,6 +167,8 @@ export interface GardenRaidScoutSnapshot {
   trophyScore: number;
   /** Defender defenseStrength for scout chip / parity. */
   defenseStrength?: number;
+  /** Strength formula stamp (GDD 2.1). */
+  balanceVersion?: string;
   mapTemplateId: EntityId;
   gardenLevel: number;
   placedPlants: GardenRaidPlacedPlant[];
@@ -223,8 +225,10 @@ export interface GardenRaidHistoryResponse {
 }
 
 /**
- * Garden / live plunder stars from secured (mower) + destroyed (house) lanes.
- * destroyed weight 2, secured weight 1; maps onto 0..maxStars.
+ * Garden / live plunder stars from fully destroyed lanes only.
+ * Formula: floor(maxStars * destroyed / total lanes).
+ * On the standard five-lane board, each destroyed lane awards one star.
+ * `lanesSecured` remains in the input for wire compatibility but has no score value.
  */
 export function starsFromLaneProgress(input: {
   lanesDestroyed: number;
@@ -233,15 +237,9 @@ export function starsFromLaneProgress(input: {
   maxStars?: number;
 }): number {
   const destroyed = Math.max(0, Math.floor(input.lanesDestroyed));
-  const secured = Math.max(0, Math.floor(input.lanesSecured));
   const total = Math.max(1, Math.floor(input.laneCount));
   const maxStars = Math.max(1, Math.floor(input.maxStars ?? GARDEN_RAID_MAX_STARS));
-  // Secured lanes that were later destroyed should not double-count — caller
-  // should pass disjoint sets. Clamp secured so points never exceed maxPoints.
-  const securedOnly = Math.min(secured, Math.max(0, total - destroyed));
-  const points = destroyed * 2 + securedOnly;
-  const maxPoints = total * 2;
-  return Math.min(maxStars, Math.floor((points * maxStars) / maxPoints));
+  return Math.min(maxStars, Math.floor((destroyed * maxStars) / total));
 }
 
 /** Next item-box bomb recharge after `useCount` prior fires this raid. */

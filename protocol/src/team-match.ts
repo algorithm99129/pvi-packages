@@ -11,7 +11,7 @@ export const TEAM_MATCH_CLEAR_STARS_ID = 'TEAM_MATCH_CLEAR_STARS';
 export const TEAM_MATCH_CLEAR_STARS_DEFAULT = 2;
 
 export const TEAM_MATCH_MAX_STARS_PER_RAID_ID = 'TEAM_MATCH_MAX_STARS_PER_RAID';
-export const TEAM_MATCH_MAX_STARS_PER_RAID_DEFAULT = 3;
+export const TEAM_MATCH_MAX_STARS_PER_RAID_DEFAULT = 5;
 
 export type TeamFormationSize = 5 | 10;
 
@@ -127,14 +127,16 @@ export function layerForFlatIndex(
   return { layer: 3, indexInLayer: Math.max(0, counts[2] - 1) };
 }
 
-/** Stars from lanes destroyed (capped). */
+/** Stars = floor(maxStars * destroyed lanes / total lanes), capped. */
 export function starsFromLanesDestroyed(
   lanesDestroyed: number,
+  totalLanes = 5,
   maxStars = TEAM_MATCH_MAX_STARS_PER_RAID_DEFAULT,
 ): number {
   const n = Math.max(0, Math.floor(lanesDestroyed));
+  const total = Math.max(1, Math.floor(totalLanes));
   const cap = Math.max(0, Math.floor(maxStars));
-  return Math.min(cap, n);
+  return Math.min(cap, Math.floor((cap * n) / total));
 }
 
 export interface TeamMatchSlotState {
