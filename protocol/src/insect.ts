@@ -203,6 +203,8 @@ export interface InsectClientAssets {
   meleeVfx?: string;
   /** Presentation for {@link meleeVfx}. Defaults to slash. */
   meleeVfxStyle?: AbilityVfxStyle;
+  /** Melee flash size as a fraction of lawn cell width (1 = one cell). */
+  meleeVfxCellSize?: number;
   /**
    * Signature ability sprite under `VFX/Sprites/` (siphon trail, pollen aura, …).
    * Played on the matching status-graph action — not on every contact hit.
@@ -210,6 +212,8 @@ export interface InsectClientAssets {
   abilityVfx?: string;
   /** How {@link abilityVfx} animates. */
   abilityVfxStyle?: AbilityVfxStyle;
+  /** Ability flash size as a fraction of lawn cell width (1 = one cell). */
+  abilityVfxCellSize?: number;
   /** Optional equipment catalog id (helmet, door, …). */
   equipmentId?: EntityId;
   /**

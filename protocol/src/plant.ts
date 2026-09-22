@@ -4,7 +4,11 @@ import type { InsectTravelLayer } from './insect';
 import type { AbilityVfxStyle } from './sprite-vfx';
 
 export type { AbilityVfxStyle } from './sprite-vfx';
-export { ABILITY_VFX_STYLE_OPTIONS } from './sprite-vfx';
+export {
+  ABILITY_VFX_STYLE_OPTIONS,
+  DEFAULT_SPRITE_VFX_CELL_SIZE,
+  normalizeSpriteVfxCellSize,
+} from './sprite-vfx';
 
 export type PlantRole =
   | 'shooter'
@@ -327,7 +331,7 @@ export function createBulletShot(
   partial?: Partial<PlantBulletShot>,
   idFactory: () => string = () => `shot_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
 ): PlantBulletShot {
-  const spawn = sanitizePoint(partial?.spawn ?? DEFAULT_PLANT_BULLET_SPAWN, DEFAULT_PLANT_BULLET_SPAWN);
+  const spawn = sanitizePoint(partial?.spawn ?? DEFAULT_PLANT_BULLET_SPAWN, DEFAULT_PLANT_BULLET_SPAWN, true);
   const trajectory =
     partial?.trajectory === 'curved'
       ? 'curved'
@@ -374,8 +378,8 @@ export function resolveBulletShots(client: {
       createBulletShot({
         id: 'legacy_spawn',
         spawn: {
-          x: clampCoord(client.bulletSpawn.x, DEFAULT_PLANT_BULLET_SPAWN.x),
-          y: clampCoord(client.bulletSpawn.y, DEFAULT_PLANT_BULLET_SPAWN.y),
+          x: clampCoord(client.bulletSpawn.x, DEFAULT_PLANT_BULLET_SPAWN.x, true),
+          y: clampCoord(client.bulletSpawn.y, DEFAULT_PLANT_BULLET_SPAWN.y, true),
         },
         directionDeg: 0,
         trajectory: 'linear',
@@ -488,12 +492,22 @@ export interface PlantClientAssets {
    */
   meleeVfxStyle?: AbilityVfxStyle;
   /**
+   * Melee flash size as a fraction of lawn cell width (1 = one cell).
+   * Defaults to {@link DEFAULT_SPRITE_VFX_CELL_SIZE}.
+   */
+  meleeVfxCellSize?: number;
+  /**
    * Signature ability sprite under `VFX/Sprites/` (heal orb, reveal ring, trail, …).
    * Played on the matching status-graph action — not on every contact hit.
    */
   abilityVfx?: string;
   /** How {@link abilityVfx} animates. Defaults by action when omitted. */
   abilityVfxStyle?: AbilityVfxStyle;
+  /**
+   * Ability flash size as a fraction of lawn cell width (1 = one cell).
+   * Defaults to {@link DEFAULT_SPRITE_VFX_CELL_SIZE}.
+   */
+  abilityVfxCellSize?: number;
 }
 
 /** Persist graph and keep legacy idle/attack/… fields mirrored. */

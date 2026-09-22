@@ -60,3 +60,18 @@ export const ABILITY_VFX_STYLE_OPTIONS: ReadonlyArray<{ id: AbilityVfxStyle; lab
   { id: 'aura', label: 'Aura (speed buzz)' },
   { id: 'burrow', label: 'Burrow (soil ripple)' },
 ];
+
+/**
+ * Default sprite VFX size as a fraction of lawn cell width
+ * (1 = effect spans one cell; sprite longest edge).
+ */
+export const DEFAULT_SPRITE_VFX_CELL_SIZE = 1;
+
+export function normalizeSpriteVfxCellSize(
+  raw: number | null | undefined,
+  fallback = DEFAULT_SPRITE_VFX_CELL_SIZE,
+): number {
+  const n = typeof raw === 'number' && Number.isFinite(raw) ? raw : fallback;
+  if (!(n > 0)) return fallback;
+  return Math.min(4, Math.max(0.15, n));
+}
