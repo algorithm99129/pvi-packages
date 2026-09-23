@@ -162,6 +162,7 @@ export type StateConditionKind =
   | 'after_seconds'
   | 'prepare_complete'
   | 'on_damaged'
+  | 'not_damaged_for'
   | 'damage_hits_at_least'
   | 'health_below'
   | 'armor_broken'
@@ -191,6 +192,8 @@ export type StateCondition =
   | { type: 'after_seconds'; value: StateDurationValue }
   | { type: 'prepare_complete' }
   | { type: 'on_damaged' }
+  /** True when this unit has taken no damage for at least `value` seconds. */
+  | { type: 'not_damaged_for'; value: StateDurationValue }
   | { type: 'damage_hits_at_least'; value: StateDurationValue }
   | { type: 'health_below'; ratio: number }
   | { type: 'armor_broken' }
@@ -403,6 +406,13 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
     type: 'on_damaged',
     label: 'Damage received',
     hint: 'This unit took damage',
+  },
+  {
+    type: 'not_damaged_for',
+    label: 'Not damaged for',
+    hint:
+      'No damage taken for at least this many seconds (Bubble Aloe idle heal). Prefer extra.healIdleSeconds.',
+    needsSeconds: true,
   },
   {
     type: 'damage_hits_at_least',
@@ -682,13 +692,37 @@ export const STATE_ACTION_MODE_OPTIONS: ReadonlyArray<{
     action: 'grant_shield',
     id: 'self_nearby',
     label: 'Self + nearby',
-    hint: 'Shield self and a plant behind (Bubble Aloe)',
+    hint: 'Shield self and nearby allies',
+  },
+  {
+    action: 'grant_shield',
+    id: 'self_behind',
+    label: 'Host under shell',
+    hint: 'Shield the plant sharing this cell (shell / pad host)',
   },
   {
     action: 'grant_shield',
     id: 'lowest_hp_ally',
     label: 'Lowest-HP ally',
-    hint: 'Shield the most damaged ally in range',
+    hint: 'Shield the most damaged ally in range (Honeybee Courier)',
+  },
+  {
+    action: 'heal_ally',
+    id: 'lowest_missing',
+    label: 'Lowest-HP ally',
+    hint: 'Heal the most damaged nearby plant (Nectar Nurse)',
+  },
+  {
+    action: 'heal_ally',
+    id: 'self',
+    label: 'Self',
+    hint: 'Heal this plant only',
+  },
+  {
+    action: 'heal_ally',
+    id: 'self_behind',
+    label: 'Self + host',
+    hint: 'Heal this shell and the plant sharing its cell (Bubble Aloe)',
   },
   {
     action: 'weaken_attack',
@@ -1773,7 +1807,8 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'heal_ally',
     label: 'Heal ally',
-    hint: 'Heal the most damaged nearby plant (Nectar Nurse)',
+    hint:
+      'Heal plants. Mode: lowest_missing (Nectar Nurse), self, or self_behind (Bubble Aloe shell + host). amount = flat or max-HP fraction.',
     kind: 'plant',
   },
   {
@@ -1810,7 +1845,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'grant_shield',
     label: 'Grant shield',
-    hint: 'Give this plant and the plant behind it a temporary absorb shield (Bubble Aloe)',
+    hint: 'Temporary absorb shield (Honeybee Courier lowest-HP ally; self_behind for shell hosts)',
     kind: 'plant',
   },
   {
@@ -4404,6 +4439,13 @@ function normalizeCondition(raw: unknown): StateCondition | null {
       return { type: c.type };
     case 'after_seconds':
       return { type: 'after_seconds', value: normalizeDurationValue(c.value ?? c) };
+    case 'not_damaged_for':
+      return {
+        type: 'not_damaged_for',
+        value:
+          normalizeDurationValue(c.value ?? c) ??
+          ({ kind: 'attribute', path: 'extra.healIdleSeconds' } as StateDurationValue),
+      };
     case 'damage_hits_at_least':
       return {
         type: 'damage_hits_at_least',
@@ -4727,6 +4769,8 @@ export function conditionLabel(condition: StateCondition): string {
       return 'Arming finished';
     case 'on_damaged':
       return 'Damage received';
+    case 'not_damaged_for':
+      return `Not damaged for ${durationLabel(condition.value)}`;
     case 'health_below':
       return `Health < ${Math.round(condition.ratio * 100)}%`;
     case 'armor_broken':
@@ -4767,6 +4811,11 @@ export function triggerLabel(trigger: { type: string; seconds?: number }): strin
 
 export function defaultCondition(kind: StateConditionKind): StateCondition {
   if (kind === 'after_seconds') return { type: 'after_seconds', value: literalDuration(1) };
+  if (kind === 'not_damaged_for')
+    return {
+      type: 'not_damaged_for',
+      value: { kind: 'attribute', path: 'extra.healIdleSeconds' },
+    };
   if (kind === 'health_below') return { type: 'health_below', ratio: 0.5 };
   return { type: kind } as StateCondition;
 }

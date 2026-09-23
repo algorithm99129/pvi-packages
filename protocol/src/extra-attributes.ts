@@ -52,6 +52,20 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     defaultValue: 24,
   },
   {
+    key: 'healIdleSeconds',
+    label: 'Heal idle seconds',
+    hint: 'Must be undamaged this long before heal pulses (Bubble Aloe). Bind on not_damaged_for.',
+    type: 'number',
+    defaultValue: 2,
+  },
+  {
+    key: 'healPercentMaxHp',
+    label: 'Heal percent max HP',
+    hint: 'Fraction of target max HP healed by heal_ally (Bubble Aloe / Nectar Nurse)',
+    type: 'number',
+    defaultValue: 0.15,
+  },
+  {
     key: 'hideProximityColumns',
     label: 'Hide proximity columns',
     hint: 'Column distance that makes a shy shooter fold shut / hide',
