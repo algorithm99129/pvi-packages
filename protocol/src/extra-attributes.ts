@@ -26,9 +26,30 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
   {
     key: 'digestSeconds',
     label: 'Digest seconds',
-    hint: 'Pitcher Snare digest duration before returning to idle',
+    hint: 'Pitcher Snare / Maw digest duration before returning to idle',
     type: 'number',
-    defaultValue: 42,
+    defaultValue: 15,
+  },
+  {
+    key: 'holdSeconds',
+    label: 'Hold seconds',
+    hint: 'Deprecated for chomp_devour (eating kills). Prefer extra.heavySlowSeconds for heavy chill.',
+    type: 'number',
+    defaultValue: 4,
+  },
+  {
+    key: 'heavySlowSeconds',
+    label: 'Heavy slow seconds',
+    hint: 'Chill duration when chomp_devour mode=trap_or_slow hits a Heavy',
+    type: 'number',
+    defaultValue: 4,
+  },
+  {
+    key: 'heavySlowScale',
+    label: 'Heavy slow scale',
+    hint: 'Move-speed scale for heavy chill in chomp_devour mode=trap_or_slow (0.65 = 35% slow)',
+    type: 'number',
+    defaultValue: 0.65,
   },
   {
     key: 'prepareSeconds',

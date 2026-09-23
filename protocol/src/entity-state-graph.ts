@@ -84,23 +84,38 @@ export const PLANT_GRAPH_STATUSES: ReadonlyArray<{
   hint: string;
   defaultLoop: boolean;
 }> = [
-  { id: 'idle', label: 'Idle', hint: 'Default resting status', defaultLoop: true },
-  { id: 'init', label: 'Init', hint: 'Arming / emerging (Potato Mine)', defaultLoop: false },
-  { id: 'armed', label: 'Armed', hint: 'Ready to trigger', defaultLoop: true },
-  { id: 'aim', label: 'Aim', hint: 'Wind-up before attack (Squash)', defaultLoop: false },
-  { id: 'attack', label: 'Attack', hint: 'Fire / crush / explode / bite', defaultLoop: false },
+  { id: 'idle', label: 'Idle', hint: 'Label only — put resting behavior in actions if needed', defaultLoop: true },
+  { id: 'init', label: 'Init', hint: 'Label for arming / setup nodes (use after_seconds + actions)', defaultLoop: false },
+  { id: 'armed', label: 'Armed', hint: 'Label for primed / waiting nodes', defaultLoop: true },
+  { id: 'aim', label: 'Aim', hint: 'Label for wind-up nodes (play clip + actions)', defaultLoop: false },
+  {
+    id: 'attack',
+    label: 'Attack',
+    hint: 'Label only — deal damage / fire via engine actions on this node',
+    defaultLoop: false,
+  },
   {
     id: 'digest',
     label: 'Digest / Hold',
-    hint: 'Recovery after chomp, or holding stolen metal (Magnet-shroom)',
+    hint: 'Label for recovery / hold nodes (actions still required)',
     defaultLoop: true,
   },
-  { id: 'hide', label: 'Hide', hint: 'Withdrawn / folded / dormant curl', defaultLoop: true },
-  { id: 'produce', label: 'Produce', hint: 'Sun / resource / support pulse', defaultLoop: false },
+  {
+    id: 'hide',
+    label: 'Hide',
+    hint: 'Label only — add hide / enter_burrow actions for real hide or burrow',
+    defaultLoop: true,
+  },
+  {
+    id: 'produce',
+    label: 'Produce',
+    hint: 'Label for produce nodes — use produce_sun (or similar) actions',
+    defaultLoop: false,
+  },
   {
     id: 'special',
     label: 'Special',
-    hint: 'Brace, reflect pulse, or other non-attack ability (Ironwood Guard)',
+    hint: 'Label for non-attack ability nodes — wire engine actions explicitly',
     defaultLoop: false,
   },
   {
@@ -118,24 +133,29 @@ export const INSECT_GRAPH_STATUSES: ReadonlyArray<{
   hint: string;
   defaultLoop: boolean;
 }> = [
-  { id: 'idle', label: 'Idle', hint: 'Standing / waiting (no march)', defaultLoop: true },
-  { id: 'walk', label: 'Walk', hint: 'Lane locomotion', defaultLoop: true },
-  { id: 'attack', label: 'Attack', hint: 'Bite / smash', defaultLoop: false },
-  { id: 'enrage', label: 'Enrage', hint: 'Faster after armor break', defaultLoop: true },
-  { id: 'vault', label: 'Vault', hint: 'Jump first plant', defaultLoop: false },
-  { id: 'burrow', label: 'Burrow', hint: 'Underground travel', defaultLoop: true },
-  { id: 'emerge', label: 'Emerge', hint: 'Surface from burrow', defaultLoop: false },
-  { id: 'swim', label: 'Swim', hint: 'Underwater / pool travel (Dive Skimmer)', defaultLoop: true },
-  { id: 'fly', label: 'Fly', hint: 'Air locomotion', defaultLoop: true },
+  { id: 'idle', label: 'Idle', hint: 'Label for standing / waiting nodes — use stop_moving if needed', defaultLoop: true },
+  { id: 'walk', label: 'Walk', hint: 'Label for march nodes — use start_moving action', defaultLoop: true },
+  { id: 'attack', label: 'Attack', hint: 'Label only — bite / smash via deal_contact_damage (etc.)', defaultLoop: false },
+  { id: 'enrage', label: 'Enrage', hint: 'Label for post-armor-break nodes (buff via actions/modifiers)', defaultLoop: true },
+  { id: 'vault', label: 'Vault', hint: 'Label for jump nodes — use vault_over_plant action', defaultLoop: false },
+  {
+    id: 'burrow',
+    label: 'Burrow',
+    hint: 'Label only — use enter_burrow action for underground / untargetable',
+    defaultLoop: true,
+  },
+  { id: 'emerge', label: 'Emerge', hint: 'Label for surface nodes — use exit_burrow + actions', defaultLoop: false },
+  { id: 'swim', label: 'Swim', hint: 'Label for pool travel nodes', defaultLoop: true },
+  { id: 'fly', label: 'Fly', hint: 'Label for air nodes — use enter_fly / exit_fly actions', defaultLoop: true },
   {
     id: 'aim',
     label: 'Aim / hang',
-    hint: 'Wind-up while dangling over a plant (Drop Spider)',
+    hint: 'Label for wind-up / hang nodes (Drop Spider)',
     defaultLoop: true,
   },
-  { id: 'summon', label: 'Summon', hint: 'Call backup insects', defaultLoop: false },
-  { id: 'throw', label: 'Throw', hint: 'Hurl Imp / projectile', defaultLoop: false },
-  { id: 'special', label: 'Special', hint: 'One-shot ability (ladder, etc.)', defaultLoop: false },
+  { id: 'summon', label: 'Summon', hint: 'Label for summon nodes — use summon_insect action', defaultLoop: false },
+  { id: 'throw', label: 'Throw', hint: 'Label for throw nodes — use throw_unit action', defaultLoop: false },
+  { id: 'special', label: 'Special', hint: 'Label for one-shot ability nodes — wire actions explicitly', defaultLoop: false },
   {
     id: 'temporal',
     label: 'Temporal',
@@ -167,6 +187,8 @@ export type StateConditionKind =
   | 'health_below'
   | 'health_above'
   | 'armor_broken'
+  | 'chomp_killed'
+  | 'no_chomp_killed'
   | 'being_bitten'
   | 'player_command'
   | 'player_controlled'
@@ -199,6 +221,8 @@ export type StateCondition =
   | { type: 'health_below'; ratio: number }
   | { type: 'health_above'; ratio: number }
   | { type: 'armor_broken' }
+  | { type: 'chomp_killed' }
+  | { type: 'no_chomp_killed' }
   | { type: 'being_bitten' }
   | { type: 'player_command' }
   | { type: 'player_controlled' }
@@ -438,6 +462,16 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
     type: 'armor_broken',
     label: 'Equipment lost',
     hint: 'Assigned equipment HP hit 0 or was stolen (Magnet). Drive a bare/enrage Spine status from here — equipment art lives on the insect avatar/Spine, not a separate overlay.',
+  },
+  {
+    type: 'chomp_killed',
+    label: 'Chomp ate target',
+    hint: 'Last chomp_devour killed a Light insect (set until leaving this node). Pitcher / Maw digest path.',
+  },
+  {
+    type: 'no_chomp_killed',
+    label: 'Chomp did not eat',
+    hint: 'Last chomp_devour missed or only slowed a Heavy (no kill). Use for rearm without digest.',
   },
   {
     type: 'being_bitten',
@@ -733,6 +767,19 @@ export const STATE_ACTION_MODE_OPTIONS: ReadonlyArray<{
     id: 'self_behind',
     label: 'Self + host',
     hint: 'Heal this shell and the plant sharing its cell (Bubble Aloe)',
+  },
+  {
+    action: 'chomp_devour',
+    id: 'trap',
+    label: 'Eat light only',
+    hint: 'Kill one Light ground insect. Skip Heavy / flying. Sets chomp_killed when successful.',
+  },
+  {
+    action: 'chomp_devour',
+    id: 'trap_or_slow',
+    label: 'Eat light / slow heavy',
+    hint:
+      'Light: kill (chomp_killed). Heavy: chill for duration at scale (no_chomp_killed). Prefer extra.heavySlowSeconds + extra.heavySlowScale.',
   },
   {
     action: 'weaken_attack',
@@ -1534,6 +1581,21 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     hint: 'Delay before self-explode. Prefer extra.fuseSeconds.',
     defaultAttribute: 'extra.fuseSeconds',
   },
+  {
+    action: 'chomp_devour',
+    key: 'duration',
+    label: 'Heavy chill seconds',
+    hint: 'Chill duration when mode=trap_or_slow hits a Heavy. Unused when eating Light (kill is instant). Prefer extra.heavySlowSeconds.',
+    defaultAttribute: 'extra.heavySlowSeconds',
+  },
+  {
+    action: 'chomp_devour',
+    key: 'scale',
+    label: 'Heavy slow scale',
+    hint:
+      'Move-speed scale while chilled (0.65 = 35% slow). Used only in mode=trap_or_slow. Prefer extra.heavySlowScale.',
+    defaultAttribute: 'extra.heavySlowScale',
+  },
 ];
 
 export function actionParamFieldsFor(type: StateActionKind) {
@@ -1574,6 +1636,9 @@ export function defaultActionParams(
   if (type === 'deal_contact_damage') {
     out.contactTarget = 'nearest';
   }
+  if (type === 'chomp_devour') {
+    out.mode = 'trap';
+  }
   return out;
 }
 
@@ -1604,7 +1669,8 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'chomp_devour',
     label: 'Chomp devour',
-    hint: 'Swallow one target, then recover (Pitcher Snare)',
+    hint:
+      'Eat (kill) a Light ground insect. mode=trap_or_slow also chills Heavy at scale/duration. Branch with chomp_killed / no_chomp_killed.',
     kind: 'plant',
   },
   {
@@ -1664,14 +1730,14 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'enter_burrow',
     label: 'Enter burrow',
-    hint: 'Go underground / untargetable travel',
-    kind: 'insect',
+    hint: 'Go underground / untargetable (insect diggers, Burrow Beetroot while buried)',
+    kind: 'both',
   },
   {
     type: 'exit_burrow',
     label: 'Exit burrow',
-    hint: 'Surface and resume normal combat',
-    kind: 'insect',
+    hint: 'Surface and resume normal combat targeting',
+    kind: 'both',
   },
   {
     type: 'reverse_march',
@@ -2379,7 +2445,7 @@ export function createChomperStateGraph(opts?: {
         status: 'attack',
         spineAnim: opts?.attackAnim,
         loop: false,
-        actions: [{ type: 'chomp_devour', when: 'after_anim' }],
+        actions: [{ type: 'chomp_devour', when: 'after_anim', mode: 'trap' }],
         position: { x: 300, y: 120 },
       },
       {
@@ -2402,7 +2468,13 @@ export function createChomperStateGraph(opts?: {
         id: createStateEdgeId(),
         from: attackId,
         to: digestId,
-        conditions: cond({ type: 'anim_ended' }),
+        conditions: cond({ type: 'anim_ended' }, { type: 'chomp_killed' }),
+      },
+      {
+        id: createStateEdgeId(),
+        from: attackId,
+        to: idleId,
+        conditions: cond({ type: 'anim_ended' }, { type: 'no_chomp_killed' }),
       },
       {
         id: createStateEdgeId(),
@@ -4477,6 +4549,8 @@ function normalizeCondition(raw: unknown): StateCondition | null {
     case 'prepare_complete':
     case 'on_damaged':
     case 'armor_broken':
+    case 'chomp_killed':
+    case 'no_chomp_killed':
     case 'being_bitten':
     case 'player_command':
     case 'player_controlled':
@@ -4527,6 +4601,19 @@ function normalizePort(raw: unknown): StateGraphPortRef | undefined {
   return { side: p.side, index };
 }
 
+/** Engine actions multi-select is one-of-each-type; keep first when duplicates sneak into JSON. */
+function dedupeStateActions(actions: StateAction[]): StateAction[] | undefined {
+  if (!actions.length) return undefined;
+  const seen = new Set<string>();
+  const out: StateAction[] = [];
+  for (const a of actions) {
+    if (seen.has(a.type)) continue;
+    seen.add(a.type);
+    out.push(a);
+  }
+  return out.length ? out : undefined;
+}
+
 export function normalizeEntityStateGraph(
   raw: unknown,
   kind: EntityGraphKind,
@@ -4568,7 +4655,9 @@ export function normalizeEntityStateGraph(
             : undefined,
         modifiers: temporal ? undefined : normalizeStatModifiers(n.modifiers),
         actions: Array.isArray(n.actions)
-          ? n.actions.map(normalizeAction).filter((a): a is StateAction => Boolean(a))
+          ? dedupeStateActions(
+              n.actions.map(normalizeAction).filter((a): a is StateAction => Boolean(a)),
+            )
           : undefined,
         position: {
           x: Number.isFinite(n.position?.x) ? (n.position!.x as number) : 80,
@@ -4832,6 +4921,10 @@ export function conditionLabel(condition: StateCondition): string {
       return `Health ≥ ${Math.round(condition.ratio * 100)}%`;
     case 'armor_broken':
       return 'Equipment lost';
+    case 'chomp_killed':
+      return 'Chomp ate target';
+    case 'no_chomp_killed':
+      return 'Chomp did not eat';
     case 'being_bitten':
       return 'Being bitten';
     case 'player_command':
