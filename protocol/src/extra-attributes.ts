@@ -59,6 +59,13 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     defaultValue: 1.5,
   },
   {
+    key: 'minRangeColumns',
+    label: 'Minimum range columns',
+    hint: 'Ignore enemies closer than this (Pinecone Mortar). Bind on enemy_in_range.minRange.',
+    type: 'number',
+    defaultValue: 2,
+  },
+  {
     key: 'fogClearRadius',
     label: 'Fog clear radius',
     hint: 'Chebyshev cells revealed by clear_fog (Lantern Lily; 1 = 3×3)',

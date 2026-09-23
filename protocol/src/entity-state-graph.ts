@@ -176,7 +176,7 @@ export type StateConditionKind =
   | 'boomerang_returned';
 
 export type StateCondition =
-  | { type: 'enemy_in_range' }
+  | { type: 'enemy_in_range'; minRange?: StateDurationValue }
   | { type: 'no_enemy_in_range' }
   | { type: 'enemy_in_proximity' }
   | { type: 'no_enemy_in_proximity' }
@@ -323,11 +323,15 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
   hint: string;
   needsSeconds?: boolean;
   needsRatio?: boolean;
+  /** enemy_in_range: optional minimum column distance (Pinecone Mortar). */
+  needsMinRange?: boolean;
 }> = [
   {
     type: 'enemy_in_range',
     label: 'Target in range',
-    hint: 'A valid combat target is within this unit’s attack range',
+    hint:
+      'A valid combat target is within attack range. Optional min range (e.g. extra.minRangeColumns) skips enemies that are too close (Pinecone Mortar).',
+    needsMinRange: true,
   },
   {
     type: 'no_enemy_in_range',
@@ -4366,9 +4370,18 @@ export function migrateLegacyTrigger(raw: unknown): StateCondition[] {
 
 function normalizeCondition(raw: unknown): StateCondition | null {
   if (!raw || typeof raw !== 'object') return null;
-  const c = raw as { type?: string; seconds?: number; ratio?: number; value?: unknown };
+  const c = raw as {
+    type?: string;
+    seconds?: number;
+    ratio?: number;
+    value?: unknown;
+    minRange?: unknown;
+  };
   switch (c.type) {
-    case 'enemy_in_range':
+    case 'enemy_in_range': {
+      const minRange = normalizeDurationValue(c.minRange);
+      return minRange ? { type: 'enemy_in_range', minRange } : { type: 'enemy_in_range' };
+    }
     case 'no_enemy_in_range':
     case 'enemy_in_proximity':
     case 'no_enemy_in_proximity':
@@ -4686,6 +4699,9 @@ function normalizeDurationValue(raw: unknown): StateDurationValue {
 export function conditionLabel(condition: StateCondition): string {
   switch (condition.type) {
     case 'enemy_in_range':
+      if (condition.type === 'enemy_in_range' && condition.minRange) {
+        return `Target in range (min ${durationLabel(condition.minRange)})`;
+      }
       return 'Target in range';
     case 'no_enemy_in_range':
       return 'No target in range';
