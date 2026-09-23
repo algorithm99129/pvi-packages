@@ -174,7 +174,7 @@ export interface PlantBulletSpawnPoint {
 }
 
 /** How a projectile leaves the plant. */
-export type BulletTrajectory = 'linear' | 'curved' | 'homing';
+export type BulletTrajectory = 'linear' | 'curved' | 'homing' | 'boomerang';
 
 /** Where a homing shot may seek. Default `board` = Cattail (any lane). */
 export type HomingScope = 'lane' | 'board';
@@ -184,6 +184,7 @@ export type HomingScope = 'lane' | 'board';
  * Curved shots bake an aiming point at fire time from the enemy — do not author `target` into plant JSON.
  * Homing shots seek a living target; scope defaults to any lane (`board`, Cattail).
  * Use `homingScope: "lane"` for same-lane seekers (Cactus).
+ * Boomerang (Lotus Discus) flies to the aim point then returns to the shooter.
  */
 export interface PlantBulletShot {
   /** Stable id for editor list selection. */
@@ -339,7 +340,9 @@ export function createBulletShot(
       ? 'curved'
       : partial?.trajectory === 'homing'
         ? 'homing'
-        : 'linear';
+        : partial?.trajectory === 'boomerang'
+          ? 'boomerang'
+          : 'linear';
   const shot: PlantBulletShot = {
     id: partial?.id && partial.id.length > 0 ? partial.id : idFactory(),
     spawn,

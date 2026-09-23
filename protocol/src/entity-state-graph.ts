@@ -61,7 +61,7 @@ export type InsectGraphStatus =
 
 export type EntityGraphStatus = PlantGraphStatus | InsectGraphStatus;
 
-/** Hold-only status: no Spine clip, no engine actions — wait on edge conditions. */
+/** Hold-only status: no Spine clip — wait on edge conditions. Engine actions are allowed. */
 export function isTemporalStatus(status: string | null | undefined): boolean {
   return status === 'temporal';
 }
@@ -106,7 +106,7 @@ export const PLANT_GRAPH_STATUSES: ReadonlyArray<{
   {
     id: 'temporal',
     label: 'Temporal',
-    hint: 'Hold only — no animation or actions; exit via cooldown / after_seconds / range',
+    hint: 'Hold with no animation; optional engine actions; exit via cooldown / after_seconds / range',
     defaultLoop: true,
   },
   { id: 'die', label: 'Die', hint: 'Special — HP≤0 only; not edged', defaultLoop: false },
@@ -139,7 +139,7 @@ export const INSECT_GRAPH_STATUSES: ReadonlyArray<{
   {
     id: 'temporal',
     label: 'Temporal',
-    hint: 'Hold only — no animation or actions; exit via cooldown / after_seconds / range',
+    hint: 'Hold with no animation; optional engine actions; exit via cooldown / after_seconds / range',
     defaultLoop: true,
   },
   { id: 'die', label: 'Die', hint: 'Special — HP≤0 only; not edged', defaultLoop: false },
@@ -172,7 +172,8 @@ export type StateConditionKind =
   | 'vault_ready'
   | 'throw_ready'
   | 'special_ready'
-  | 'reached_target';
+  | 'reached_target'
+  | 'boomerang_returned';
 
 export type StateCondition =
   | { type: 'enemy_in_range' }
@@ -200,7 +201,8 @@ export type StateCondition =
   | { type: 'vault_ready' }
   | { type: 'throw_ready' }
   | { type: 'special_ready' }
-  | { type: 'reached_target' };
+  | { type: 'reached_target' }
+  | { type: 'boomerang_returned' };
 
 /**
  * Duration for `after_seconds` — literal, unit attribute, or logic constant.
@@ -455,6 +457,11 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
     label: 'Reached march target',
     hint: 'Lane mover arrived at its current target (house / first column, or reverse-march edge)',
   },
+  {
+    type: 'boomerang_returned',
+    label: 'Boomerang returned',
+    hint: 'No owned boomerang projectile is still in flight (Lotus Discus — ready to throw again)',
+  },
 ];
 
 /**
@@ -563,7 +570,7 @@ export interface StateAction {
   damage?: StateDurationValue;
   /** knockback_insects: push only on every Nth attack. 1 = every attack. */
   knockbackEvery?: StateDurationValue;
-  /** knockback_insects: only insects with no equipment. */
+  /** knockback_insects: only light ground insects (no flying / heavy / living equipment). */
   unequippedOnly?: boolean;
   /**
    * deal_contact_damage: who to hit.
@@ -605,9 +612,16 @@ export interface StateAction {
   scale?: StateDurationValue;
   /**
    * Generic cap: attackSpeedBuffCap, markAllyCap, leafScreenCharges,
-   * delayMaxTargets, speedBuffCap, explode damageCap.
+   * delayMaxTargets, speedBuffCap, explode damageCap / pulse max targets.
    */
   cap?: StateDurationValue;
+  /**
+   * explode mode=pulse: damage multiplier for the 1st / 2nd / 3rd contact (near→far).
+   * Prefer `extra.hitDamageScale0` / `hitDamageScale1` / `hitDamageScale2`.
+   */
+  hitScale0?: StateDurationValue;
+  hitScale1?: StateDurationValue;
+  hitScale2?: StateDurationValue;
   /**
    * dash: post-burst recover scale (move slow when &lt; 1, incoming damage mult when &gt; 1).
    * Prefer `extra.dashRecoverScale`.
@@ -862,6 +876,9 @@ export type StateActionParamKey =
   | 'duration'
   | 'scale'
   | 'cap'
+  | 'hitScale0'
+  | 'hitScale1'
+  | 'hitScale2'
   | 'recoverScale'
   | 'recoverSeconds'
   | 'everyNth';
@@ -929,6 +946,27 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     label: 'Cap',
     hint: 'Blast: %HP damage cap (extra.damageCap). Pulse: max targets (extra.sweepMaxTargets). 0 = unlimited.',
     defaultAttribute: 'extra.damageCap',
+  },
+  {
+    action: 'explode',
+    key: 'hitScale0',
+    label: 'Pulse hit 1 scale',
+    hint: 'Pulse only: damage multiplier for the nearest contact. Prefer extra.hitDamageScale0 (1 = 100%).',
+    defaultAttribute: 'extra.hitDamageScale0',
+  },
+  {
+    action: 'explode',
+    key: 'hitScale1',
+    label: 'Pulse hit 2 scale',
+    hint: 'Pulse only: damage multiplier for the 2nd-nearest contact. Prefer extra.hitDamageScale1.',
+    defaultAttribute: 'extra.hitDamageScale1',
+  },
+  {
+    action: 'explode',
+    key: 'hitScale2',
+    label: 'Pulse hit 3 scale',
+    hint: 'Pulse only: damage multiplier for the 3rd-nearest contact. Prefer extra.hitDamageScale2.',
+    defaultAttribute: 'extra.hitDamageScale2',
   },
   {
     action: 'blow_away_flying',
@@ -1006,6 +1044,34 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     label: 'Contact chill (s)',
     hint: 'Chill bitten target (prefer extra.chillOnContactSeconds)',
     defaultAttribute: 'extra.chillOnContactSeconds',
+  },
+  {
+    action: 'deal_contact_damage',
+    key: 'cap',
+    label: 'Sweep max targets',
+    hint: 'Leaf/sweep melee: max enemies hit near→far. 0 or unset = single nearest (unless hit scales are bound). Prefer extra.sweepMaxTargets.',
+    defaultAttribute: 'extra.sweepMaxTargets',
+  },
+  {
+    action: 'deal_contact_damage',
+    key: 'hitScale0',
+    label: 'Sweep hit 1 scale',
+    hint: 'Damage multiplier for the nearest contact. Prefer extra.hitDamageScale0 (1 = 100%).',
+    defaultAttribute: 'extra.hitDamageScale0',
+  },
+  {
+    action: 'deal_contact_damage',
+    key: 'hitScale1',
+    label: 'Sweep hit 2 scale',
+    hint: 'Damage multiplier for the 2nd-nearest contact. Prefer extra.hitDamageScale1.',
+    defaultAttribute: 'extra.hitDamageScale1',
+  },
+  {
+    action: 'deal_contact_damage',
+    key: 'hitScale2',
+    label: 'Sweep hit 3 scale',
+    hint: 'Damage multiplier for the 3rd-nearest contact. Prefer extra.hitDamageScale2.',
+    defaultAttribute: 'extra.hitDamageScale2',
   },
   {
     action: 'knockback_insects',
@@ -1945,8 +2011,7 @@ export interface EntityStateNode {
   requiresEquipment?: boolean;
   modifiers?: StateStatModifiers;
   /**
-   * Predefined engine actions run while / around this status.
-   * Temporal nodes never run actions (stripped on normalize).
+   * Predefined engine actions run while / around this status (including temporal holds).
    */
   actions?: StateAction[];
   /** Canvas position in the status graph editor. */
@@ -4283,6 +4348,9 @@ function normalizeAction(raw: unknown): StateAction | null {
     'duration',
     'scale',
     'cap',
+    'hitScale0',
+    'hitScale1',
+    'hitScale2',
     'recoverScale',
     'recoverSeconds',
     'everyNth',
@@ -4391,6 +4459,7 @@ function normalizeCondition(raw: unknown): StateCondition | null {
     case 'throw_ready':
     case 'special_ready':
     case 'reached_target':
+    case 'boomerang_returned':
       return { type: c.type };
     case 'after_seconds':
       return { type: 'after_seconds', value: normalizeDurationValue(c.value ?? c) };
@@ -4460,11 +4529,9 @@ export function normalizeEntityStateGraph(
             ? (n as EntityStateNode).requiresEquipment
             : undefined,
         modifiers: temporal ? undefined : normalizeStatModifiers(n.modifiers),
-        actions: temporal
-          ? undefined
-          : Array.isArray(n.actions)
-            ? n.actions.map(normalizeAction).filter((a): a is StateAction => Boolean(a))
-            : undefined,
+        actions: Array.isArray(n.actions)
+          ? n.actions.map(normalizeAction).filter((a): a is StateAction => Boolean(a))
+          : undefined,
         position: {
           x: Number.isFinite(n.position?.x) ? (n.position!.x as number) : 80,
           y: Number.isFinite(n.position?.y) ? (n.position!.y as number) : 120,
@@ -4736,6 +4803,8 @@ export function conditionLabel(condition: StateCondition): string {
       return 'Special ready';
     case 'reached_target':
       return 'Reached march target';
+    case 'boomerang_returned':
+      return 'Boomerang returned';
     default:
       return 'Condition';
   }
