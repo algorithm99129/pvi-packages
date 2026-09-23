@@ -588,6 +588,7 @@ export type StateActionKind =
   | 'leave_speed_trail'
   | 'echo_special'
   | 'reflect_projectile'
+  | 'discard_aerial_impact'
 
 export type StateActionWhen = 'on_enter' | 'after_anim' | 'on_exit';
 
@@ -629,6 +630,21 @@ export interface StateAction {
   knockbackEvery?: StateDurationValue;
   /** knockback_insects: only light ground insects (no flying / heavy / living equipment). */
   unequippedOnly?: boolean;
+  /**
+   * discard_aerial_impact: absorb lobbed / curved insect bullets in the canopy.
+   * Omit or true = enabled; false = ignore bullets.
+   */
+  blockBullets?: boolean;
+  /**
+   * discard_aerial_impact: bounce thrown insects that would land in the canopy.
+   * Omit or true = enabled; false = ignore thrown landings.
+   */
+  blockThrown?: boolean;
+  /**
+   * discard_aerial_impact: bounce aerial drops / steal attempts in the canopy.
+   * Omit or true = enabled; false = ignore aerial drop / steal.
+   */
+  blockAerialDrop?: boolean;
   /**
    * deal_contact_damage: who to hit.
    * `nearest` = FindNearestEnemy; `biting` = insect currently chewing this plant.
@@ -1252,6 +1268,34 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     defaultAttribute: 'extra.slowScale',
   },
   {
+    action: 'apply_slow',
+    key: 'columnRange',
+    label: 'Column range',
+    hint: 'Target column radius in cells. Prefer extra.slowColumnRange.',
+    defaultAttribute: 'extra.slowColumnRange',
+  },
+  {
+    action: 'apply_slow',
+    key: 'laneRange',
+    label: 'Lane range',
+    hint: 'Target lane radius (0 = same lane only). Prefer extra.slowLaneRange.',
+    defaultAttribute: 'extra.slowLaneRange',
+  },
+  {
+    action: 'discard_aerial_impact',
+    key: 'columnRange',
+    label: 'Column range',
+    hint: 'Canopy column radius in cells (1 = ±1 → 3-wide). Prefer extra.aerialProtectColumnRange.',
+    defaultAttribute: 'extra.aerialProtectColumnRange',
+  },
+  {
+    action: 'discard_aerial_impact',
+    key: 'laneRange',
+    label: 'Lane range',
+    hint: 'Canopy lane radius in cells (1 = ±1 → 3-tall). Prefer extra.aerialProtectLaneRange.',
+    defaultAttribute: 'extra.aerialProtectLaneRange',
+  },
+  {
     action: 'weaken_attack',
     key: 'scale',
     label: 'Weaken scale',
@@ -1660,6 +1704,13 @@ export function defaultActionParams(
   if (type === 'chomp_devour') {
     out.mode = 'trap';
   }
+  if (type === 'discard_aerial_impact') {
+    out.blockBullets = true;
+    out.blockThrown = true;
+    out.blockAerialDrop = true;
+    if (out.columnRange == null) out.columnRange = literalDuration(1);
+    if (out.laneRange == null) out.laneRange = literalDuration(1);
+  }
   return out;
 }
 
@@ -1787,7 +1838,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'charm_insect',
     label: 'Charm insect',
-    hint: 'Turn the biting insect to fight for the garden (Turncoat Bloom)',
+    hint: 'Turn the biting insect to fight for the garden (Mirror Ivy / Hypno)',
     kind: 'plant',
   },
   {
@@ -1950,7 +2001,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'echo_special',
     label: 'Echo special',
-    hint: 'Arm a delayed burst on this plant at half fuse damage (Echo Orchid). Prefer arm_burst + extras when identical.',
+    hint: 'Arm a delayed burst on this plant at half fuse damage. Prefer arm_burst + extras when identical.',
     kind: 'plant',
   },
   {
@@ -2023,7 +2074,15 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'apply_slow',
     label: 'Apply slow',
-    hint: 'Slow insects in a small area (Mint Mist / Velcro hooks)',
+    hint:
+      'Slow insects in range (Mint Mist / Velcro). columnRange / laneRange set the pulse radius; duration / scale set chill.',
+    kind: 'plant',
+  },
+  {
+    type: 'discard_aerial_impact',
+    label: 'Discard aerial impact',
+    hint:
+      'Umbrella canopy while this status is active (Vine Relay). columnRange / laneRange = protect area; toggles control bullets, thrown insects, and aerial drops.',
     kind: 'plant',
   },
   {
@@ -4429,6 +4488,9 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   leave_speed_trail: 'leave_speed_trail',
   echo_special: 'echo_special',
   reflect_projectile: 'reflect_projectile',
+  discard_aerial_impact: 'discard_aerial_impact',
+  block_aerial: 'discard_aerial_impact',
+  umbrella_protect: 'discard_aerial_impact',
 };
 
 function normalizeAction(raw: unknown): StateAction | null {
@@ -4476,6 +4538,10 @@ function normalizeAction(raw: unknown): StateAction | null {
     if (parsed) action.everyNth = parsed;
   }
   if (a.unequippedOnly === true) action.unequippedOnly = true;
+  // discard_aerial_impact toggles: omit = enabled; explicit false disables.
+  if (typeof a.blockBullets === 'boolean') action.blockBullets = a.blockBullets;
+  if (typeof a.blockThrown === 'boolean') action.blockThrown = a.blockThrown;
+  if (typeof a.blockAerialDrop === 'boolean') action.blockAerialDrop = a.blockAerialDrop;
   if (typeof a.contactTarget === 'string') {
     const ct = a.contactTarget.trim().toLowerCase();
     if (ct === 'nearest' || ct === 'biting') action.contactTarget = ct;

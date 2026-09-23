@@ -686,7 +686,6 @@ const SLOW_PLANT_IDS = new Set([
   'bamboo_lancer',
   'thistle_duelist',
   'vine_relay',
-  'echo_orchid',
   'pitcher_snare',
   'coffee_bean',
 ]);

@@ -44,7 +44,8 @@ export type AbilityVfxStyle =
   | 'trail'
   | 'veil'
   | 'aura'
-  | 'burrow';
+  | 'burrow'
+  | 'popup';
 
 export const ABILITY_VFX_STYLE_OPTIONS: ReadonlyArray<{ id: AbilityVfxStyle; label: string }> = [
   { id: 'slash', label: 'Slash (melee crescent)' },
@@ -59,6 +60,7 @@ export const ABILITY_VFX_STYLE_OPTIONS: ReadonlyArray<{ id: AbilityVfxStyle; lab
   { id: 'veil', label: 'Veil (concealment)' },
   { id: 'aura', label: 'Aura (speed buzz)' },
   { id: 'burrow', label: 'Burrow (soil ripple)' },
+  { id: 'popup', label: 'Popup (umbrella block leaf)' },
 ];
 
 /**

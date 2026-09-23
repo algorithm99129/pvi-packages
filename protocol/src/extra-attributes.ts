@@ -129,6 +129,20 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     defaultValue: 1,
   },
   {
+    key: 'aerialProtectColumnRange',
+    label: 'Aerial protect column range',
+    hint: 'discard_aerial_impact canopy column radius (1 = ±1 → 3-wide)',
+    type: 'number',
+    defaultValue: 1,
+  },
+  {
+    key: 'aerialProtectLaneRange',
+    label: 'Aerial protect lane range',
+    hint: 'discard_aerial_impact canopy lane radius (1 = ±1 → 3-tall)',
+    type: 'number',
+    defaultValue: 1,
+  },
+  {
     key: 'produceSunAmount',
     label: 'Produce sun amount',
     hint: 'Resource granted by produce_sun (Honeycomb Clover = 50, Sunleaf Banker default 25)',
