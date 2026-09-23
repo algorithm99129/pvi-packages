@@ -182,7 +182,8 @@ export type HomingScope = 'lane' | 'board';
 /**
  * One projectile in a volley. Direction 0° = right (lane-forward), increasing CCW.
  * Curved shots bake an aiming point at fire time from the enemy — do not author `target` into plant JSON.
- * Homing shots seek a living target; scope defaults to any lane (`board`, Cattail).
+ * Homing shots coast along `directionDeg` for `homingLaunchSeconds` (default 0.5),
+ * then steer toward a living target; scope defaults to any lane (`board`, Cattail).
  * Use `homingScope: "lane"` for same-lane seekers (Cactus).
  * Boomerang (Lotus Discus) flies to the aim point then returns to the shooter.
  */
@@ -197,6 +198,11 @@ export interface PlantBulletShot {
    * Homing only. `lane` = same lane as the shooter; `board` / omit = any lane.
    */
   homingScope?: HomingScope;
+  /**
+   * Homing only: seconds to coast along `directionDeg` before steering.
+   * Omit / invalid → {@link DEFAULT_HOMING_LAUNCH_SECONDS}.
+   */
+  homingLaunchSeconds?: number;
   /**
    * @deprecated Not persisted. Combat bakes aim at fire; editor keeps a preview Aim in UI state only.
    */
@@ -216,6 +222,8 @@ export interface PlantBulletShot {
 
 export const DEFAULT_PLANT_BULLET_SPAWN: PlantBulletSpawnPoint = { x: 0.75, y: 0.5 };
 export const DEFAULT_BULLET_ARC_HEIGHT = 0.35;
+/** Homing coast along authored direction before seek begins. */
+export const DEFAULT_HOMING_LAUNCH_SECONDS = 0.5;
 
 /**
  * One entry in a plant's projectile pool.
@@ -358,6 +366,12 @@ export function createBulletShot(
   }
   if (trajectory === 'homing' && partial?.homingScope === 'lane') {
     shot.homingScope = 'lane';
+  }
+  if (trajectory === 'homing') {
+    shot.homingLaunchSeconds =
+      Number.isFinite(partial?.homingLaunchSeconds) && (partial!.homingLaunchSeconds as number) >= 0
+        ? (partial!.homingLaunchSeconds as number)
+        : DEFAULT_HOMING_LAUNCH_SECONDS;
   }
   if (trajectory === 'curved') {
     shot.arcHeight =

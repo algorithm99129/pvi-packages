@@ -218,6 +218,16 @@ export interface BulletStats {
   sleepDurationSeconds?: number;
   eliteSlowScale?: number;
   eliteSlowSeconds?: number;
+  /**
+   * Additive damage vs flying insects (TravelLayer flying).
+   * e.g. 0.25 = +25%. Does not stack multiply with lightDamageBonus — max wins.
+   */
+  flyerDamageBonus?: number;
+  /**
+   * Additive damage vs Light ground insects (not heavy/boss/knockback-immune).
+   * Does not stack multiply with flyerDamageBonus — max wins.
+   */
+  lightDamageBonus?: number;
 }
 
 /** Applied by projectiles on impact — not unit status-graph statuses. */
@@ -791,6 +801,11 @@ function normalizeBulletStats(stats?: Partial<BulletStats>): BulletStats {
   if (eliteSlow > 0) next.eliteSlowScale = eliteSlow;
   const eliteSlowSec = finiteNonNegative(stats?.eliteSlowSeconds);
   if (eliteSlowSec > 0) next.eliteSlowSeconds = eliteSlowSec;
+
+  const flyerBonus = finiteNonNegative(stats?.flyerDamageBonus);
+  if (flyerBonus > 0) next.flyerDamageBonus = flyerBonus;
+  const lightBonus = finiteNonNegative(stats?.lightDamageBonus);
+  if (lightBonus > 0) next.lightDamageBonus = lightBonus;
 
   return next;
 }
