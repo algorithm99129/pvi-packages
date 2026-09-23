@@ -122,6 +122,25 @@ export function graphHasAction(
   return false;
 }
 
+/** True when any squash_crush action uses the given crushStyle (e.g. pull_under). */
+function graphHasCrushStyle(
+  graph: EntityStateGraph | null | undefined,
+  crushStyle: string,
+): boolean {
+  if (!graph?.nodes?.length || !crushStyle) return false;
+  const want = crushStyle.trim().toLowerCase();
+  for (const node of graph.nodes) {
+    const actions = node?.actions;
+    if (!actions?.length) continue;
+    for (const action of actions) {
+      if (action?.type !== "squash_crush") continue;
+      const style = (action.crushStyle ?? "").trim().toLowerCase();
+      if (style === want) return true;
+    }
+  }
+  return false;
+}
+
 /** True when the plant clears fog via status-graph `clear_fog` (Plantern). */
 export function plantClearsFog(input: {
   id: string;
@@ -209,7 +228,8 @@ function inferPlantBehavior(input: {
   ) {
     return {
       kind: "melee_trap",
-      triggerColumnRange: id === "tangle_root" ? 1 : 1.15,
+      // Tangle Root = water kelp pull (tight cell). Mallet / squash hop use a bit more reach.
+      triggerColumnRange: id === "tangle_root" || graphHasCrushStyle(graph, "pull_under") ? 1 : 1.15,
       removeOnTrigger: true,
       aimBeforeAttack: Boolean(client.aim) || id === "mallet_mushroom",
     };
