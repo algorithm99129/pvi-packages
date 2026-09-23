@@ -1475,11 +1475,25 @@ export function actionParamFieldsFor(type: StateActionKind) {
   return STATE_ACTION_PARAM_FIELDS.filter((f) => f.action === type);
 }
 
-/** Seed default attribute-bound params when adding an action in the editor. */
-export function defaultActionParams(type: StateActionKind): Partial<StateAction> {
+/**
+ * Seed default attribute-bound params when adding an action in the editor.
+ * When `availableAttributePaths` is provided, only bind defaults whose path
+ * exists on this unit (extras + built-in stats). Missing extras stay unset (None).
+ */
+export function defaultActionParams(
+  type: StateActionKind,
+  availableAttributePaths?: ReadonlySet<string> | readonly string[],
+): Partial<StateAction> {
   const fields = actionParamFieldsFor(type);
+  const available =
+    availableAttributePaths == null
+      ? null
+      : availableAttributePaths instanceof Set
+        ? availableAttributePaths
+        : new Set(availableAttributePaths);
   const out: Partial<StateAction> = {};
   for (const f of fields) {
+    if (available && !available.has(f.defaultAttribute)) continue;
     (out as Record<string, StateDurationValue>)[f.key] = attributeDuration(f.defaultAttribute);
   }
   if (type === 'explode') {
