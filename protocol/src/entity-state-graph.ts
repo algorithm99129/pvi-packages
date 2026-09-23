@@ -165,6 +165,7 @@ export type StateConditionKind =
   | 'not_damaged_for'
   | 'damage_hits_at_least'
   | 'health_below'
+  | 'health_above'
   | 'armor_broken'
   | 'being_bitten'
   | 'player_command'
@@ -196,6 +197,7 @@ export type StateCondition =
   | { type: 'not_damaged_for'; value: StateDurationValue }
   | { type: 'damage_hits_at_least'; value: StateDurationValue }
   | { type: 'health_below'; ratio: number }
+  | { type: 'health_above'; ratio: number }
   | { type: 'armor_broken' }
   | { type: 'being_bitten' }
   | { type: 'player_command' }
@@ -427,6 +429,12 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
     needsRatio: true,
   },
   {
+    type: 'health_above',
+    label: 'Health above threshold',
+    hint: 'Current health as a fraction of max health is at or above the threshold',
+    needsRatio: true,
+  },
+  {
     type: 'armor_broken',
     label: 'Equipment lost',
     hint: 'Assigned equipment HP hit 0 or was stolen (Magnet). Drive a bare/enrage Spine status from here — equipment art lives on the insect avatar/Spine, not a separate overlay.',
@@ -540,6 +548,8 @@ export type StateActionKind =
   | 'trap_skip'
   | 'grant_leaf_screen'
   | 'apply_camouflage'
+  | 'hide'
+  | 'unhide'
   | 'cleanse_move_debuff'
   | 'leave_speed_trail'
   | 'echo_special'
@@ -1419,6 +1429,20 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     defaultAttribute: 'extra.camouflageSeconds',
   },
   {
+    action: 'hide',
+    key: 'scale',
+    label: 'Opacity',
+    hint: 'Visible alpha while hidden (0.2–0.7 typical). Prefer extra.hideOpacity.',
+    defaultAttribute: 'extra.hideOpacity',
+  },
+  {
+    action: 'hide',
+    key: 'duration',
+    label: 'Hide duration (s)',
+    hint: '0 / unset = stay hidden until unhide or leaving via graph. Prefer extra.hideSeconds.',
+    defaultAttribute: 'extra.hideSeconds',
+  },
+  {
     action: 'hop_evade',
     key: 'scale',
     label: 'Hop miss chance',
@@ -1762,6 +1786,19 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     label: 'Apply camouflage',
     hint: 'Lower auto-target priority so shooters prefer other insects (Katydid / Walking Leaf / Stickbug)',
     kind: 'insect',
+  },
+  {
+    type: 'hide',
+    label: 'Hide',
+    hint:
+      'Fade opacity and skip direct enemy targeting / chew. Still takes area damage (explode, splash). Use unhide on exit or set duration.',
+    kind: 'plant',
+  },
+  {
+    type: 'unhide',
+    label: 'Unhide',
+    hint: 'Clear hide — restore opacity and direct targeting',
+    kind: 'plant',
   },
   {
     type: 'cleanse_move_debuff',
@@ -2805,6 +2842,15 @@ export function createScaredyStateGraph(opts?: {
         status: 'hide',
         spineAnim: opts?.hideAnim ?? opts?.idleAnim,
         loop: true,
+        actions: [
+          {
+            type: 'hide',
+            when: 'on_enter',
+            scale: { kind: 'attribute', path: 'extra.hideOpacity' },
+            duration: { kind: 'attribute', path: 'extra.hideSeconds' },
+          },
+          { type: 'unhide', when: 'on_exit' },
+        ],
         position: { x: 80, y: 40 },
       },
       {
@@ -4283,6 +4329,8 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   trap_skip: 'trap_skip',
   grant_leaf_screen: 'grant_leaf_screen',
   apply_camouflage: 'apply_camouflage',
+  hide: 'hide',
+  unhide: 'unhide',
   cleanse_move_debuff: 'cleanse_move_debuff',
   leave_speed_trail: 'leave_speed_trail',
   echo_special: 'echo_special',
@@ -4394,6 +4442,8 @@ export function migrateLegacyTrigger(raw: unknown): StateCondition[] {
       return [{ type: 'attack_interval_ready' }];
     case 'health_below':
       return [{ type: 'health_below', ratio: Number(t.ratio) || 0.5 }];
+    case 'health_above':
+      return [{ type: 'health_above', ratio: Number(t.ratio) || 0.5 }];
     default:
       return [];
   }
@@ -4454,6 +4504,11 @@ function normalizeCondition(raw: unknown): StateCondition | null {
     case 'health_below':
       return {
         type: 'health_below',
+        ratio: Math.min(1, Math.max(0, Number(c.ratio) || 0.5)),
+      };
+    case 'health_above':
+      return {
+        type: 'health_above',
         ratio: Math.min(1, Math.max(0, Number(c.ratio) || 0.5)),
       };
     case 'on_attack':
@@ -4773,6 +4828,8 @@ export function conditionLabel(condition: StateCondition): string {
       return `Not damaged for ${durationLabel(condition.value)}`;
     case 'health_below':
       return `Health < ${Math.round(condition.ratio * 100)}%`;
+    case 'health_above':
+      return `Health ≥ ${Math.round(condition.ratio * 100)}%`;
     case 'armor_broken':
       return 'Equipment lost';
     case 'being_bitten':
@@ -4817,5 +4874,6 @@ export function defaultCondition(kind: StateConditionKind): StateCondition {
       value: { kind: 'attribute', path: 'extra.healIdleSeconds' },
     };
   if (kind === 'health_below') return { type: 'health_below', ratio: 0.5 };
+  if (kind === 'health_above') return { type: 'health_above', ratio: 0.5 };
   return { type: kind } as StateCondition;
 }

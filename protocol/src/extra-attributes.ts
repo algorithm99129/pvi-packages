@@ -66,6 +66,20 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     defaultValue: 0.15,
   },
   {
+    key: 'hideOpacity',
+    label: 'Hide opacity',
+    hint: 'Alpha while hide action is active (shy plants)',
+    type: 'number',
+    defaultValue: 0.4,
+  },
+  {
+    key: 'hideSeconds',
+    label: 'Hide seconds',
+    hint: 'Timed hide window; 0 = until unhide. Bind on hide.duration.',
+    type: 'number',
+    defaultValue: 0,
+  },
+  {
     key: 'hideProximityColumns',
     label: 'Hide proximity columns',
     hint: 'Column distance that makes a shy shooter fold shut / hide',

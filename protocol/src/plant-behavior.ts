@@ -1,16 +1,16 @@
-import type { PlantClientAssets, PlantRole } from './plant';
-import type { EntityStateGraph, StateActionKind } from './entity-state-graph';
+import type { PlantClientAssets, PlantRole } from "./plant";
+import type { EntityStateGraph, StateActionKind } from "./entity-state-graph";
 
 /** Data-driven plant combat behavior — prefer status-graph actions for gameplay. */
 export type PlantBehaviorKind =
-  | 'shooter'
-  | 'producer'
-  | 'blocker'
-  | 'instant_explode'
-  | 'armed_trap'
-  | 'melee_trap'
-  | 'pitcher_snare'
-  | 'disruptor';
+  | "shooter"
+  | "producer"
+  | "blocker"
+  | "instant_explode"
+  | "armed_trap"
+  | "melee_trap"
+  | "pitcher_snare"
+  | "disruptor";
 
 export interface PlantBehaviorConfig {
   kind: PlantBehaviorKind;
@@ -40,25 +40,27 @@ export interface PlantBehaviorConfig {
   hideProximityColumns?: number;
 }
 
-const PRODUCER_IDS = new Set(['sunleaf_banker', 'honeycomb_clover']);
+const PRODUCER_IDS = new Set(["sunleaf_banker", "honeycomb_clover"]);
 
-export const DEFAULT_PLANT_BEHAVIOR: PlantBehaviorConfig = { kind: 'shooter' };
+export const DEFAULT_PLANT_BEHAVIOR: PlantBehaviorConfig = { kind: "shooter" };
 
 const MELEE_ACTIONS: ReadonlyArray<StateActionKind> = [
-  'deal_contact_damage',
-  'squash_crush',
-  'chomp_devour',
-  'knockback_insects',
+  "deal_contact_damage",
+  "squash_crush",
+  "chomp_devour",
+  "knockback_insects",
 ];
 
 /** True when any node runs explode with mode=pulse (close fan / cone). */
-function graphHasPulseExplode(graph: EntityStateGraph | null | undefined): boolean {
+function graphHasPulseExplode(
+  graph: EntityStateGraph | null | undefined,
+): boolean {
   if (!graph?.nodes?.length) return false;
   for (const node of graph.nodes) {
     const actions = node?.actions;
     if (!actions?.length) continue;
     for (const action of actions) {
-      if (action?.type === 'explode' && action.mode === 'pulse') return true;
+      if (action?.type === "explode" && action.mode === "pulse") return true;
     }
   }
   return false;
@@ -73,7 +75,7 @@ export function entityUsesMeleeAttack(input: {
 }): boolean {
   const graph = input.client?.stateGraph;
   if (!graph?.nodes?.length) return false;
-  if (graphHasAction(graph, 'fire_bullet')) return false;
+  if (graphHasAction(graph, "fire_bullet")) return false;
   if (graphHasPulseExplode(graph)) return true;
   return MELEE_ACTIONS.some((type) => graphHasAction(graph, type));
 }
@@ -100,8 +102,8 @@ export function plantShootsBullets(input: {
   behavior?: PlantBehaviorConfig;
 }): boolean {
   const graph = input.client?.stateGraph;
-  if (graph?.nodes?.length) return graphHasAction(graph, 'fire_bullet');
-  return resolvePlantBehavior(input).kind === 'shooter';
+  if (graph?.nodes?.length) return graphHasAction(graph, "fire_bullet");
+  return resolvePlantBehavior(input).kind === "shooter";
 }
 
 /** True when any status-graph node runs the given engine action. */
@@ -125,8 +127,8 @@ export function plantClearsFog(input: {
   id: string;
   client?: PlantClientAssets | null;
 }): boolean {
-  if (graphHasAction(input.client?.stateGraph, 'clear_fog')) return true;
-  return input.id.trim().toLowerCase() === 'lantern_lily';
+  if (graphHasAction(input.client?.stateGraph, "clear_fog")) return true;
+  return input.id.trim().toLowerCase() === "lantern_lily";
 }
 
 /** Merge explicit JSON behavior with conventions from role, id, and animation clips. */
@@ -155,41 +157,45 @@ function inferPlantBehavior(input: {
   const { id, role, client } = input;
   const graph = client?.stateGraph;
 
-  if (graphHasAction(graph, 'explode')) {
+  if (graphHasAction(graph, "explode")) {
     return {
-      kind: 'instant_explode',
+      kind: "instant_explode",
       detonateDelaySeconds: 0.5,
       triggerLaneRange: 1,
       triggerColumnRange: 1.5,
       removeOnTrigger: true,
-      explodeGfx: 'boom',
+      explodeGfx: "boom",
     };
   }
 
-  if (graphHasAction(graph, 'produce_sun') || PRODUCER_IDS.has(id)) {
-    return { kind: 'producer', produceIntervalSeconds: 24 };
-  }
-
-  if (graphHasAction(graph, 'clear_fog') || id === 'lantern_lily' || role === 'utility') {
-    return { kind: 'blocker' };
-  }
-
-  if (role === 'blocker') {
-    return { kind: 'blocker' };
+  if (graphHasAction(graph, "produce_sun") || PRODUCER_IDS.has(id)) {
+    return { kind: "producer", produceIntervalSeconds: 24 };
   }
 
   if (
-    role === 'disruptor' ||
-    graphHasAction(graph, 'reflect_projectile') ||
-    graphHasAction(graph, 'apply_slow') ||
-    id === 'mirror_ivy'
+    graphHasAction(graph, "clear_fog") ||
+    id === "lantern_lily" ||
+    role === "utility"
   ) {
-    return { kind: 'disruptor' };
+    return { kind: "blocker" };
+  }
+
+  if (role === "blocker") {
+    return { kind: "blocker" };
+  }
+
+  if (
+    role === "disruptor" ||
+    graphHasAction(graph, "reflect_projectile") ||
+    graphHasAction(graph, "apply_slow") ||
+    id === "mirror_ivy"
+  ) {
+    return { kind: "disruptor" };
   }
 
   if (client.init) {
     return {
-      kind: 'armed_trap',
+      kind: "armed_trap",
       prepareSeconds: 15,
       triggerColumnRange: 0.45,
       removeOnTrigger: true,
@@ -197,22 +203,22 @@ function inferPlantBehavior(input: {
   }
 
   if (
-    graphHasAction(graph, 'squash_crush') ||
-    id === 'mallet_mushroom' ||
-    id === 'tangle_root'
+    graphHasAction(graph, "squash_crush") ||
+    id === "mallet_mushroom" ||
+    id === "tangle_root"
   ) {
     return {
-      kind: 'melee_trap',
-      triggerColumnRange: id === 'tangle_root' ? 1 : 1.15,
+      kind: "melee_trap",
+      triggerColumnRange: id === "tangle_root" ? 1 : 1.15,
       removeOnTrigger: true,
-      aimBeforeAttack: Boolean(client.aim) || id === 'mallet_mushroom',
+      aimBeforeAttack: Boolean(client.aim) || id === "mallet_mushroom",
     };
   }
 
-  if (role === 'trap' || graphHasAction(graph, 'chomp_devour')) {
-    if (id === 'pitcher_snare' || graphHasAction(graph, 'chomp_devour')) {
+  if (role === "trap" || graphHasAction(graph, "chomp_devour")) {
+    if (id === "pitcher_snare" || graphHasAction(graph, "chomp_devour")) {
       return {
-        kind: 'pitcher_snare',
+        kind: "pitcher_snare",
         triggerColumnRange: 1.05,
         removeOnTrigger: false,
         digestSeconds: 15,
@@ -220,27 +226,32 @@ function inferPlantBehavior(input: {
     }
 
     return {
-      kind: 'melee_trap',
+      kind: "melee_trap",
       triggerColumnRange: 1.15,
       removeOnTrigger: true,
       aimBeforeAttack: Boolean(client.aim),
     };
   }
 
-  if (graphHasAction(graph, 'fire_bullet') || role === 'shooter' || role === 'splash' || role === 'anti_air') {
-    if (id === 'mimosa_flinch') {
-      return { kind: 'shooter', hideProximityColumns: 1.5 };
+  if (
+    graphHasAction(graph, "fire_bullet") ||
+    role === "shooter" ||
+    role === "splash" ||
+    role === "anti_air"
+  ) {
+    if (graphHasAction(graph, "hide")) {
+      return { kind: "shooter", hideProximityColumns: 1.5 };
     }
-    return { kind: 'shooter' };
+    return { kind: "shooter" };
   }
 
-  if (role === 'support') {
-    return { kind: 'blocker' };
+  if (role === "support") {
+    return { kind: "blocker" };
   }
 
   if (entityUsesMeleeAttack({ client })) {
     return {
-      kind: 'melee_trap',
+      kind: "melee_trap",
       triggerColumnRange: 1.15,
       removeOnTrigger: false,
     };
