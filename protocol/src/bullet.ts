@@ -209,8 +209,9 @@ export interface BulletStats {
   sideShotSpreadDeg?: number;
   sideShotDamageScale?: number;
   /**
-   * Moonseed: N hits within sleepStackWindowSeconds apply sleep (stun) to normals,
+   * Moonseed Drowsy: N hits within sleepStackWindowSeconds apply sleep to normals,
    * or eliteSlowScale for eliteSlowSeconds on elites/heavies.
+   * Authored on the bullet (not onHitStatuses); see MOONSEED_DROWSY_DEFAULTS.
    */
   sleepStacksNeeded?: number;
   sleepStackWindowSeconds?: number;
@@ -220,7 +221,7 @@ export interface BulletStats {
 }
 
 /** Applied by projectiles on impact — not unit status-graph statuses. */
-export type BulletOnHitStatusKind = 'slow' | 'freeze' | 'stun';
+export type BulletOnHitStatusKind = 'slow' | 'freeze' | 'stun' | 'sleep' | 'drowsy' | 'burn';
 
 export interface BulletOnHitStatus {
   kind: BulletOnHitStatusKind;
@@ -265,13 +266,93 @@ export const BULLET_ON_HIT_PRESETS: ReadonlyArray<{
   },
 ];
 
+/**
+ * Moonseed-style Drowsy: stack hits on the bullet (not onHitStatuses).
+ * Applied via sleepStacksNeeded / window / sleep / elite slow fields.
+ */
+export const MOONSEED_DROWSY_DEFAULTS = {
+  sleepStacksNeeded: 4,
+  sleepStackWindowSeconds: 6,
+  sleepDurationSeconds: 2,
+  eliteSlowScale: 0.7,
+  eliteSlowSeconds: 3,
+} as const;
+
+export type MoonseedDrowsyStats = {
+  sleepStacksNeeded: number;
+  sleepStackWindowSeconds: number;
+  sleepDurationSeconds: number;
+  eliteSlowScale: number;
+  eliteSlowSeconds: number;
+};
+
+export function bulletHasDrowsyStacks(
+  stats: Pick<BulletStats, 'sleepStacksNeeded'> | null | undefined,
+): boolean {
+  return (stats?.sleepStacksNeeded ?? 0) > 0;
+}
+
+export function applyMoonseedDrowsyDefaults(): Partial<BulletStats> {
+  return { ...MOONSEED_DROWSY_DEFAULTS };
+}
+
+export function clearMoonseedDrowsyStats(): Partial<BulletStats> {
+  return {
+    sleepStacksNeeded: undefined,
+    sleepStackWindowSeconds: undefined,
+    sleepDurationSeconds: undefined,
+    eliteSlowScale: undefined,
+    eliteSlowSeconds: undefined,
+  };
+}
+
+/**
+ * Acorn Blaster–style: every Nth shot applies empowerOnHitStatuses
+ * (brief butter stun on light ground by default).
+ */
+export const ACORN_EMPOWER_DEFAULTS = {
+  empowerEvery: 5,
+  empowerLightGroundOnly: true,
+  empowerOnHitStatuses: [
+    {
+      kind: 'stun' as const,
+      durationSeconds: 0.35,
+      speedScale: 0,
+      blockActions: true,
+    },
+  ],
+};
+
+export function bulletHasEmpowerShot(
+  stats: Pick<BulletStats, 'empowerEvery'> | null | undefined,
+): boolean {
+  return (stats?.empowerEvery ?? 0) > 0;
+}
+
+export function applyAcornEmpowerDefaults(): Partial<BulletStats> {
+  return {
+    empowerEvery: ACORN_EMPOWER_DEFAULTS.empowerEvery,
+    empowerLightGroundOnly: ACORN_EMPOWER_DEFAULTS.empowerLightGroundOnly,
+    empowerOnHitStatuses: ACORN_EMPOWER_DEFAULTS.empowerOnHitStatuses.map((s) => ({ ...s })),
+  };
+}
+
+export function clearEmpowerShotStats(): Partial<BulletStats> {
+  return {
+    empowerEvery: undefined,
+    empowerOnHitStatuses: undefined,
+    empowerLightGroundOnly: undefined,
+    empowerExtraPierceHits: undefined,
+  };
+}
+
 export function defaultOnHitSpeedScale(kind: BulletOnHitStatusKind): number {
-  if (kind === 'slow') return 0.5;
+  if (kind === 'slow' || kind === 'drowsy') return 0.5;
   return 0;
 }
 
 export function defaultOnHitBlockActions(kind: BulletOnHitStatusKind): boolean {
-  return kind === 'freeze' || kind === 'stun';
+  return kind === 'freeze' || kind === 'stun' || kind === 'sleep';
 }
 
 export interface BulletDefinition {
@@ -732,7 +813,14 @@ function normalizeOnHitStatuses(raw: unknown): BulletOnHitStatus[] | undefined {
     if (!item || typeof item !== 'object') continue;
     const row = item as Record<string, unknown>;
     const kind =
-      row.kind === 'slow' || row.kind === 'freeze' || row.kind === 'stun' ? row.kind : null;
+      row.kind === 'slow' ||
+      row.kind === 'freeze' ||
+      row.kind === 'stun' ||
+      row.kind === 'sleep' ||
+      row.kind === 'drowsy' ||
+      row.kind === 'burn'
+        ? row.kind
+        : null;
     if (!kind) continue;
     const duration = Number(row.durationSeconds);
     if (!Number.isFinite(duration) || duration <= 0) continue;

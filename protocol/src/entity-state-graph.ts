@@ -508,7 +508,6 @@ export type StateActionKind =
   | 'sip_economy'
   | 'suppress_special'
   | 'retreat_columns'
-  | 'summon_temp_plant'
   | 'brace'
   | 'chain_damage'
   | 'leave_slick'
@@ -579,7 +578,10 @@ export interface StateAction {
   contactTarget?: ContactTargetMode;
   /** arm_burst: fuse length before explode (prefer `extra.fuseSeconds`). */
   fuseDuration?: StateDurationValue;
-  /** summon_temp_plant: catalog plant id to spawn (literal string). */
+  /**
+   * Legacy summon plant id (prefer `targetId` for summon_insect / throw_unit).
+   * Kept for older graphs that still author summonId.
+   */
   summonId?: string;
   /**
    * summon_insect / throw_unit: catalog insect id to spawn (literal string).
@@ -591,10 +593,6 @@ export interface StateAction {
    * Prefer this over traits.*Mode when set.
    */
   mode?: string;
-  /** summon_temp_plant: seconds the sprout lives (prefer `extra.summonDuration`). */
-  summonDuration?: StateDurationValue;
-  /** summon_temp_plant: override sprout max HP (prefer `extra.summonHp`). */
-  summonHp?: StateDurationValue;
   /**
    * Generic amount: produce_sun, heal_ally, grant_leaf_screen HP,
    * explode burstDamage, chain_damage maxJumps.
@@ -870,8 +868,6 @@ export type StateActionParamKey =
   | 'damage'
   | 'knockbackEvery'
   | 'fuseDuration'
-  | 'summonDuration'
-  | 'summonHp'
   | 'amount'
   | 'duration'
   | 'scale'
@@ -985,8 +981,9 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
   {
     action: 'fire_bullet',
     key: 'columnRange',
-    label: 'Travel columns',
-    hint: 'How many columns the projectile travels before it fades. Prefer extra.travelColumns.',
+    label: 'Travel / jump radius',
+    hint:
+      'Projectile travel columns, or chain lightning jump radius (extra.jumpRadiusCells). Prefer extra.travelColumns / extra.jumpRadiusCells.',
     defaultAttribute: 'extra.travelColumns',
   },
   {
@@ -999,8 +996,9 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
   {
     action: 'fire_bullet',
     key: 'cap',
-    label: 'Pierce hits',
-    hint: 'How many targets one projectile can hit. 0 or 1 stops on the first hit. Prefer extra.pierceHits.',
+    label: 'Pierce / max jumps',
+    hint:
+      'Pierce hit count, or chain lightning max jumps (extra.maxJumps). Prefer extra.pierceHits / extra.maxJumps.',
     defaultAttribute: 'extra.pierceHits',
   },
   {
@@ -1479,62 +1477,6 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     hint: 'Delay before self-explode. Prefer extra.fuseSeconds.',
     defaultAttribute: 'extra.fuseSeconds',
   },
-  {
-    action: 'summon_temp_plant',
-    key: 'summonDuration',
-    label: 'Summon lifetime (s)',
-    hint: 'How long the sprout lives before despawn',
-    defaultAttribute: 'extra.summonDuration',
-  },
-  {
-    action: 'summon_temp_plant',
-    key: 'summonHp',
-    label: 'Summon HP',
-    hint: 'Override sprout max health',
-    defaultAttribute: 'extra.summonHp',
-  },
-  {
-    action: 'summon_temp_plant',
-    key: 'cap',
-    label: 'Summon cap',
-    hint: 'Max living sprouts from this mother. Prefer extra.summonCap',
-    defaultAttribute: 'extra.summonCap',
-  },
-  {
-    action: 'summon_temp_plant',
-    key: 'columnRange',
-    label: 'Forward columns',
-    hint: 'How many columns ahead to search for a landing cell. Prefer extra.summonForwardColumns',
-    defaultAttribute: 'extra.summonForwardColumns',
-  },
-  {
-    action: 'summon_temp_plant',
-    key: 'damage',
-    label: 'Sprout damage',
-    hint: 'Override sprout attack damage. Prefer extra.summonDamage',
-    defaultAttribute: 'extra.summonDamage',
-  },
-  {
-    action: 'summon_temp_plant',
-    key: 'amount',
-    label: 'Sprout interval (ms)',
-    hint: 'Sprout attack interval in ms. Prefer extra.summonIntervalMs',
-    defaultAttribute: 'extra.summonIntervalMs',
-  },
-  {
-    action: 'summon_temp_plant',
-    key: 'scale',
-    label: 'Sprout range',
-    hint: 'Sprout combat range (also selects shooter vs melee). Prefer extra.summonRange',
-    defaultAttribute: 'extra.summonRange',
-  },
-  {
-    action: 'summon_temp_plant',
-    key: 'laneRange',
-    label: 'Over blockers',
-    hint: 'When >0.5, landing search skips past occupied cells. Prefer extra.overBlockers',
-    defaultAttribute: 'extra.overBlockers',
-  },
 ];
 
 export function actionParamFieldsFor(type: StateActionKind) {
@@ -1888,13 +1830,6 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     label: 'Retreat columns',
     hint: 'Drift back toward spawn after a shot (Damselfly). amount = columns; duration = cooldown seconds. Uses SpecialReady.',
     kind: 'insect',
-  },
-  {
-    type: 'summon_temp_plant',
-    label: 'Summon temp plant',
-    hint:
-      'Spawns a short-lived ally plant ahead. Separate from Fire bullet — use summonId, lifetime, HP, and landing params here.',
-    kind: 'plant',
   },
   {
     type: 'brace',
@@ -4295,7 +4230,6 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   sip_economy: 'sip_economy',
   suppress_special: 'suppress_special',
   retreat_columns: 'retreat_columns',
-  summon_temp_plant: 'summon_temp_plant',
   brace: 'brace',
   chain_damage: 'chain_damage',
   leave_slick: 'leave_slick',
@@ -4342,8 +4276,6 @@ function normalizeAction(raw: unknown): StateAction | null {
     'damage',
     'knockbackEvery',
     'fuseDuration',
-    'summonDuration',
-    'summonHp',
     'amount',
     'duration',
     'scale',

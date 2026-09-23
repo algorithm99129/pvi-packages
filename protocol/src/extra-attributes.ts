@@ -54,7 +54,7 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
   {
     key: 'hideProximityColumns',
     label: 'Hide proximity columns',
-    hint: 'Column distance that makes Mimosa Flinch fold shut',
+    hint: 'Column distance that makes a shy shooter fold shut / hide',
     type: 'number',
     defaultValue: 1.5,
   },
@@ -218,20 +218,6 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     hint: 'Wire via arm_burst.fuseDuration → extra.fuseSeconds',
     type: 'number',
     defaultValue: 8,
-  },
-  {
-    key: 'summonDuration',
-    label: 'Summon duration seconds',
-    hint: 'Wire via summon_temp_plant.summonDuration → extra.summonDuration',
-    type: 'number',
-    defaultValue: 12,
-  },
-  {
-    key: 'summonHp',
-    label: 'Summon HP',
-    hint: 'Wire via summon_temp_plant.summonHp → extra.summonHp',
-    type: 'number',
-    defaultValue: 150,
   },
 ];
 
