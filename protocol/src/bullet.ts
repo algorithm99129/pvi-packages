@@ -109,6 +109,24 @@ export interface BulletChainLightning {
   missRefundInterval?: number;
 }
 
+/**
+ * Unity-drawn flame cone (Snapdragon Ember). Not a flying sprite —
+ * combat sprays fire particles in a forward cone and hits up to maxTargets.
+ */
+export interface BulletFlameCone {
+  /**
+   * Full cone aperture in degrees (e.g. 70 = ±35° from lane-forward).
+   * Default 70.
+   */
+  angleDeg?: number;
+  /** Max columns the cone reaches. Default from plant range / graph columnRange. */
+  columns?: number;
+  /** Burst presentation duration (seconds). Default 0.35. */
+  durationSeconds?: number;
+  /** Max insects hit, nearest first. Default 3. */
+  maxTargets?: number;
+}
+
 export interface BulletClientAssets {
   /** PascalCase unit folder under Bullets/, e.g. Pea */
   folder: string;
@@ -142,6 +160,11 @@ export interface BulletClientAssets {
    * Editor bullet shots UI only authors the spawn point.
    */
   chainLightning?: BulletChainLightning;
+  /**
+   * When set, Unity draws a flame-particle cone (no projectile flight preview).
+   * Editor bullet shots UI only authors the spawn point.
+   */
+  flameCone?: BulletFlameCone;
   /** Fraction of grid cell width (0–1). Default 0.4. Height follows sprite aspect. */
   cellWidthFill?: number;
   /** Extra multiplier applied after cell-width fitting. */
@@ -245,6 +268,17 @@ export interface BulletStats {
   stickMaxStacks?: number;
   /** Damage dealt when stacks reach the max and burrs disappear. */
   stickPopDamage?: number;
+  /**
+   * Snapdragon Warmth: N hits within warmthDurationSeconds apply burn
+   * (burnDps for burnSeconds). Burn does not stack; refreshing replaces.
+   */
+  warmthStacksNeeded?: number;
+  /** Rolling window for Warmth stacks (seconds). */
+  warmthDurationSeconds?: number;
+  /** Burn damage per second once Warmth reaches stacksNeeded. */
+  burnDps?: number;
+  /** Burn DoT duration (seconds). */
+  burnSeconds?: number;
 }
 
 /** Applied by projectiles on impact — not unit status-graph statuses. */
@@ -439,7 +473,44 @@ export function bulletUsesUnityPresentation(
   if (!bullet?.client) return false;
   if (bullet.client.beam && bullet.client.beam.durationSeconds > 0) return true;
   if (bullet.client.chainLightning) return true;
+  if (bullet.client.flameCone) return true;
   return false;
+}
+
+/**
+ * Snapdragon-style Warmth → burn. Authored on the bullet (not onHitStatuses).
+ */
+export const SNAPDRAGON_WARMTH_DEFAULTS = {
+  warmthStacksNeeded: 3,
+  warmthDurationSeconds: 4,
+  burnDps: 8,
+  burnSeconds: 4,
+} as const;
+
+export type SnapdragonWarmthStats = {
+  warmthStacksNeeded: number;
+  warmthDurationSeconds: number;
+  burnDps: number;
+  burnSeconds: number;
+};
+
+export function bulletHasWarmthStacks(
+  stats: Pick<BulletStats, 'warmthStacksNeeded'> | null | undefined,
+): boolean {
+  return (stats?.warmthStacksNeeded ?? 0) > 0;
+}
+
+export function applySnapdragonWarmthDefaults(): Partial<BulletStats> {
+  return { ...SNAPDRAGON_WARMTH_DEFAULTS };
+}
+
+export function clearSnapdragonWarmthStats(): Partial<BulletStats> {
+  return {
+    warmthStacksNeeded: undefined,
+    warmthDurationSeconds: undefined,
+    burnDps: undefined,
+    burnSeconds: undefined,
+  };
 }
 
 /** Editor hint: only author spawn UVs; flight path is owned by Unity. */
@@ -674,6 +745,8 @@ function normalizeBulletClient(
   if (beam) next.beam = beam;
   const chain = normalizeChainLightning(client.chainLightning);
   if (chain) next.chainLightning = chain;
+  const flame = normalizeFlameCone(client.flameCone);
+  if (flame) next.flameCone = flame;
   next.cellWidthFill = resolveCellWidthFill(client.cellWidthFill, DEFAULT_BULLET_CELL_WIDTH_FILL);
   const scale =
     client.scale != null && Number.isFinite(client.scale) && client.scale > 0 ? client.scale : 1;
@@ -748,6 +821,22 @@ function normalizeChainLightning(value: unknown): BulletChainLightning | undefin
   if (maxJumps > 0) out.maxJumps = Math.max(1, Math.round(maxJumps));
   if (jumpRadiusCells > 0) out.jumpRadiusCells = jumpRadiusCells;
   if (missRefundInterval > 0) out.missRefundInterval = Math.min(1, missRefundInterval);
+  return out;
+}
+
+function normalizeFlameCone(value: unknown): BulletFlameCone | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const raw = value as Partial<BulletFlameCone>;
+  const angleDeg = finiteNonNegative(raw.angleDeg);
+  const columns = finiteNonNegative(raw.columns);
+  const durationSeconds = finiteNonNegative(raw.durationSeconds);
+  const maxTargets = finiteNonNegative(raw.maxTargets);
+  // Presence of the object opts into flame-cone presentation; Unity fills defaults.
+  const out: BulletFlameCone = {};
+  if (angleDeg > 0) out.angleDeg = Math.min(180, angleDeg);
+  if (columns > 0) out.columns = columns;
+  if (durationSeconds > 0) out.durationSeconds = durationSeconds;
+  if (maxTargets > 0) out.maxTargets = Math.max(1, Math.round(maxTargets));
   return out;
 }
 
@@ -877,6 +966,21 @@ function normalizeBulletStats(stats?: Partial<BulletStats>): BulletStats {
       slow > 0 && slow <= 1 ? slow : VELCRO_COCKLEBUR_DEFAULTS.stickSlowScale;
     const pop = finiteNonNegative(stats?.stickPopDamage);
     if (pop > 0) next.stickPopDamage = pop;
+  }
+
+  const warmthNeed =
+    Number.isFinite(stats?.warmthStacksNeeded) && (stats!.warmthStacksNeeded as number) > 0
+      ? Math.max(1, Math.round(stats!.warmthStacksNeeded as number))
+      : 0;
+  if (warmthNeed > 0) {
+    next.warmthStacksNeeded = warmthNeed;
+    const warmthWindow = finiteNonNegative(stats?.warmthDurationSeconds);
+    next.warmthDurationSeconds =
+      warmthWindow > 0 ? warmthWindow : SNAPDRAGON_WARMTH_DEFAULTS.warmthDurationSeconds;
+    const dps = finiteNonNegative(stats?.burnDps);
+    next.burnDps = dps > 0 ? dps : SNAPDRAGON_WARMTH_DEFAULTS.burnDps;
+    const burnSec = finiteNonNegative(stats?.burnSeconds);
+    next.burnSeconds = burnSec > 0 ? burnSec : SNAPDRAGON_WARMTH_DEFAULTS.burnSeconds;
   }
 
   return next;
