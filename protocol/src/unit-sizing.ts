@@ -11,9 +11,12 @@ export const DEFAULT_BULLET_CELL_WIDTH_FILL = 0.4;
 export const DEFAULT_EGG_GROUP_CELL_WIDTH_FILL = 0.82;
 
 /**
- * Normalized art box relative to one grid cell (bottom-left origin).
- * Edges are normally 0–1 inside the cell, but may overflow (e.g. −0.25…1.25)
- * so tall/wide units can extend past the cell.
+ * Normalized art box relative to the placement space (bottom-left origin):
+ * one lawn cell, or the whole footprint when `server.footprintColumns` /
+ * `footprintLanes` are greater than 1.
+ * Edges are normally 0–1 inside that space, but may overflow (e.g. −0.25…1.25).
+ * Combat and the editor use the same UV: size = placementWorld × (max−min),
+ * feet at (midX, minY) on the placement quad.
  */
 export interface UnitCellAnchor {
   /** Left edge as a fraction of cell width. */
