@@ -653,7 +653,7 @@ export interface StateAction {
   mode?: string;
   /**
    * Generic amount: produce_sun, heal_ally, grant_leaf_screen HP,
-   * explode burstDamage, chain_damage maxJumps.
+   * explode burstDamage, chain_damage maxJumps, reduce_ally_cooldown seconds.
    */
   amount?: StateDurationValue;
   /**
@@ -1596,6 +1596,27 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
       'Move-speed scale while chilled (0.65 = 35% slow). Used only in mode=trap_or_slow. Prefer extra.heavySlowScale.',
     defaultAttribute: 'extra.heavySlowScale',
   },
+  {
+    action: 'reduce_ally_cooldown',
+    key: 'amount',
+    label: 'Shave seconds',
+    hint: 'Seconds subtracted from each ally attack cooldown. Prefer extra.cooldownShaveSeconds.',
+    defaultAttribute: 'extra.cooldownShaveSeconds',
+  },
+  {
+    action: 'reduce_ally_cooldown',
+    key: 'columnRange',
+    label: 'Column range',
+    hint: 'Ally column radius in cells. Prefer extra.cooldownColumnRange.',
+    defaultAttribute: 'extra.cooldownColumnRange',
+  },
+  {
+    action: 'reduce_ally_cooldown',
+    key: 'laneRange',
+    label: 'Lane range',
+    hint: 'Ally lane radius (0 = same lane only). Prefer extra.cooldownLaneRange.',
+    defaultAttribute: 'extra.cooldownLaneRange',
+  },
 ];
 
 export function actionParamFieldsFor(type: StateActionKind) {
@@ -1989,7 +2010,8 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'reduce_ally_cooldown',
     label: 'Reduce ally cooldown',
-    hint: 'Shorten nearby plants’ attack timers (Clockvine)',
+    hint:
+      'Shorten nearby plants’ attack timers (Clockvine). amount = seconds; columnRange / laneRange = ally radius.',
     kind: 'plant',
   },
   {
