@@ -209,6 +209,8 @@ export interface PlantBulletShot {
    * 0 = shooter's lane. Combat skips shots that land off the map.
    */
   laneOffset?: number;
+  /** Per-shot damage multiplier (Tri-Berry side shots = 0.5). Omitted / 0 = 1. */
+  damageScale?: number;
 }
 
 export const DEFAULT_PLANT_BULLET_SPAWN: PlantBulletSpawnPoint = { x: 0.75, y: 0.5 };
@@ -347,6 +349,9 @@ export function createBulletShot(
   };
   if (Number.isFinite(partial?.laneOffset) && (partial!.laneOffset as number) !== 0) {
     shot.laneOffset = Math.trunc(partial!.laneOffset as number);
+  }
+  if (Number.isFinite(partial?.damageScale) && (partial!.damageScale as number) > 0) {
+    shot.damageScale = partial!.damageScale as number;
   }
   if (trajectory === 'homing' && partial?.homingScope === 'lane') {
     shot.homingScope = 'lane';

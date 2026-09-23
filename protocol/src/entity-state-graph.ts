@@ -162,6 +162,7 @@ export type StateConditionKind =
   | 'after_seconds'
   | 'prepare_complete'
   | 'on_damaged'
+  | 'damage_hits_at_least'
   | 'health_below'
   | 'armor_broken'
   | 'being_bitten'
@@ -189,6 +190,7 @@ export type StateCondition =
   | { type: 'after_seconds'; value: StateDurationValue }
   | { type: 'prepare_complete' }
   | { type: 'on_damaged' }
+  | { type: 'damage_hits_at_least'; value: StateDurationValue }
   | { type: 'health_below'; ratio: number }
   | { type: 'armor_broken' }
   | { type: 'being_bitten' }
@@ -397,6 +399,12 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
     hint: 'This unit took damage',
   },
   {
+    type: 'damage_hits_at_least',
+    label: 'Damage hits at least',
+    hint: 'Body/armor hit count since last reset (Pillbug coil after N hits). value = threshold.',
+    needsSeconds: true,
+  },
+  {
     type: 'health_below',
     label: 'Health below threshold',
     hint: 'Current health as a fraction of max health is below the threshold',
@@ -455,17 +463,13 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
  */
 export type StateActionKind =
   | 'fire_bullet'
-  | 'begin_charge'
   | 'deal_contact_damage'
-  | 'deal_area_damage'
   | 'squash_crush'
   | 'chomp_devour'
   | 'explode'
   | 'produce_sun'
   | 'clear_fog'
-  | 'clear_all_fog'
   | 'blow_away_flying'
-  | 'blow_away'
   | 'despawn'
   | 'reset_attack_timer'
   | 'stop_moving'
@@ -495,6 +499,8 @@ export type StateActionKind =
   | 'knockback_insects'
   | 'grant_shield'
   | 'sip_economy'
+  | 'suppress_special'
+  | 'retreat_columns'
   | 'summon_temp_plant'
   | 'brace'
   | 'chain_damage'
@@ -550,12 +556,72 @@ export interface StateAction {
   splashLaneRange?: StateDurationValue;
   /** knockback_insects: how many cells to push the insect back along the lane. */
   knockbackCells?: StateDurationValue;
-  /** knockback_insects: damage dealt with the shove. Prefer stats.baseDamage. */
+  /**
+   * knockback_insects / deal_contact_damage: damage dealt.
+   * Prefer `stats.baseDamage` or `extra.retaliationDamage` attribute paths.
+   */
   damage?: StateDurationValue;
   /** knockback_insects: push only on every Nth attack. 1 = every attack. */
   knockbackEvery?: StateDurationValue;
   /** knockback_insects: only insects with no equipment. */
   unequippedOnly?: boolean;
+  /**
+   * deal_contact_damage: who to hit.
+   * `nearest` = FindNearestEnemy; `biting` = insect currently chewing this plant.
+   */
+  contactTarget?: ContactTargetMode;
+  /** arm_burst: fuse length before explode (prefer `extra.fuseSeconds`). */
+  fuseDuration?: StateDurationValue;
+  /** summon_temp_plant: catalog plant id to spawn (literal string). */
+  summonId?: string;
+  /**
+   * summon_insect / throw_unit: catalog insect id to spawn (literal string).
+   * Prefer this over traits.summonInsectId / traits.throwInsectId when set.
+   */
+  targetId?: string;
+  /**
+   * Mode enum for multi-mode verbs (grant_shield, weaken_attack, buff_attack_speed, …).
+   * Prefer this over traits.*Mode when set.
+   */
+  mode?: string;
+  /** summon_temp_plant: seconds the sprout lives (prefer `extra.summonDuration`). */
+  summonDuration?: StateDurationValue;
+  /** summon_temp_plant: override sprout max HP (prefer `extra.summonHp`). */
+  summonHp?: StateDurationValue;
+  /**
+   * Generic amount: produce_sun, heal_ally, grant_leaf_screen HP,
+   * explode burstDamage, chain_damage maxJumps.
+   */
+  amount?: StateDurationValue;
+  /**
+   * Generic duration (seconds): shield / reflect / brace / mark / camouflage /
+   * trail / buff / contact stun / dash / slow / weaken.
+   */
+  duration?: StateDurationValue;
+  /**
+   * Generic scale: attackSpeedScale, weaken scale, shield pct, brace incoming,
+   * slow scale, mark damage, dash / trail / camouflage / hop miss, explode maxHpPercent.
+   */
+  scale?: StateDurationValue;
+  /**
+   * Generic cap: attackSpeedBuffCap, markAllyCap, leafScreenCharges,
+   * delayMaxTargets, speedBuffCap, explode damageCap.
+   */
+  cap?: StateDurationValue;
+  /**
+   * dash: post-burst recover scale (move slow when &lt; 1, incoming damage mult when &gt; 1).
+   * Prefer `extra.dashRecoverScale`.
+   */
+  recoverScale?: StateDurationValue;
+  /**
+   * dash: post-burst recover window seconds. Prefer `extra.dashRecoverSeconds`.
+   */
+  recoverSeconds?: StateDurationValue;
+  /**
+   * deal_contact_damage: stun on every Nth hit (prefer `extra.stunEveryNth`).
+   * Also used as contactEvery alias in older graphs.
+   */
+  everyNth?: StateDurationValue;
   /**
    * squash_crush: how the plant reaches the target.
    * Prefer this over hardcoding by plant id in the client (Squash hop vs Tangle Kelp pull).
@@ -567,6 +633,131 @@ export interface StateAction {
    */
   vfxStyle?: ExplodeVfxStyle;
 }
+
+/** Who `deal_contact_damage` hits. */
+export type ContactTargetMode = 'nearest' | 'biting';
+
+export const CONTACT_TARGET_OPTIONS: ReadonlyArray<{
+  id: ContactTargetMode;
+  label: string;
+  hint: string;
+}> = [
+  {
+    id: 'nearest',
+    label: 'Nearest enemy',
+    hint: 'Spikeweed-style scrape: nearest enemy in range',
+  },
+  {
+    id: 'biting',
+    label: 'Biting insect',
+    hint: 'Bramble-style thorns: only the insect currently chewing this plant',
+  },
+];
+
+/** Common `mode` values for multi-mode engine actions. */
+export const STATE_ACTION_MODE_OPTIONS: ReadonlyArray<{
+  action: StateActionKind;
+  id: string;
+  label: string;
+  hint: string;
+}> = [
+  {
+    action: 'grant_shield',
+    id: 'self_nearby',
+    label: 'Self + nearby',
+    hint: 'Shield self and a plant behind (Bubble Aloe)',
+  },
+  {
+    action: 'grant_shield',
+    id: 'lowest_hp_ally',
+    label: 'Lowest-HP ally',
+    hint: 'Shield the most damaged ally in range',
+  },
+  {
+    action: 'weaken_attack',
+    id: 'damage_weaken',
+    label: 'Damage weaken',
+    hint: 'Reduce enemy attack damage',
+  },
+  {
+    action: 'weaken_attack',
+    id: 'bite_slow',
+    label: 'Bite slow',
+    hint: 'Slow insect bite / move',
+  },
+  {
+    action: 'weaken_attack',
+    id: 'song_delay',
+    label: 'Song delay',
+    hint: 'Delay plant attack timers (Cicada song)',
+  },
+  {
+    action: 'weaken_attack',
+    id: 'silk_tether',
+    label: 'Silk tether',
+    hint: 'Stronger plant attack-interval slow (Silkworm)',
+  },
+  {
+    action: 'buff_attack_speed',
+    id: 'aura',
+    label: 'Aura',
+    hint: 'Buff nearby allies in range',
+  },
+  {
+    action: 'buff_attack_speed',
+    id: 'self',
+    label: 'Self only',
+    hint: 'Buff only the caster',
+  },
+  {
+    action: 'buff_move_speed',
+    id: 'aura',
+    label: 'Aura',
+    hint: 'Speed-buff nearby insect allies',
+  },
+  {
+    action: 'buff_move_speed',
+    id: 'boss_pulse',
+    label: 'Boss pulse',
+    hint: 'Wider ally speed pulse (Bumble Queen)',
+  },
+  {
+    action: 'buff_move_speed',
+    id: 'trail',
+    label: 'Speed trail',
+    hint: 'Leave a temporary speed trail',
+  },
+  {
+    action: 'buff_move_speed',
+    id: 'cleanse_pulse',
+    label: 'Cleanse pulse',
+    hint: 'Clear move debuffs instead of buffing',
+  },
+  {
+    action: 'explode',
+    id: 'blast',
+    label: 'Blast',
+    hint: 'One-shot area blast (ArmorFirst, explode VFX). Default.',
+  },
+  {
+    action: 'explode',
+    id: 'pulse',
+    label: 'Pulse',
+    hint: 'Repeating close area hit (Pierce, melee VFX). Use for fans / cones.',
+  },
+  {
+    action: 'clear_fog',
+    id: 'aura',
+    label: 'Aura',
+    hint: 'Local fog hole while this unit is alive (Lantern Lily). Default.',
+  },
+  {
+    action: 'clear_fog',
+    id: 'all',
+    label: 'All fog',
+    hint: 'Permanently clear the entire fog bank for the rest of the raid.',
+  },
+];
 
 /** Motion style for the `squash_crush` action. */
 export type SquashCrushStyle = 'hop' | 'pull_under';
@@ -654,18 +845,30 @@ export function normalizeExplodeVfxStyle(raw: unknown): ExplodeVfxStyle | undefi
 }
 
 /** Inspector fields for actions that take graph-configurable numbers. */
+export type StateActionParamKey =
+  | 'columnRange'
+  | 'laneRange'
+  | 'freezeDuration'
+  | 'chillDuration'
+  | 'splashColumnRange'
+  | 'splashLaneRange'
+  | 'knockbackCells'
+  | 'damage'
+  | 'knockbackEvery'
+  | 'fuseDuration'
+  | 'summonDuration'
+  | 'summonHp'
+  | 'amount'
+  | 'duration'
+  | 'scale'
+  | 'cap'
+  | 'recoverScale'
+  | 'recoverSeconds'
+  | 'everyNth';
+
 export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
   action: StateActionKind;
-  key:
-    | 'columnRange'
-    | 'laneRange'
-    | 'freezeDuration'
-    | 'chillDuration'
-    | 'splashColumnRange'
-    | 'splashLaneRange'
-    | 'knockbackCells'
-    | 'damage'
-    | 'knockbackEvery';
+  key: StateActionParamKey;
   label: string;
   hint: string;
   /** Default Extra attribute path when inserting the action. */
@@ -686,18 +889,459 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     defaultAttribute: 'extra.triggerLaneRange',
   },
   {
-    action: 'deal_area_damage',
+    action: 'explode',
     key: 'columnRange',
     label: 'Column range',
-    hint: 'Area damage column radius',
+    hint: 'Blast / pulse column radius (prefer extra.triggerColumnRange)',
     defaultAttribute: 'extra.triggerColumnRange',
   },
   {
-    action: 'deal_area_damage',
+    action: 'explode',
     key: 'laneRange',
     label: 'Lane range',
-    hint: 'Area damage lane radius',
+    hint: 'Blast / pulse lane radius (prefer extra.triggerLaneRange)',
     defaultAttribute: 'extra.triggerLaneRange',
+  },
+  {
+    action: 'explode',
+    key: 'amount',
+    label: 'Burst damage',
+    hint: 'Flat damage (blast: extra.burstDamage; pulse: stats.baseDamage)',
+    defaultAttribute: 'extra.burstDamage',
+  },
+  {
+    action: 'explode',
+    key: 'damage',
+    label: 'Pulse damage',
+    hint: 'Flat damage for mode=pulse (alias of amount). Prefer stats.baseDamage.',
+    defaultAttribute: 'stats.baseDamage',
+  },
+  {
+    action: 'explode',
+    key: 'scale',
+    label: 'Max-HP percent',
+    hint: 'Blast only: fraction of target max HP (prefer extra.maxHpPercent)',
+    defaultAttribute: 'extra.maxHpPercent',
+  },
+  {
+    action: 'explode',
+    key: 'cap',
+    label: 'Cap',
+    hint: 'Blast: %HP damage cap (extra.damageCap). Pulse: max targets (extra.sweepMaxTargets). 0 = unlimited.',
+    defaultAttribute: 'extra.damageCap',
+  },
+  {
+    action: 'blow_away_flying',
+    key: 'columnRange',
+    label: 'Push columns',
+    hint: 'How many columns to push flying insects toward spawn (no despawn). Prefer extra.blowAwayColumns.',
+    defaultAttribute: 'extra.blowAwayColumns',
+  },
+  {
+    action: 'fire_bullet',
+    key: 'damage',
+    label: 'Shot damage',
+    hint: 'Damage this projectile deals. Prefer stats.baseDamage unless this shot differs from the unit.',
+    defaultAttribute: 'stats.baseDamage',
+  },
+  {
+    action: 'fire_bullet',
+    key: 'columnRange',
+    label: 'Travel columns',
+    hint: 'How many columns the projectile travels before it fades. Prefer extra.travelColumns.',
+    defaultAttribute: 'extra.travelColumns',
+  },
+  {
+    action: 'fire_bullet',
+    key: 'duration',
+    label: 'Max air life (s)',
+    hint: 'Seconds before the projectile disappears. Prefer extra.airLifeSeconds.',
+    defaultAttribute: 'extra.airLifeSeconds',
+  },
+  {
+    action: 'fire_bullet',
+    key: 'cap',
+    label: 'Pierce hits',
+    hint: 'How many targets one projectile can hit. 0 or 1 stops on the first hit. Prefer extra.pierceHits.',
+    defaultAttribute: 'extra.pierceHits',
+  },
+  {
+    action: 'fire_bullet',
+    key: 'amount',
+    label: 'Pass over blockers',
+    hint: 'Above 0.5, the shot flies over plants that block the lane. Prefer extra.overBlockers.',
+    defaultAttribute: 'extra.overBlockers',
+  },
+  {
+    action: 'deal_contact_damage',
+    key: 'damage',
+    label: 'Contact damage',
+    hint: 'Prefer stats.baseDamage (Spikeweed) or extra.retaliationDamage (Bramble)',
+    defaultAttribute: 'stats.baseDamage',
+  },
+  {
+    action: 'deal_contact_damage',
+    key: 'columnRange',
+    label: 'Contact reach',
+    hint: 'Melee search range in columns (prefer extra.triggerColumnRange)',
+    defaultAttribute: 'extra.triggerColumnRange',
+  },
+  {
+    action: 'deal_contact_damage',
+    key: 'everyNth',
+    label: 'Stun every Nth',
+    hint: 'Stun on this attack count (prefer extra.stunEveryNth)',
+    defaultAttribute: 'extra.stunEveryNth',
+  },
+  {
+    action: 'deal_contact_damage',
+    key: 'duration',
+    label: 'Contact stun (s)',
+    hint: 'Stun length when everyNth fires (prefer extra.contactStunSeconds)',
+    defaultAttribute: 'extra.contactStunSeconds',
+  },
+  {
+    action: 'deal_contact_damage',
+    key: 'chillDuration',
+    label: 'Contact chill (s)',
+    hint: 'Chill bitten target (prefer extra.chillOnContactSeconds)',
+    defaultAttribute: 'extra.chillOnContactSeconds',
+  },
+  {
+    action: 'knockback_insects',
+    key: 'columnRange',
+    label: 'Knockback reach',
+    hint: 'How far ahead to shove insects (prefer extra.triggerColumnRange)',
+    defaultAttribute: 'extra.triggerColumnRange',
+  },
+  {
+    action: 'explode',
+    key: 'duration',
+    label: 'Interrupt (s)',
+    hint: 'Optional special-interrupt duration on hit (prefer extra.interruptSpecialSeconds)',
+    defaultAttribute: 'extra.interruptSpecialSeconds',
+  },
+  {
+    action: 'produce_sun',
+    key: 'amount',
+    label: 'Sun amount',
+    hint: 'Sun produced per pulse (prefer extra.produceSunAmount)',
+    defaultAttribute: 'extra.produceSunAmount',
+  },
+  {
+    action: 'heal_ally',
+    key: 'amount',
+    label: 'Heal amount',
+    hint: 'Flat heal or percent via extra.healPercentMaxHp / healMaxHpPercent',
+    defaultAttribute: 'extra.healPercentMaxHp',
+  },
+  {
+    action: 'heal_ally',
+    key: 'scale',
+    label: 'Link heal copy',
+    hint: 'Fraction of heal copied to a linked ally (extra.linkHealCopy)',
+    defaultAttribute: 'extra.linkHealCopy',
+  },
+  {
+    action: 'heal_ally',
+    key: 'cap',
+    label: 'Overheal shield %',
+    hint: 'Shield fraction of max HP when heal overfills (extra.overhealShieldPercent)',
+    defaultAttribute: 'extra.overhealShieldPercent',
+  },
+  {
+    action: 'buff_attack_speed',
+    key: 'scale',
+    label: 'Attack interval scale',
+    hint: '<1 = faster (prefer extra.attackSpeedScale)',
+    defaultAttribute: 'extra.attackSpeedScale',
+  },
+  {
+    action: 'buff_attack_speed',
+    key: 'duration',
+    label: 'Buff duration (s)',
+    hint: 'Prefer extra.attackSpeedBuffSeconds',
+    defaultAttribute: 'extra.attackSpeedBuffSeconds',
+  },
+  {
+    action: 'buff_attack_speed',
+    key: 'cap',
+    label: 'Ally cap',
+    hint: 'Max allies buffed (prefer extra.attackSpeedBuffCap)',
+    defaultAttribute: 'extra.attackSpeedBuffCap',
+  },
+  {
+    action: 'mark_priority_target',
+    key: 'duration',
+    label: 'Mark duration (s)',
+    hint: 'Prefer extra.markDurationSeconds',
+    defaultAttribute: 'extra.markDurationSeconds',
+  },
+  {
+    action: 'mark_priority_target',
+    key: 'scale',
+    label: 'Mark damage scale',
+    hint: 'Prefer extra.markDamageScale',
+    defaultAttribute: 'extra.markDamageScale',
+  },
+  {
+    action: 'mark_priority_target',
+    key: 'cap',
+    label: 'Mark ally cap',
+    hint: 'Prefer extra.markAllyCap',
+    defaultAttribute: 'extra.markAllyCap',
+  },
+  {
+    action: 'apply_slow',
+    key: 'duration',
+    label: 'Slow duration (s)',
+    hint: 'Prefer extra.slowDurationSeconds',
+    defaultAttribute: 'extra.slowDurationSeconds',
+  },
+  {
+    action: 'apply_slow',
+    key: 'scale',
+    label: 'Slow scale',
+    hint: 'Movement multiplier while slowed (prefer extra.slowScale)',
+    defaultAttribute: 'extra.slowScale',
+  },
+  {
+    action: 'weaken_attack',
+    key: 'scale',
+    label: 'Weaken scale',
+    hint: 'Outgoing damage or interval scale (extra.weakenDamageScale)',
+    defaultAttribute: 'extra.weakenDamageScale',
+  },
+  {
+    action: 'weaken_attack',
+    key: 'duration',
+    label: 'Weaken duration (s)',
+    hint: 'Prefer extra.weakenSeconds',
+    defaultAttribute: 'extra.weakenSeconds',
+  },
+  {
+    action: 'reflect_projectile',
+    key: 'duration',
+    label: 'Reflect duration (s)',
+    hint: 'Prefer extra.reflectSeconds',
+    defaultAttribute: 'extra.reflectSeconds',
+  },
+  {
+    action: 'grant_shield',
+    key: 'scale',
+    label: 'Shield percent',
+    hint: 'Fraction of max HP (extra.shieldSelfPct / shieldMaxHpPercent)',
+    defaultAttribute: 'extra.shieldSelfPct',
+  },
+  {
+    action: 'grant_shield',
+    key: 'duration',
+    label: 'Shield duration (s)',
+    hint: 'Prefer extra.shieldSeconds / shieldDurationSeconds',
+    defaultAttribute: 'extra.shieldSeconds',
+  },
+  {
+    action: 'brace',
+    key: 'scale',
+    label: 'Brace incoming scale',
+    hint: 'Damage taken multiplier (extra.braceIncomingScale / braceDamageScale)',
+    defaultAttribute: 'extra.braceIncomingScale',
+  },
+  {
+    action: 'brace',
+    key: 'duration',
+    label: 'Brace duration (s)',
+    hint: 'Prefer extra.braceSeconds / braceDurationSeconds',
+    defaultAttribute: 'extra.braceSeconds',
+  },
+  {
+    action: 'delay_plant_attack',
+    key: 'duration',
+    label: 'Attack delay (s)',
+    hint: 'Prefer extra.attackDelaySeconds',
+    defaultAttribute: 'extra.attackDelaySeconds',
+  },
+  {
+    action: 'delay_plant_attack',
+    key: 'cap',
+    label: 'Max targets',
+    hint: 'Prefer extra.delayMaxTargets',
+    defaultAttribute: 'extra.delayMaxTargets',
+  },
+  {
+    action: 'grant_leaf_screen',
+    key: 'amount',
+    label: 'Leaf screen HP',
+    hint: 'Prefer extra.leafScreenHp',
+    defaultAttribute: 'extra.leafScreenHp',
+  },
+  {
+    action: 'grant_leaf_screen',
+    key: 'cap',
+    label: 'Leaf screen block count',
+    hint: 'Prefer extra.leafScreenBlockCount (alias leafScreenCharges)',
+    defaultAttribute: 'extra.leafScreenBlockCount',
+  },
+  {
+    action: 'dash',
+    key: 'scale',
+    label: 'Dash speed scale',
+    hint: 'Prefer extra.dashSpeedScale',
+    defaultAttribute: 'extra.dashSpeedScale',
+  },
+  {
+    action: 'dash',
+    key: 'duration',
+    label: 'Dash duration (s)',
+    hint: 'Prefer extra.dashSeconds',
+    defaultAttribute: 'extra.dashSeconds',
+  },
+  {
+    action: 'dash',
+    key: 'recoverScale',
+    label: 'Dash recover scale',
+    hint: 'Prefer extra.dashRecoverScale (<1 move slow, >1 incoming damage mult)',
+    defaultAttribute: 'extra.dashRecoverScale',
+  },
+  {
+    action: 'dash',
+    key: 'recoverSeconds',
+    label: 'Dash recover seconds',
+    hint: 'Prefer extra.dashRecoverSeconds',
+    defaultAttribute: 'extra.dashRecoverSeconds',
+  },
+  {
+    action: 'coil_roll',
+    key: 'columnRange',
+    label: 'Roll columns',
+    hint: 'Prefer extra.triggerColumnRange',
+    defaultAttribute: 'extra.triggerColumnRange',
+  },
+  {
+    action: 'coil_roll',
+    key: 'duration',
+    label: 'Coil cooldown (s)',
+    hint: 'Seconds before special is ready again. Prefer extra.coilCooldownSeconds',
+    defaultAttribute: 'extra.coilCooldownSeconds',
+  },
+  {
+    action: 'sip_economy',
+    key: 'duration',
+    label: 'Sip duration (s)',
+    hint: 'Prefer extra.sipDurationSeconds (GDD Aphid 6s)',
+    defaultAttribute: 'extra.sipDurationSeconds',
+  },
+  {
+    action: 'sip_economy',
+    key: 'everyNth',
+    label: 'First contact only',
+    hint: 'Set to 1 (extra.sipFirstContactOnly) so only the first economy contact sips',
+    defaultAttribute: 'extra.sipFirstContactOnly',
+  },
+  {
+    action: 'suppress_special',
+    key: 'duration',
+    label: 'Suppress duration (s)',
+    hint: 'Prefer extra.suppressSpecialSeconds (GDD Ant Forager 4s)',
+    defaultAttribute: 'extra.suppressSpecialSeconds',
+  },
+  {
+    action: 'suppress_special',
+    key: 'cap',
+    label: 'Plant immunity (s)',
+    hint: 'Prefer extra.suppressImmuneSeconds (GDD 10s)',
+    defaultAttribute: 'extra.suppressImmuneSeconds',
+  },
+  {
+    action: 'retreat_columns',
+    key: 'amount',
+    label: 'Retreat columns',
+    hint: 'Prefer extra.retreatColumns (GDD Damselfly 0.5)',
+    defaultAttribute: 'extra.retreatColumns',
+  },
+  {
+    action: 'retreat_columns',
+    key: 'duration',
+    label: 'Retreat cooldown (s)',
+    hint: 'Prefer extra.retreatCooldownSeconds (GDD 4s)',
+    defaultAttribute: 'extra.retreatCooldownSeconds',
+  },
+  {
+    action: 'leave_slick',
+    key: 'duration',
+    label: 'Slick duration (s)',
+    hint: 'Prefer extra.slickDurationSeconds',
+    defaultAttribute: 'extra.slickDurationSeconds',
+  },
+  {
+    action: 'leave_slick',
+    key: 'scale',
+    label: 'Slick attack interval scale',
+    hint: 'Prefer extra.slickAttackIntervalScale (>1 = slower plants)',
+    defaultAttribute: 'extra.slickAttackIntervalScale',
+  },
+  {
+    action: 'buff_move_speed',
+    key: 'scale',
+    label: 'Move speed scale',
+    hint: 'Prefer extra.moveSpeedScale',
+    defaultAttribute: 'extra.moveSpeedScale',
+  },
+  {
+    action: 'buff_move_speed',
+    key: 'duration',
+    label: 'Buff duration (s)',
+    hint: 'Prefer extra.moveSpeedBuffSeconds',
+    defaultAttribute: 'extra.moveSpeedBuffSeconds',
+  },
+  {
+    action: 'buff_move_speed',
+    key: 'cap',
+    label: 'Ally cap',
+    hint: 'Prefer extra.speedBuffCap',
+    defaultAttribute: 'extra.speedBuffCap',
+  },
+  {
+    action: 'leave_speed_trail',
+    key: 'scale',
+    label: 'Trail speed scale',
+    hint: 'Prefer extra.trailSpeedScale',
+    defaultAttribute: 'extra.trailSpeedScale',
+  },
+  {
+    action: 'leave_speed_trail',
+    key: 'duration',
+    label: 'Trail duration (s)',
+    hint: 'Prefer extra.trailSeconds',
+    defaultAttribute: 'extra.trailSeconds',
+  },
+  {
+    action: 'apply_camouflage',
+    key: 'scale',
+    label: 'Camouflage priority scale',
+    hint: 'Prefer extra.camouflagePriorityScale',
+    defaultAttribute: 'extra.camouflagePriorityScale',
+  },
+  {
+    action: 'apply_camouflage',
+    key: 'duration',
+    label: 'Camouflage duration (s)',
+    hint: 'Prefer extra.camouflageSeconds',
+    defaultAttribute: 'extra.camouflageSeconds',
+  },
+  {
+    action: 'hop_evade',
+    key: 'scale',
+    label: 'Hop miss chance',
+    hint: 'Prefer extra.hopMissChance',
+    defaultAttribute: 'extra.hopMissChance',
+  },
+  {
+    action: 'chain_damage',
+    key: 'amount',
+    label: 'Max jumps',
+    hint: 'Prefer extra.maxJumps',
+    defaultAttribute: 'extra.maxJumps',
   },
   {
     action: 'apply_freeze',
@@ -752,7 +1396,7 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     action: 'knockback_insects',
     key: 'damage',
     label: 'Knockback damage',
-    hint: 'Damage dealt with the shove. Attribute stats.baseDamage uses this plant’s damage.',
+    hint: "Damage dealt with the shove. Attribute stats.baseDamage uses this plant's damage.",
     defaultAttribute: 'stats.baseDamage',
   },
   {
@@ -761,6 +1405,69 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     label: 'Every Nth attack',
     hint: 'Push only on this attack count. 1 pushes every attack. 3 pushes on the 3rd, 6th, and so on.',
     defaultAttribute: 'extra.knockbackEvery',
+  },
+  {
+    action: 'arm_burst',
+    key: 'fuseDuration',
+    label: 'Fuse seconds',
+    hint: 'Delay before self-explode. Prefer extra.fuseSeconds.',
+    defaultAttribute: 'extra.fuseSeconds',
+  },
+  {
+    action: 'summon_temp_plant',
+    key: 'summonDuration',
+    label: 'Summon lifetime (s)',
+    hint: 'How long the sprout lives before despawn',
+    defaultAttribute: 'extra.summonDuration',
+  },
+  {
+    action: 'summon_temp_plant',
+    key: 'summonHp',
+    label: 'Summon HP',
+    hint: 'Override sprout max health',
+    defaultAttribute: 'extra.summonHp',
+  },
+  {
+    action: 'summon_temp_plant',
+    key: 'cap',
+    label: 'Summon cap',
+    hint: 'Max living sprouts from this mother. Prefer extra.summonCap',
+    defaultAttribute: 'extra.summonCap',
+  },
+  {
+    action: 'summon_temp_plant',
+    key: 'columnRange',
+    label: 'Forward columns',
+    hint: 'How many columns ahead to search for a landing cell. Prefer extra.summonForwardColumns',
+    defaultAttribute: 'extra.summonForwardColumns',
+  },
+  {
+    action: 'summon_temp_plant',
+    key: 'damage',
+    label: 'Sprout damage',
+    hint: 'Override sprout attack damage. Prefer extra.summonDamage',
+    defaultAttribute: 'extra.summonDamage',
+  },
+  {
+    action: 'summon_temp_plant',
+    key: 'amount',
+    label: 'Sprout interval (ms)',
+    hint: 'Sprout attack interval in ms. Prefer extra.summonIntervalMs',
+    defaultAttribute: 'extra.summonIntervalMs',
+  },
+  {
+    action: 'summon_temp_plant',
+    key: 'scale',
+    label: 'Sprout range',
+    hint: 'Sprout combat range (also selects shooter vs melee). Prefer extra.summonRange',
+    defaultAttribute: 'extra.summonRange',
+  },
+  {
+    action: 'summon_temp_plant',
+    key: 'laneRange',
+    label: 'Over blockers',
+    hint: 'When >0.5, landing search skips past occupied cells. Prefer extra.overBlockers',
+    defaultAttribute: 'extra.overBlockers',
   },
 ];
 
@@ -777,9 +1484,16 @@ export function defaultActionParams(type: StateActionKind): Partial<StateAction>
   }
   if (type === 'explode') {
     out.vfxStyle = 'boom';
+    out.mode = 'blast';
+  }
+  if (type === 'clear_fog') {
+    out.mode = 'aura';
   }
   if (type === 'squash_crush') {
     out.crushStyle = 'hop';
+  }
+  if (type === 'deal_contact_damage') {
+    out.contactTarget = 'nearest';
   }
   return out;
 }
@@ -793,25 +1507,14 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'fire_bullet',
     label: 'Fire bullet',
-    hint: 'Launch projectile volley from client.bulletShots (plants + catapult insects)',
+    hint: 'Fires this unit’s projectile (client.bullet / bulletShots). Not a summon.',
     kind: 'both',
-  },
-  {
-    type: 'begin_charge',
-    label: 'Begin charge',
-    hint: 'Start the prepare timer again. The plant cannot fire until prepare completes.',
-    kind: 'plant',
   },
   {
     type: 'deal_contact_damage',
     label: 'Deal contact damage',
-    hint: 'Melee hit against current target',
-  },
-  {
-    type: 'deal_area_damage',
-    label: 'Deal area damage',
-    hint: 'Damage every enemy in range (close area pulse)',
-    kind: 'plant',
+    hint:
+      'Melee hit. Set damage (stats.baseDamage / extra.*) and contactTarget (nearest | biting) on the action.',
   },
   {
     type: 'squash_crush',
@@ -828,7 +1531,8 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'explode',
     label: 'Explode',
-    hint: 'Area / lane blast — set column/lane range on the action (extra.trigger*)',
+    hint:
+      'Area hit. mode=blast (default): one-shot ArmorFirst blast + VFX. mode=pulse: repeating Pierce pulse (fans / cones). Bind column/lane on the action.',
   },
   {
     type: 'produce_sun',
@@ -839,25 +1543,15 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'clear_fog',
     label: 'Clear fog',
-    hint: 'Reveal a hole in raid fog while this status is active (Lantern Lily)',
-    kind: 'plant',
-  },
-  {
-    type: 'clear_all_fog',
-    label: 'Clear all fog',
-    hint: 'Wipe the entire fog bank (Gale Bloom)',
+    hint:
+      'Fog clear. mode=aura (default): local lantern hole. mode=all: permanent map-wide clear.',
     kind: 'plant',
   },
   {
     type: 'blow_away_flying',
     label: 'Blow away flying',
-    hint: 'Remove every flying insect on the board (Gale Bloom)',
-    kind: 'plant',
-  },
-  {
-    type: 'blow_away',
-    label: 'Blow away',
-    hint: 'Clear all fog and remove flying insects (Gale Bloom combo)',
+    hint:
+      'Push every flying insect toward spawn by columnRange columns. Does not despawn — they resume marching.',
     kind: 'plant',
   },
   {
@@ -1100,13 +1794,26 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'sip_economy',
     label: 'Sip economy',
-    hint: 'Temporarily reduce an economy plant’s production (Aphid Nibbler)',
+    hint: 'Temporarily reduce an economy plant’s production (Aphid Nibbler). Use duration + everyNth=1 for first-contact-only.',
+    kind: 'insect',
+  },
+  {
+    type: 'suppress_special',
+    label: 'Suppress special',
+    hint: 'First contact suppresses a support/economy plant’s special (Ant Forager). duration = suppress window; cap = per-plant immunity seconds.',
+    kind: 'insect',
+  },
+  {
+    type: 'retreat_columns',
+    label: 'Retreat columns',
+    hint: 'Drift back toward spawn after a shot (Damselfly). amount = columns; duration = cooldown seconds. Uses SpecialReady.',
     kind: 'insect',
   },
   {
     type: 'summon_temp_plant',
     label: 'Summon temp plant',
-    hint: 'Spawn a short-lived ally sprout ahead in the lane (Seedling Swarm / Dandelion Courier)',
+    hint:
+      'Spawns a short-lived ally plant ahead. Separate from Fire bullet — use summonId, lifetime, HP, and landing params here.',
     kind: 'plant',
   },
   {
@@ -1164,16 +1871,24 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'arm_burst',
     label: 'Arm burst',
-    hint: 'Once, after extra.fuseSeconds, explode for extra.burstDamage and leave. Re-entering the status does not reset the fuse (Pillbug Tumbler / Echo Orchid reuse).',
+    hint: 'Once, after fuseDuration (extra.fuseSeconds), explode and leave. Re-entering does not reset the fuse.',
     kind: 'insect',
   },
 ];
 
 /** Absolute overrides applied while the unit remains in this status. */
 export interface StateStatModifiers {
-  attackIntervalMs?: number;
+  /**
+   * Attack interval while in this status.
+   * Bare number (milliseconds) or StateDurationValue (extra.shotIntervalMs / stats.attackIntervalMs).
+   */
+  attackIntervalMs?: number | StateDurationValue;
   moveSpeed?: number;
-  range?: number;
+  /**
+   * Combat range while in this status.
+   * Bare number or StateDurationValue (extra.shotRange / stats.range).
+   */
+  range?: number | StateDurationValue;
   /**
    * Fraction of the unit clipped below the waterline (0 = fully above, 1 = fully under).
    * Prefer `attributeDuration('extra.underwaterClipHeight')` so Extra attributes drive the value.
@@ -1983,7 +2698,12 @@ export function createContactDamageStateGraph(opts?: {
         spineAnim: opts?.attackAnim,
         loop: false,
         actions: [
-          { type: 'deal_contact_damage', when: hasAttackAnim ? 'after_anim' : 'on_enter' },
+          {
+            type: 'deal_contact_damage',
+            when: hasAttackAnim ? 'after_anim' : 'on_enter',
+            damage: attributeDuration('stats.baseDamage'),
+            contactTarget: 'nearest',
+          },
           { type: 'reset_attack_timer', when: hasAttackAnim ? 'after_anim' : 'on_enter' },
         ],
         position: { x: 360, y: 160 },
@@ -2207,6 +2927,60 @@ export function createGarlicStateGraph(opts?: {
         from: attackId,
         to: idleId,
         conditions: cond({ type: 'anim_ended' }),
+      },
+    ],
+    die: { spineAnim: opts?.dieAnim },
+  };
+}
+
+/** Bramble Bulwark: thorn retaliation once per melee hit (graph damage → extra.retaliationDamage). */
+export function createRetaliationWallStateGraph(opts?: {
+  idleAnim?: string;
+  attackAnim?: string;
+  dieAnim?: string;
+}): EntityStateGraph {
+  const idleId = createStateNodeId();
+  const attackId = createStateNodeId();
+  return {
+    version: 1,
+    entryNodeId: idleId,
+    nodes: [
+      {
+        id: idleId,
+        status: 'idle',
+        spineAnim: opts?.idleAnim,
+        loop: true,
+        position: { x: 80, y: 160 },
+      },
+      {
+        id: attackId,
+        status: 'attack',
+        spineAnim: opts?.attackAnim,
+        loop: false,
+        actions: [
+          {
+            type: 'deal_contact_damage',
+            when: 'on_enter',
+            damage: attributeDuration('extra.retaliationDamage'),
+            contactTarget: 'biting',
+          },
+        ],
+        position: { x: 360, y: 160 },
+      },
+    ],
+    edges: [
+      {
+        id: createStateEdgeId(),
+        from: idleId,
+        to: attackId,
+        // One return per attacker hit — not continuous while chewing, not DoT/projectile.
+        conditions: cond({ type: 'being_bitten' }, { type: 'on_damaged' }),
+      },
+      {
+        id: createStateEdgeId(),
+        from: attackId,
+        to: idleId,
+        conditions: cond({ type: 'after_seconds', value: literalDuration(0.05) }),
       },
     ],
     die: { spineAnim: opts?.dieAnim },
@@ -2881,6 +3655,8 @@ export function createInsectSummonStateGraph(opts?: {
   attackAnim?: string;
   dieAnim?: string;
   summonSeconds?: number;
+  /** Catalog insect id for summon_insect.targetId */
+  insectId?: string;
 }): EntityStateGraph {
   const walkId = createStateNodeId();
   const attackId = createStateNodeId();
@@ -2917,7 +3693,11 @@ export function createInsectSummonStateGraph(opts?: {
         loop: false,
         actions: [
           { type: 'stop_moving', when: 'on_enter' },
-          { type: 'summon_insect', when: 'after_anim' },
+          {
+            type: 'summon_insect',
+            when: 'after_anim',
+            ...(opts?.insectId ? { targetId: opts.insectId } : {}),
+          },
         ],
         position: { x: 360, y: 40 },
       },
@@ -3038,6 +3818,8 @@ export function createInsectThrowStateGraph(opts?: {
   attackAnim?: string;
   dieAnim?: string;
   throwHealthRatio?: number;
+  /** Catalog insect id for throw_unit.targetId */
+  insectId?: string;
 }): EntityStateGraph {
   const walkId = createStateNodeId();
   const attackId = createStateNodeId();
@@ -3076,7 +3858,11 @@ export function createInsectThrowStateGraph(opts?: {
         actions: [
           { type: 'stop_moving', when: 'on_enter' },
           // Release mid-windup so the Imp arc is the visible throw (classic ~74% of anim).
-          { type: 'throw_unit', when: 'on_enter' },
+          {
+            type: 'throw_unit',
+            when: 'on_enter',
+            ...(opts?.insectId ? { targetId: opts.insectId } : {}),
+          },
         ],
         position: { x: 360, y: 40 },
       },
@@ -3383,20 +4169,20 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   launch_bullet: 'fire_bullet',
   destroy_grave: 'destroy_egg_group',
   fire_bullet: 'fire_bullet',
-  begin_charge: 'begin_charge',
   deal_contact_damage: 'deal_contact_damage',
-  deal_area_damage: 'deal_area_damage',
+  // Legacy close pulse → explode (normalizeAction forces mode=pulse).
+  deal_area_damage: 'explode',
   squash_crush: 'squash_crush',
   chomp_devour: 'chomp_devour',
   explode: 'explode',
   produce_sun: 'produce_sun',
   clear_fog: 'clear_fog',
   light_fog: 'clear_fog',
-  clear_all_fog: 'clear_all_fog',
-  blow_fog: 'clear_all_fog',
+  // Legacy map-wide clear → clear_fog (normalizeAction forces mode=all).
+  clear_all_fog: 'clear_fog',
+  blow_fog: 'clear_fog',
   blow_away_flying: 'blow_away_flying',
   kill_flying: 'blow_away_flying',
-  blow_away: 'blow_away',
   despawn: 'despawn',
   reset_attack_timer: 'reset_attack_timer',
   stop_moving: 'stop_moving',
@@ -3428,6 +4214,8 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   knockback_insects: 'knockback_insects',
   grant_shield: 'grant_shield',
   sip_economy: 'sip_economy',
+  suppress_special: 'suppress_special',
+  retreat_columns: 'retreat_columns',
   summon_temp_plant: 'summon_temp_plant',
   brace: 'brace',
   chain_damage: 'chain_damage',
@@ -3456,7 +4244,10 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
 function normalizeAction(raw: unknown): StateAction | null {
   if (!raw || typeof raw !== 'object') return null;
   const a = raw as Record<string, unknown>;
-  const type = typeof a.type === 'string' ? ACTION_ALIASES[a.type] : undefined;
+  const rawType = typeof a.type === 'string' ? a.type.trim() : '';
+  // Drop removed no-op / combo verbs (use after_seconds / clear_fog+blow_away_flying).
+  if (rawType === 'begin_charge' || rawType === 'blow_away') return null;
+  const type = rawType ? ACTION_ALIASES[rawType] : undefined;
   if (!type) return null;
   const when =
     a.when === 'on_enter' || a.when === 'after_anim' || a.when === 'on_exit' ? a.when : undefined;
@@ -3471,6 +4262,16 @@ function normalizeAction(raw: unknown): StateAction | null {
     'knockbackCells',
     'damage',
     'knockbackEvery',
+    'fuseDuration',
+    'summonDuration',
+    'summonHp',
+    'amount',
+    'duration',
+    'scale',
+    'cap',
+    'recoverScale',
+    'recoverSeconds',
+    'everyNth',
   ] as const;
   for (const key of paramKeys) {
     if (a[key] != null) {
@@ -3478,10 +4279,36 @@ function normalizeAction(raw: unknown): StateAction | null {
       if (parsed) (action as unknown as Record<string, StateDurationValue>)[key] = parsed;
     }
   }
+  // Legacy alias: contactEvery → everyNth for deal_contact_damage stun cadence.
+  if (action.everyNth == null && a.contactEvery != null) {
+    const parsed = normalizeDurationValue(a.contactEvery);
+    if (parsed) action.everyNth = parsed;
+  }
   if (a.unequippedOnly === true) action.unequippedOnly = true;
+  if (typeof a.contactTarget === 'string') {
+    const ct = a.contactTarget.trim().toLowerCase();
+    if (ct === 'nearest' || ct === 'biting') action.contactTarget = ct;
+  }
+  if (typeof a.summonId === 'string' && a.summonId.trim()) {
+    action.summonId = a.summonId.trim();
+  }
+  if (typeof a.targetId === 'string' && a.targetId.trim()) {
+    action.targetId = a.targetId.trim();
+  }
+  if (typeof a.mode === 'string' && a.mode.trim()) {
+    action.mode = a.mode.trim();
+  }
+  if (rawType === 'deal_area_damage' && !action.mode) {
+    action.mode = 'pulse';
+  }
+  if ((rawType === 'clear_all_fog' || rawType === 'blow_fog') && !action.mode) {
+    action.mode = 'all';
+  }
   if (type === 'explode') {
     const style = normalizeExplodeVfxStyle(a.vfxStyle ?? a.explodeGfx);
     if (style) action.vfxStyle = style;
+    // Pulse graphs often bind `damage`; blast uses `amount`. Keep both.
+    if (action.amount == null && action.damage != null) action.amount = action.damage;
   }
   if (type === 'squash_crush') {
     const crush = normalizeSquashCrushStyle(a.crushStyle ?? a.motionStyle ?? a.style);
@@ -3525,7 +4352,7 @@ export function migrateLegacyTrigger(raw: unknown): StateCondition[] {
 
 function normalizeCondition(raw: unknown): StateCondition | null {
   if (!raw || typeof raw !== 'object') return null;
-  const c = raw as { type?: string; seconds?: number; ratio?: number };
+  const c = raw as { type?: string; seconds?: number; ratio?: number; value?: unknown };
   switch (c.type) {
     case 'enemy_in_range':
     case 'no_enemy_in_range':
@@ -3552,7 +4379,12 @@ function normalizeCondition(raw: unknown): StateCondition | null {
     case 'reached_target':
       return { type: c.type };
     case 'after_seconds':
-      return { type: 'after_seconds', value: normalizeDurationValue(c) };
+      return { type: 'after_seconds', value: normalizeDurationValue(c.value ?? c) };
+    case 'damage_hits_at_least':
+      return {
+        type: 'damage_hits_at_least',
+        value: normalizeDurationValue(c.value ?? c) ?? { kind: 'literal', seconds: 3 },
+      };
     case 'health_below':
       return {
         type: 'health_below',
@@ -3772,14 +4604,22 @@ function normalizeStatModifiers(raw: unknown): StateStatModifiers | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
   const m = raw as Record<string, unknown>;
   const out: StateStatModifiers = {};
-  if (typeof m.attackIntervalMs === 'number' && Number.isFinite(m.attackIntervalMs)) {
-    out.attackIntervalMs = m.attackIntervalMs;
+  if (m.attackIntervalMs !== undefined && m.attackIntervalMs !== null) {
+    if (typeof m.attackIntervalMs === 'number' && Number.isFinite(m.attackIntervalMs)) {
+      out.attackIntervalMs = m.attackIntervalMs;
+    } else {
+      out.attackIntervalMs = normalizeDurationValue(m.attackIntervalMs);
+    }
   }
   if (typeof m.moveSpeed === 'number' && Number.isFinite(m.moveSpeed)) {
     out.moveSpeed = m.moveSpeed;
   }
-  if (typeof m.range === 'number' && Number.isFinite(m.range)) {
-    out.range = m.range;
+  if (m.range !== undefined && m.range !== null) {
+    if (typeof m.range === 'number' && Number.isFinite(m.range)) {
+      out.range = m.range;
+    } else {
+      out.range = normalizeDurationValue(m.range);
+    }
   }
   if (m.underwaterClipHeight !== undefined && m.underwaterClipHeight !== null) {
     out.underwaterClipHeight = normalizeDurationValue(m.underwaterClipHeight);

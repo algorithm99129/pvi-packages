@@ -84,6 +84,29 @@ export interface BulletEmbed {
 export interface BulletBeam {
   /** Seconds the beam stays on screen before it disappears. */
   durationSeconds: number;
+  /** Optional max columns the beam covers (Dewdrop). Omitted = full board edge. */
+  columns?: number;
+}
+
+/**
+ * Unity-drawn chain lightning (Peppercoil). Not a flying sprite —
+ * combat paints arcs from the shooter through successive targets.
+ */
+export interface BulletChainLightning {
+  /**
+   * Visual palette. `red` = pepper/ember arcs; `yellow` = pale GDD default.
+   */
+  style: 'red' | 'yellow' | 'cyan';
+  /** Delay between successive hops (seconds). */
+  jumpDelaySeconds?: number;
+  /** How long each arc segment stays visible (seconds). */
+  arcSeconds?: number;
+  /** Max insects hit (including the first). Authored on the bullet — not plant extras. */
+  maxJumps?: number;
+  /** Max column jump radius to the next unhit insect. */
+  jumpRadiusCells?: number;
+  /** When no target in range, shave this fraction of the attack interval (0–1). */
+  missRefundInterval?: number;
 }
 
 export interface BulletClientAssets {
@@ -114,11 +137,27 @@ export interface BulletClientAssets {
    * instead of a flying projectile.
    */
   beam?: BulletBeam;
+  /**
+   * When set, Unity draws chain-lightning arcs (no projectile flight preview).
+   * Editor bullet shots UI only authors the spawn point.
+   */
+  chainLightning?: BulletChainLightning;
   /** Fraction of grid cell width (0–1). Default 0.4. Height follows sprite aspect. */
   cellWidthFill?: number;
   /** Extra multiplier applied after cell-width fitting. */
   scale?: number;
 }
+
+export const BULLET_CHAIN_LIGHTNING_STYLE_OPTIONS: ReadonlyArray<{
+  id: BulletChainLightning['style'];
+  label: string;
+  hint: string;
+}> = [
+  { id: 'red', label: 'Red (ember / pepper)', hint: 'Hot red-orange arcs' },
+  { id: 'yellow', label: 'Yellow-green', hint: 'Pale electric arcs (GDD default)' },
+  { id: 'cyan', label: 'Cyan', hint: 'Cool blue arcs' },
+];
+
 
 export interface BulletStats {
   baseDamage: number;
@@ -129,10 +168,55 @@ export interface BulletStats {
   /** Area only: blast radius in grid cells around impact. */
   areaRadiusCells?: number;
   /**
+   * Pierce only: max distinct targets before the shot despawns.
+   * When unset and hitMode is pierce, combat defaults to 99.
+   */
+  pierceHits?: number;
+  /**
+   * Damage multipliers for successive pierce (or single) hits, 0-based.
+   * e.g. `[1, 0.7, 0.45]` — missing indices reuse the last scale.
+   */
+  hitDamageScales?: number[];
+  /**
+   * Every Nth shot from the owning unit is empowered (via AdvanceAttackBeat).
+   * 0 / omitted = never.
+   */
+  empowerEvery?: number;
+  /** Extra on-hit statuses applied only when the shot is empowered. */
+  empowerOnHitStatuses?: BulletOnHitStatus[];
+  /**
+   * When true, empower statuses only apply to Light ground insects
+   * (not MaxHealth≥1500, BlocksVault, heavyUnit, or non-ground travel).
+   */
+  empowerLightGroundOnly?: boolean;
+  /** When empowered, add this many pierce hits to pierceHits. */
+  empowerExtraPierceHits?: number;
+  /**
    * Combat debuffs applied to each hit target (PvZ-style chill / butter / freeze).
    * Distinct from BulletStatusPresentation (flying art).
    */
   onHitStatuses?: BulletOnHitStatus[];
+  /**
+   * Twinpod: second hit on the same target within pairWindowSeconds multiplies damage.
+   * e.g. pairBonusScale 1.4, pairWindowSeconds 0.8.
+   */
+  pairBonusScale?: number;
+  pairWindowSeconds?: number;
+  /**
+   * Tri-Berry: when the plant has a single authored shot, FireBullet expands
+   * ±sideShotSpreadDeg side shots (with sideShotDamageScale, default 0.5).
+   */
+  sideShotSpreadDeg?: number;
+  sideShotDamageScale?: number;
+  /**
+   * Moonseed: N hits within sleepStackWindowSeconds apply sleep (stun) to normals,
+   * or eliteSlowScale for eliteSlowSeconds on elites/heavies.
+   */
+  sleepStacksNeeded?: number;
+  sleepStackWindowSeconds?: number;
+  sleepDurationSeconds?: number;
+  eliteSlowScale?: number;
+  eliteSlowSeconds?: number;
 }
 
 /** Applied by projectiles on impact — not unit status-graph statuses. */
@@ -203,6 +287,23 @@ export interface BulletDefinition {
 /** Same payload for client Resources and API — presentation + combat. */
 export type ClientBulletExport = BulletDefinition;
 export type ServerBulletExport = BulletDefinition;
+
+/** True when combat uses a Unity-drawn presentation instead of a flying sprite. */
+export function bulletUsesUnityPresentation(
+  bullet: Pick<BulletDefinition, 'client'> | null | undefined,
+): boolean {
+  if (!bullet?.client) return false;
+  if (bullet.client.beam && bullet.client.beam.durationSeconds > 0) return true;
+  if (bullet.client.chainLightning) return true;
+  return false;
+}
+
+/** Editor hint: only author spawn UVs; flight path is owned by Unity. */
+export function bulletPreviewIsSpawnOnly(
+  bullet: Pick<BulletDefinition, 'client'> | null | undefined,
+): boolean {
+  return bulletUsesUnityPresentation(bullet);
+}
 
 export const DEFAULT_BULLET_AREA_RADIUS_CELLS = 1;
 export const DEFAULT_BULLET_SPEED = 3.5;
@@ -424,6 +525,8 @@ function normalizeBulletClient(
   if (embed) next.embed = embed;
   const beam = normalizeBeam(client.beam);
   if (beam) next.beam = beam;
+  const chain = normalizeChainLightning(client.chainLightning);
+  if (chain) next.chainLightning = chain;
   next.cellWidthFill = resolveCellWidthFill(client.cellWidthFill, DEFAULT_BULLET_CELL_WIDTH_FILL);
   const scale =
     client.scale != null && Number.isFinite(client.scale) && client.scale > 0 ? client.scale : 1;
@@ -475,7 +578,30 @@ function normalizeBeam(value: unknown): BulletBeam | undefined {
   const raw = value as Partial<BulletBeam>;
   const durationSeconds = finiteNonNegative(raw.durationSeconds);
   if (durationSeconds <= 0) return undefined;
-  return { durationSeconds };
+  const out: BulletBeam = { durationSeconds };
+  const columns = finiteNonNegative(raw.columns);
+  if (columns > 0) out.columns = columns;
+  return out;
+}
+
+function normalizeChainLightning(value: unknown): BulletChainLightning | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const raw = value as Partial<BulletChainLightning>;
+  const styleRaw = typeof raw.style === 'string' ? raw.style.trim().toLowerCase() : 'red';
+  const style: BulletChainLightning['style'] =
+    styleRaw === 'yellow' || styleRaw === 'cyan' || styleRaw === 'red' ? styleRaw : 'red';
+  const jumpDelaySeconds = finiteNonNegative(raw.jumpDelaySeconds);
+  const arcSeconds = finiteNonNegative(raw.arcSeconds);
+  const maxJumps = finiteNonNegative(raw.maxJumps);
+  const jumpRadiusCells = finiteNonNegative(raw.jumpRadiusCells);
+  const missRefundInterval = finiteNonNegative(raw.missRefundInterval);
+  const out: BulletChainLightning = { style };
+  if (jumpDelaySeconds > 0) out.jumpDelaySeconds = jumpDelaySeconds;
+  if (arcSeconds > 0) out.arcSeconds = arcSeconds;
+  if (maxJumps > 0) out.maxJumps = Math.max(1, Math.round(maxJumps));
+  if (jumpRadiusCells > 0) out.jumpRadiusCells = jumpRadiusCells;
+  if (missRefundInterval > 0) out.missRefundInterval = Math.min(1, missRefundInterval);
+  return out;
 }
 
 function clamp01(value: unknown, fallback: number): number {
@@ -536,9 +662,67 @@ function normalizeBulletStats(stats?: Partial<BulletStats>): BulletStats {
         ? (stats!.areaRadiusCells as number)
         : DEFAULT_BULLET_AREA_RADIUS_CELLS;
   }
+  if (hitMode === 'pierce') {
+    const pierce =
+      Number.isFinite(stats?.pierceHits) && (stats!.pierceHits as number) > 0
+        ? Math.max(1, Math.round(stats!.pierceHits as number))
+        : undefined;
+    if (pierce != null) next.pierceHits = pierce;
+  }
+  const scales = normalizeHitDamageScales(stats?.hitDamageScales);
+  if (scales) next.hitDamageScales = scales;
+  const empowerEvery =
+    Number.isFinite(stats?.empowerEvery) && (stats!.empowerEvery as number) > 0
+      ? Math.max(1, Math.round(stats!.empowerEvery as number))
+      : 0;
+  if (empowerEvery > 0) next.empowerEvery = empowerEvery;
+  const empowerOnHit = normalizeOnHitStatuses(stats?.empowerOnHitStatuses);
+  if (empowerOnHit) next.empowerOnHitStatuses = empowerOnHit;
+  if (stats?.empowerLightGroundOnly === true) next.empowerLightGroundOnly = true;
+  const extraPierce =
+    Number.isFinite(stats?.empowerExtraPierceHits) && (stats!.empowerExtraPierceHits as number) > 0
+      ? Math.max(1, Math.round(stats!.empowerExtraPierceHits as number))
+      : 0;
+  if (extraPierce > 0) next.empowerExtraPierceHits = extraPierce;
   const onHit = normalizeOnHitStatuses(stats?.onHitStatuses);
   if (onHit) next.onHitStatuses = onHit;
+
+  const pairBonus = finiteNonNegative(stats?.pairBonusScale);
+  if (pairBonus > 1) next.pairBonusScale = pairBonus;
+  const pairWindow = finiteNonNegative(stats?.pairWindowSeconds);
+  if (pairWindow > 0) next.pairWindowSeconds = pairWindow;
+
+  const sideSpread = finiteNonNegative(stats?.sideShotSpreadDeg);
+  if (sideSpread > 0) next.sideShotSpreadDeg = sideSpread;
+  const sideDmg = finiteNonNegative(stats?.sideShotDamageScale);
+  if (sideDmg > 0) next.sideShotDamageScale = sideDmg;
+
+  const sleepNeed =
+    Number.isFinite(stats?.sleepStacksNeeded) && (stats!.sleepStacksNeeded as number) > 0
+      ? Math.max(1, Math.round(stats!.sleepStacksNeeded as number))
+      : 0;
+  if (sleepNeed > 0) next.sleepStacksNeeded = sleepNeed;
+  const sleepWindow = finiteNonNegative(stats?.sleepStackWindowSeconds);
+  if (sleepWindow > 0) next.sleepStackWindowSeconds = sleepWindow;
+  const sleepDur = finiteNonNegative(stats?.sleepDurationSeconds);
+  if (sleepDur > 0) next.sleepDurationSeconds = sleepDur;
+  const eliteSlow = finiteNonNegative(stats?.eliteSlowScale);
+  if (eliteSlow > 0) next.eliteSlowScale = eliteSlow;
+  const eliteSlowSec = finiteNonNegative(stats?.eliteSlowSeconds);
+  if (eliteSlowSec > 0) next.eliteSlowSeconds = eliteSlowSec;
+
   return next;
+}
+
+function normalizeHitDamageScales(raw: unknown): number[] | undefined {
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  const out: number[] = [];
+  for (const item of raw) {
+    const n = typeof item === 'number' ? item : Number(item);
+    if (!Number.isFinite(n) || n < 0) continue;
+    out.push(n);
+  }
+  return out.length > 0 ? out : undefined;
 }
 
 function normalizeOnHitStatuses(raw: unknown): BulletOnHitStatus[] | undefined {

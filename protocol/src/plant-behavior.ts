@@ -46,11 +46,23 @@ export const DEFAULT_PLANT_BEHAVIOR: PlantBehaviorConfig = { kind: 'shooter' };
 
 const MELEE_ACTIONS: ReadonlyArray<StateActionKind> = [
   'deal_contact_damage',
-  'deal_area_damage',
   'squash_crush',
   'chomp_devour',
   'knockback_insects',
 ];
+
+/** True when any node runs explode with mode=pulse (close fan / cone). */
+function graphHasPulseExplode(graph: EntityStateGraph | null | undefined): boolean {
+  if (!graph?.nodes?.length) return false;
+  for (const node of graph.nodes) {
+    const actions = node?.actions;
+    if (!actions?.length) continue;
+    for (const action of actions) {
+      if (action?.type === 'explode' && action.mode === 'pulse') return true;
+    }
+  }
+  return false;
+}
 
 /**
  * True when the unit strikes in place (contact, cone, crush, snare, knockback)
@@ -62,6 +74,7 @@ export function entityUsesMeleeAttack(input: {
   const graph = input.client?.stateGraph;
   if (!graph?.nodes?.length) return false;
   if (graphHasAction(graph, 'fire_bullet')) return false;
+  if (graphHasPulseExplode(graph)) return true;
   return MELEE_ACTIONS.some((type) => graphHasAction(graph, type));
 }
 

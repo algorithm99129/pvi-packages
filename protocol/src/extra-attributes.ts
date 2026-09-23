@@ -206,11 +206,32 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     defaultValue: 1,
   },
   {
-    key: 'chillOnContactSeconds',
-    label: 'Chill on contact seconds',
-    hint: 'Frost Roller: chill duration applied when crushing a plant',
+    key: 'retaliationDamage',
+    label: 'Retaliation damage',
+    hint: 'Wire via deal_contact_damage.damage → extra.retaliationDamage (Bramble Bulwark)',
     type: 'number',
-    defaultValue: 4,
+    defaultValue: 15,
+  },
+  {
+    key: 'fuseSeconds',
+    label: 'Fuse seconds',
+    hint: 'Wire via arm_burst.fuseDuration → extra.fuseSeconds',
+    type: 'number',
+    defaultValue: 8,
+  },
+  {
+    key: 'summonDuration',
+    label: 'Summon duration seconds',
+    hint: 'Wire via summon_temp_plant.summonDuration → extra.summonDuration',
+    type: 'number',
+    defaultValue: 12,
+  },
+  {
+    key: 'summonHp',
+    label: 'Summon HP',
+    hint: 'Wire via summon_temp_plant.summonHp → extra.summonHp',
+    type: 'number',
+    defaultValue: 150,
   },
 ];
 
