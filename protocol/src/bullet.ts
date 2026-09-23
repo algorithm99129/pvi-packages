@@ -165,6 +165,11 @@ export interface BulletStats {
   /** Cells traveled per second along the shot path. */
   speed: number;
   hitMode: BulletHitMode;
+  /**
+   * Min fraction of this bullet's opaque (non-transparent) area that must overlap
+   * the target's solid body/equipment to register a hit. Default 0.3.
+   */
+  hitOpaqueOverlap?: number;
   /** Area only: blast radius in grid cells around impact. */
   areaRadiusCells?: number;
   /**
@@ -228,6 +233,18 @@ export interface BulletStats {
    * Does not stack multiply with flyerDamageBonus — max wins.
    */
   lightDamageBonus?: number;
+  /**
+   * Rough Cocklebur / Velcro: shot sticks to the target for stickSeconds,
+   * applying stacked slow (stickSlowScale per stack). At stickMaxStacks the
+   * stuck burrs pop for stickPopDamage (defaults to baseDamage when unset).
+   */
+  stickSeconds?: number;
+  /** Per-stack speed multiplier (0.85 = −15% each). Combined: 1 − (1−scale)×stacks. */
+  stickSlowScale?: number;
+  /** Max stuck burrs before pop (default 3). */
+  stickMaxStacks?: number;
+  /** Damage dealt when stacks reach the max and burrs disappear. */
+  stickPopDamage?: number;
 }
 
 /** Applied by projectiles on impact — not unit status-graph statuses. */
@@ -317,6 +334,42 @@ export function clearMoonseedDrowsyStats(): Partial<BulletStats> {
 }
 
 /**
+ * Velcro Vine Rough Cocklebur: stick, stack slow, pop at max stacks.
+ */
+export const VELCRO_COCKLEBUR_DEFAULTS = {
+  stickSeconds: 2,
+  stickSlowScale: 0.85,
+  stickMaxStacks: 3,
+  stickPopDamage: 24,
+} as const;
+
+export type VelcroCockleburStats = {
+  stickSeconds: number;
+  stickSlowScale: number;
+  stickMaxStacks: number;
+  stickPopDamage: number;
+};
+
+export function bulletHasCockleburStick(
+  stats: Pick<BulletStats, 'stickMaxStacks' | 'stickSeconds'> | null | undefined,
+): boolean {
+  return (stats?.stickMaxStacks ?? 0) > 0 && (stats?.stickSeconds ?? 0) > 0;
+}
+
+export function applyVelcroCockleburDefaults(): Partial<BulletStats> {
+  return { ...VELCRO_COCKLEBUR_DEFAULTS, baseDamage: 0, damagePerLevel: 0 };
+}
+
+export function clearVelcroCockleburStats(): Partial<BulletStats> {
+  return {
+    stickSeconds: undefined,
+    stickSlowScale: undefined,
+    stickMaxStacks: undefined,
+    stickPopDamage: undefined,
+  };
+}
+
+/**
  * Acorn Blaster–style: every Nth shot applies empowerOnHitStatuses
  * (brief butter stun on light ground by default).
  */
@@ -399,6 +452,8 @@ export function bulletPreviewIsSpawnOnly(
 export const DEFAULT_BULLET_AREA_RADIUS_CELLS = 1;
 export const DEFAULT_BULLET_SPEED = 3.5;
 export const DEFAULT_BULLET_DAMAGE_PER_LEVEL = 2;
+/** Min opaque-area overlap with the target to count as a hit. */
+export const DEFAULT_BULLET_HIT_OPAQUE_OVERLAP = 0.3;
 
 /** Fixed image basename for each status under Bullets/{folder}/. */
 export function bulletStatusImageName(status: BulletStatusName): string {
@@ -430,6 +485,7 @@ export function defaultBulletStats(): BulletStats {
     damagePerLevel: DEFAULT_BULLET_DAMAGE_PER_LEVEL,
     speed: DEFAULT_BULLET_SPEED,
     hitMode: 'single',
+    hitOpaqueOverlap: DEFAULT_BULLET_HIT_OPAQUE_OVERLAP,
   };
 }
 
@@ -746,6 +802,7 @@ function normalizeBulletStats(stats?: Partial<BulletStats>): BulletStats {
       : DEFAULT_BULLET_DAMAGE_PER_LEVEL,
     speed: Number.isFinite(stats?.speed) ? Math.max(0.1, stats!.speed!) : DEFAULT_BULLET_SPEED,
     hitMode,
+    hitOpaqueOverlap: clamp01(stats?.hitOpaqueOverlap, DEFAULT_BULLET_HIT_OPAQUE_OVERLAP),
   };
   if (hitMode === 'area') {
     next.areaRadiusCells =
@@ -806,6 +863,21 @@ function normalizeBulletStats(stats?: Partial<BulletStats>): BulletStats {
   if (flyerBonus > 0) next.flyerDamageBonus = flyerBonus;
   const lightBonus = finiteNonNegative(stats?.lightDamageBonus);
   if (lightBonus > 0) next.lightDamageBonus = lightBonus;
+
+  const stickMax =
+    Number.isFinite(stats?.stickMaxStacks) && (stats!.stickMaxStacks as number) > 0
+      ? Math.max(1, Math.round(stats!.stickMaxStacks as number))
+      : 0;
+  const stickSec = finiteNonNegative(stats?.stickSeconds);
+  if (stickMax > 0 && stickSec > 0) {
+    next.stickMaxStacks = stickMax;
+    next.stickSeconds = stickSec;
+    const slow = finiteNonNegative(stats?.stickSlowScale);
+    next.stickSlowScale =
+      slow > 0 && slow <= 1 ? slow : VELCRO_COCKLEBUR_DEFAULTS.stickSlowScale;
+    const pop = finiteNonNegative(stats?.stickPopDamage);
+    if (pop > 0) next.stickPopDamage = pop;
+  }
 
   return next;
 }

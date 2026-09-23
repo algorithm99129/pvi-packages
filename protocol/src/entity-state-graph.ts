@@ -604,7 +604,8 @@ export interface StateAction {
   amount?: StateDurationValue;
   /**
    * Generic duration (seconds): shield / reflect / brace / mark / camouflage /
-   * trail / buff / contact stun / dash / slow / weaken.
+   * trail / buff / contact stun / dash / slow / weaken /
+   * knockback_insects impact priority mark (`extra.impactMarkSeconds`).
    */
   duration?: StateDurationValue;
   /**
@@ -1475,6 +1476,14 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     defaultAttribute: 'extra.knockbackEvery',
   },
   {
+    action: 'knockback_insects',
+    key: 'duration',
+    label: 'Impact mark (seconds)',
+    hint:
+      'After a successful shove, mark that insect so nearby shooters prioritize it and deal +15% damage (Chestnut Cannon). None / 0 = no mark.',
+    defaultAttribute: 'extra.impactMarkSeconds',
+  },
+  {
     action: 'arm_burst',
     key: 'fuseDuration',
     label: 'Fuse seconds',
@@ -1808,7 +1817,8 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'knockback_insects',
     label: 'Knockback insects',
-    hint: 'Push insects in this lane back a set number of cells and deal damage. They keep walking. Can be limited to unequipped insects and every Nth attack.',
+    hint:
+      'Push insects in this lane back a set number of cells and deal damage. Optional impact mark makes shooters prioritize the shoved target (Chestnut Cannon).',
     kind: 'plant',
   },
   {
