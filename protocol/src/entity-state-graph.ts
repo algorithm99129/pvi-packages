@@ -563,7 +563,6 @@ export type StateActionKind =
   | 'buff_attack_speed'
   | 'knockback_insects'
   | 'grant_shield'
-  | 'sip_economy'
   | 'suppress_special'
   | 'retreat_columns'
   | 'brace'
@@ -808,13 +807,19 @@ export const STATE_ACTION_MODE_OPTIONS: ReadonlyArray<{
     action: 'weaken_attack',
     id: 'damage_weaken',
     label: 'Damage weaken',
-    hint: 'Reduce enemy attack damage',
+    hint: 'Plant pulse: reduce insect outgoing attack damage (Spore Lantern)',
+  },
+  {
+    action: 'weaken_attack',
+    id: 'plant_damage_weaken',
+    label: 'Plant damage weaken',
+    hint: 'Insect bite: reduce a plant\'s outgoing attack damage by scale for duration (Aphid Nibbler). everyNth≥1 = first contact only.',
   },
   {
     action: 'weaken_attack',
     id: 'bite_slow',
     label: 'Bite slow',
-    hint: 'Slow insect bite / move',
+    hint: 'Slow plant attack interval (Caterpillar)',
   },
   {
     action: 'weaken_attack',
@@ -1351,7 +1356,7 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     action: 'weaken_attack',
     key: 'scale',
     label: 'Weaken scale',
-    hint: 'Outgoing damage or interval scale (extra.weakenDamageScale)',
+    hint: 'Outgoing damage or interval scale (extra.weakenDamageScale). plant_damage_weaken: 0.75 = plants deal 75% damage.',
     defaultAttribute: 'extra.weakenDamageScale',
   },
   {
@@ -1360,6 +1365,13 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     label: 'Weaken duration (s)',
     hint: 'Prefer extra.weakenSeconds',
     defaultAttribute: 'extra.weakenSeconds',
+  },
+  {
+    action: 'weaken_attack',
+    key: 'everyNth',
+    label: 'First contact only',
+    hint: 'plant_damage_weaken: set to 1 so only the first bite applies the weaken (extra.weakenFirstContactOnly).',
+    defaultAttribute: 'extra.weakenFirstContactOnly',
   },
   {
     action: 'reflect_projectile',
@@ -1465,20 +1477,6 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     label: 'Coil cooldown (s)',
     hint: 'Seconds before special is ready again. Prefer extra.coilCooldownSeconds',
     defaultAttribute: 'extra.coilCooldownSeconds',
-  },
-  {
-    action: 'sip_economy',
-    key: 'duration',
-    label: 'Sip duration (s)',
-    hint: 'Prefer extra.sipDurationSeconds (GDD Aphid 6s)',
-    defaultAttribute: 'extra.sipDurationSeconds',
-  },
-  {
-    action: 'sip_economy',
-    key: 'everyNth',
-    label: 'First contact only',
-    hint: 'Set to 1 (extra.sipFirstContactOnly) so only the first economy contact sips',
-    defaultAttribute: 'extra.sipFirstContactOnly',
   },
   {
     action: 'suppress_special',
@@ -2136,12 +2134,6 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     kind: 'plant',
   },
   {
-    type: 'sip_economy',
-    label: 'Sip economy',
-    hint: 'Temporarily reduce an economy plant’s production (Aphid Nibbler). Use duration + everyNth=1 for first-contact-only.',
-    kind: 'insect',
-  },
-  {
     type: 'suppress_special',
     label: 'Suppress special',
     hint: 'First contact suppresses a support/economy plant’s special (Ant Forager). duration = suppress window; cap = per-plant immunity seconds.',
@@ -2220,7 +2212,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'weaken_attack',
     label: 'Weaken attack',
-    hint: 'Mode via extra.weakenMode: bite_slow | song_delay | silk_tether | damage_weaken (Caterpillar / Spore Lantern)',
+    hint: 'Mode: damage_weaken (plant→insect dmg), plant_damage_weaken (insect→plant dmg), bite_slow | silk_tether | song_delay',
   },
   {
     type: 'dash',
@@ -4592,7 +4584,6 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   buff_attack_speed: 'buff_attack_speed',
   knockback_insects: 'knockback_insects',
   grant_shield: 'grant_shield',
-  sip_economy: 'sip_economy',
   suppress_special: 'suppress_special',
   retreat_columns: 'retreat_columns',
   brace: 'brace',
