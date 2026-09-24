@@ -591,6 +591,8 @@ export type StateActionKind =
   | 'echo_special'
   | 'reflect_projectile'
   | 'discard_aerial_impact'
+  | 'bounce_hopper'
+  | 'bounce_bullet'
 
 export type StateActionWhen = 'on_enter' | 'after_anim' | 'on_exit';
 
@@ -621,7 +623,8 @@ export interface StateAction {
   splashColumnRange?: StateDurationValue;
   /** squash_crush: splash lane radius around impact. */
   splashLaneRange?: StateDurationValue;
-  /** knockback_insects: how many cells to push the insect back along the lane. */
+  /** knockback_insects: how many cells to push the insect back along the lane.
+   * bounce_hopper: shove distance when a hop/vault insect targets this plant. */
   knockbackCells?: StateDurationValue;
   /**
    * knockback_insects / deal_contact_damage: damage dealt.
@@ -630,7 +633,7 @@ export interface StateAction {
   damage?: StateDurationValue;
   /** knockback_insects: push only on every Nth attack. 1 = every attack. */
   knockbackEvery?: StateDurationValue;
-  /** knockback_insects: only light ground insects (no flying / heavy / living equipment). */
+  /** knockback_insects / bounce_hopper: only light ground insects (no flying / heavy / living equipment). */
   unequippedOnly?: boolean;
   /**
    * discard_aerial_impact: absorb lobbed / curved insect bullets in the canopy.
@@ -677,12 +680,14 @@ export interface StateAction {
   /**
    * Generic duration (seconds): shield / reflect / brace / mark / camouflage /
    * trail / buff / contact stun / dash / slow / weaken /
-   * knockback_insects impact priority mark (`extra.impactMarkSeconds`).
+   * knockback_insects impact priority mark (`extra.impactMarkSeconds`);
+   * bounce_hopper bounce immunity (`extra.bounceImmuneSeconds`).
    */
   duration?: StateDurationValue;
   /**
    * Generic scale: attackSpeedScale, weaken scale, shield pct, brace incoming,
-   * slow scale, mark damage, dash / trail / camouflage / hop miss, explode maxHpPercent.
+   * slow scale, mark damage, dash / trail / camouflage / hop miss, explode maxHpPercent;
+   * bounce_bullet optional shooter damage scale (`extra.bounceBulletDamageScale`).
    */
   scale?: StateDurationValue;
   /**
@@ -1298,6 +1303,27 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     defaultAttribute: 'extra.aerialProtectLaneRange',
   },
   {
+    action: 'bounce_hopper',
+    key: 'knockbackCells',
+    label: 'Bounce distance (cells)',
+    hint: 'How far hop/vault insects are shoved when they land on this plant. Prefer extra.knockbackCells.',
+    defaultAttribute: 'extra.knockbackCells',
+  },
+  {
+    action: 'bounce_hopper',
+    key: 'duration',
+    label: 'Bounce immunity (s)',
+    hint: 'Seconds before the same insect can be bounced again. Prefer extra.bounceImmuneSeconds.',
+    defaultAttribute: 'extra.bounceImmuneSeconds',
+  },
+  {
+    action: 'bounce_bullet',
+    key: 'scale',
+    label: 'Bounce damage scale',
+    hint: 'Optional damage to the shooter when a bullet bounces (0 = trajectory bounce only). Prefer extra.bounceBulletDamageScale.',
+    defaultAttribute: 'extra.bounceBulletDamageScale',
+  },
+  {
     action: 'weaken_attack',
     key: 'scale',
     label: 'Weaken scale',
@@ -1745,6 +1771,14 @@ export function defaultActionParams(
     if (out.columnRange == null) out.columnRange = literalDuration(1);
     if (out.laneRange == null) out.laneRange = literalDuration(1);
   }
+  if (type === 'bounce_hopper') {
+    if (out.knockbackCells == null) out.knockbackCells = attributeDuration('extra.knockbackCells');
+    if (out.duration == null) out.duration = attributeDuration('extra.bounceImmuneSeconds');
+    out.unequippedOnly = true;
+  }
+  if (type === 'bounce_bullet') {
+    if (out.scale == null) out.scale = attributeDuration('extra.bounceBulletDamageScale');
+  }
   return out;
 }
 
@@ -2131,6 +2165,20 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     label: 'Discard aerial impact',
     hint:
       'Umbrella canopy while this status is active (Vine Relay). columnRange / laneRange = protect area; toggles control bullets, thrown insects, and aerial drops.',
+    kind: 'plant',
+  },
+  {
+    type: 'bounce_hopper',
+    label: 'Bounce hopper',
+    hint:
+      'While this status is active, hop/vault insects that target this plant are shoved back knockbackCells (Pillow Moss). Check Small insects only for Light landers.',
+    kind: 'plant',
+  },
+  {
+    type: 'bounce_bullet',
+    label: 'Bounce bullet',
+    hint:
+      'While this status is active, enemy bullets that hit this plant bounce back toward insects (Pillow Moss). Optional scale damages the shooter.',
     kind: 'plant',
   },
   {
@@ -4544,6 +4592,10 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   discard_aerial_impact: 'discard_aerial_impact',
   block_aerial: 'discard_aerial_impact',
   umbrella_protect: 'discard_aerial_impact',
+  bounce_hopper: 'bounce_hopper',
+  bounce_vault: 'bounce_hopper',
+  bounce_bullet: 'bounce_bullet',
+  deflect_bullet: 'bounce_bullet',
 };
 
 function normalizeAction(raw: unknown): StateAction | null {

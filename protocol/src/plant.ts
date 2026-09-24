@@ -612,7 +612,10 @@ export interface PlantServerConfig {
    * - omit / `neutral`: no time-of-day range scale
    */
   timeAffinity?: 'day' | 'night' | 'neutral';
-  /** Blocks vault / pogo / dolphin jumps onto this plant. */
+  /**
+   * Block hop: hoppers / vault insects cannot leap over this plant (Ironwood Guard).
+   * Light/Medium blockers leave this false so Grasshopper etc. can hop them.
+   */
   blocksVault?: boolean;
   /** Ignites or extinguishes peas that pass through this plant. */
   transformsPeas?: boolean;
