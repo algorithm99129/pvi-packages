@@ -605,6 +605,13 @@ export interface PlantServerConfig {
    * When omitted, clients treat `*_shroom` ids as sleeping-by-day.
    */
   sleepsDuringDay?: boolean;
+  /**
+   * Day / night affinity for map time modifiers.
+   * - `day`: on night maps, range is scaled by map `client.dayAffinityNightRangeScale`
+   * - `night`: preferred at night (no day range penalty from that map field)
+   * - omit / `neutral`: no time-of-day range scale
+   */
+  timeAffinity?: 'day' | 'night' | 'neutral';
   /** Blocks vault / pogo / dolphin jumps onto this plant. */
   blocksVault?: boolean;
   /** Ignites or extinguishes peas that pass through this plant. */

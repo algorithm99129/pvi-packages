@@ -532,6 +532,8 @@ export type StateActionKind =
   | 'explode'
   | 'produce_sun'
   | 'clear_fog'
+  | 'reveal_camouflage'
+  | 'force_burrow_emerge'
   | 'blow_away_flying'
   | 'despawn'
   | 'reset_attack_timer'
@@ -819,7 +821,7 @@ export const STATE_ACTION_MODE_OPTIONS: ReadonlyArray<{
     action: 'weaken_attack',
     id: 'silk_tether',
     label: 'Silk tether',
-    hint: 'Stronger plant attack-interval slow (Silkworm)',
+    hint: 'Stronger plant attack-interval slow (legacy silk tether mode)',
   },
   {
     action: 'buff_attack_speed',
@@ -873,7 +875,7 @@ export const STATE_ACTION_MODE_OPTIONS: ReadonlyArray<{
     action: 'clear_fog',
     id: 'aura',
     label: 'Aura',
-    hint: 'Local fog hole while this unit is alive (Lantern Lily). Default.',
+    hint: 'Local fog hole while this unit is alive (Lantern Lily). Pair with reveal_camouflage / force_burrow_emerge for Plantern reveal. Default.',
   },
   {
     action: 'clear_fog',
@@ -1590,6 +1592,34 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     defaultAttribute: 'extra.fogClearRadius',
   },
   {
+    action: 'reveal_camouflage',
+    key: 'columnRange',
+    label: 'Column range',
+    hint: 'Strip camouflage / hide within this column radius (1 = 3-wide). Prefer extra.fogClearRadius or extra.revealColumnRange.',
+    defaultAttribute: 'extra.fogClearRadius',
+  },
+  {
+    action: 'reveal_camouflage',
+    key: 'laneRange',
+    label: 'Lane range',
+    hint: 'Strip camouflage within this lane radius. Prefer extra.fogClearRadius or extra.revealLaneRange.',
+    defaultAttribute: 'extra.fogClearRadius',
+  },
+  {
+    action: 'force_burrow_emerge',
+    key: 'columnRange',
+    label: 'Column range',
+    hint: 'Force burrowed insects up within this column radius. Prefer extra.fogClearRadius or extra.revealColumnRange.',
+    defaultAttribute: 'extra.fogClearRadius',
+  },
+  {
+    action: 'force_burrow_emerge',
+    key: 'laneRange',
+    label: 'Lane range',
+    hint: 'Force burrowed insects up within this lane radius. Prefer extra.fogClearRadius or extra.revealLaneRange.',
+    defaultAttribute: 'extra.fogClearRadius',
+  },
+  {
     action: 'knockback_insects',
     key: 'knockbackCells',
     label: 'Knockback distance (cells)',
@@ -1695,6 +1725,10 @@ export function defaultActionParams(
   if (type === 'clear_fog') {
     out.mode = 'aura';
   }
+  if (type === 'reveal_camouflage' || type === 'force_burrow_emerge') {
+    if (out.columnRange == null) out.columnRange = literalDuration(1);
+    if (out.laneRange == null) out.laneRange = literalDuration(1);
+  }
   if (type === 'squash_crush') {
     out.crushStyle = 'hop';
   }
@@ -1761,7 +1795,21 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     type: 'clear_fog',
     label: 'Clear fog',
     hint:
-      'Fog clear. mode=aura (default): local lantern hole. mode=all: permanent map-wide clear.',
+      'Fog clear. mode=aura (default): local lantern hole. mode=all: permanent map-wide clear. Reveal is separate (reveal_camouflage / force_burrow_emerge).',
+    kind: 'plant',
+  },
+  {
+    type: 'reveal_camouflage',
+    label: 'Strip camouflage',
+    hint:
+      'While this status is active, strip camouflage / hide on insects in columnRange × laneRange (Lantern Lily).',
+    kind: 'plant',
+  },
+  {
+    type: 'force_burrow_emerge',
+    label: 'Force burrow emerge',
+    hint:
+      'While this status is active, force burrowed insects in columnRange × laneRange to surface early (Lantern Lily).',
     kind: 'plant',
   },
   {
@@ -2094,7 +2142,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'weaken_attack',
     label: 'Weaken attack',
-    hint: 'Mode via extra.weakenMode: bite_slow | song_delay | silk_tether | damage_weaken (Caterpillar / Spore Lantern / Silkworm)',
+    hint: 'Mode via extra.weakenMode: bite_slow | song_delay | silk_tether | damage_weaken (Caterpillar / Spore Lantern)',
   },
   {
     type: 'dash',
@@ -4429,6 +4477,11 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   // Legacy map-wide clear → clear_fog (normalizeAction forces mode=all).
   clear_all_fog: 'clear_fog',
   blow_fog: 'clear_fog',
+  reveal_camouflage: 'reveal_camouflage',
+  strip_camouflage: 'reveal_camouflage',
+  force_burrow_emerge: 'force_burrow_emerge',
+  force_emerge: 'force_burrow_emerge',
+  reveal_burrow: 'force_burrow_emerge',
   blow_away_flying: 'blow_away_flying',
   kill_flying: 'blow_away_flying',
   despawn: 'despawn',

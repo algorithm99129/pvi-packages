@@ -107,6 +107,16 @@ export interface MapTemplateDefinition {
     thumbnailImage?: string;
     /** Background variant index (0=day, 1=night, …) */
     backgroundType?: number;
+    /**
+     * Explicit day/night for combat. When omitted, night is inferred from
+     * `backgroundType >= 1` or id/background path containing "night".
+     */
+    timeOfDay?: 'day' | 'night';
+    /**
+     * On night maps, multiply attack range of day-affinity plants by this.
+     * Omit or 1 = no penalty. Example: 0.75 → day shooters lose 25% range at night.
+     */
+    dayAffinityNightRangeScale?: number;
     tileset?: string;
     parallaxLayers?: string[];
     /** Optional per-cell anchors aligned to the background art */

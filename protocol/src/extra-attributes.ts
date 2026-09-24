@@ -117,7 +117,7 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
   {
     key: 'fogClearRadius',
     label: 'Fog clear radius',
-    hint: 'Chebyshev cells revealed by clear_fog (Lantern Lily; 1 = 3×3)',
+    hint: 'Chebyshev cells for clear_fog / reveal auras (Lantern Lily; 1 = 3×3)',
     type: 'number',
     defaultValue: 1,
   },
