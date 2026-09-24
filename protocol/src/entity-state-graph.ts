@@ -888,6 +888,30 @@ export const STATE_ACTION_MODE_OPTIONS: ReadonlyArray<{
     label: 'All fog',
     hint: 'Permanently clear the entire fog bank for the rest of the raid.',
   },
+  {
+    action: 'blow_away_flying',
+    id: 'push',
+    label: 'Push',
+    hint: 'Shove flying insects toward spawn by columnRange; they land and keep marching. Default.',
+  },
+  {
+    action: 'blow_away_flying',
+    id: 'offscreen',
+    label: 'Off-screen (Blover)',
+    hint: 'Blow flying insects off the lawn and remove them. Plays yellow pollen burst. Classic Blover / Sneezeweed.',
+  },
+  {
+    action: 'despawn',
+    id: 'puff',
+    label: 'Puff',
+    hint: 'Remove with the default plant exit puff. Default.',
+  },
+  {
+    action: 'despawn',
+    id: 'silent',
+    label: 'Silent',
+    hint: 'Remove with no exit puff (use when a prior action already played FX, e.g. pollen burst).',
+  },
 ];
 
 /** Motion style for the `squash_crush` action. */
@@ -1073,7 +1097,7 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     action: 'blow_away_flying',
     key: 'columnRange',
     label: 'Push columns',
-    hint: 'How many columns to push flying insects toward spawn (no despawn). Prefer extra.blowAwayColumns.',
+    hint: 'Push mode: columns toward spawn. Offscreen mode: optional travel hint (default blows past the lawn edge). Prefer extra.blowAwayColumns.',
     defaultAttribute: 'extra.blowAwayColumns',
   },
   {
@@ -1751,6 +1775,12 @@ export function defaultActionParams(
   if (type === 'clear_fog') {
     out.mode = 'aura';
   }
+  if (type === 'blow_away_flying') {
+    out.mode = 'push';
+  }
+  if (type === 'despawn') {
+    out.mode = 'puff';
+  }
   if (type === 'reveal_camouflage' || type === 'force_burrow_emerge') {
     if (out.columnRange == null) out.columnRange = literalDuration(1);
     if (out.laneRange == null) out.laneRange = literalDuration(1);
@@ -1850,13 +1880,13 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     type: 'blow_away_flying',
     label: 'Blow away flying',
     hint:
-      'Push every flying insect toward spawn by columnRange columns. Does not despawn — they resume marching.',
+      'Flying insects. mode=push (default): shove toward spawn by columnRange. mode=offscreen: blow off-lawn + remove (Blover / Sneezeweed pollen burst).',
     kind: 'plant',
   },
   {
     type: 'despawn',
     label: 'Despawn',
-    hint: 'Remove this unit from the board',
+    hint: 'Remove this unit. mode=silent skips the default plant exit puff when FX already played.',
   },
   {
     type: 'reset_attack_timer',
