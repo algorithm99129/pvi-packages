@@ -1589,6 +1589,20 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     defaultAttribute: 'extra.speedBuffCap',
   },
   {
+    action: 'buff_move_speed',
+    key: 'columnRange',
+    label: 'Affection column range',
+    hint: 'Aura / boss pulse: columns along the lane. Prefer extra.speedBuffColumnRange. Unused for trail / cleanse.',
+    defaultAttribute: 'extra.speedBuffColumnRange',
+  },
+  {
+    action: 'buff_move_speed',
+    key: 'laneRange',
+    label: 'Affection lane range',
+    hint: 'Aura / boss pulse: lanes above/below (±). Prefer extra.speedBuffLaneRange. Unused for trail / cleanse.',
+    defaultAttribute: 'extra.speedBuffLaneRange',
+  },
+  {
     action: 'leave_speed_trail',
     key: 'scale',
     label: 'Trail speed scale',
@@ -2274,7 +2288,8 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'buff_move_speed',
     label: 'Buff move speed',
-    hint: 'Mode via extra.speedBuffMode: aura | trail | cleanse_pulse | boss_pulse (Bumblebee / Glowworm / Firefly / Queen)',
+    hint:
+      'Mode via extra.speedBuffMode: aura | trail | cleanse_pulse | boss_pulse. Aura/boss_pulse use columnRange × laneRange affection (extra.speedBuffColumnRange / speedBuffLaneRange).',
     kind: 'insect',
   },
   {
