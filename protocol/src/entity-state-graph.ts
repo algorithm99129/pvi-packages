@@ -569,6 +569,7 @@ export type StateActionKind =
   | 'brace'
   | 'chain_damage'
   | 'leave_slick'
+  | 'leave_gel'
   | 'reduce_ally_cooldown'
   | 'pull_insect'
   | 'apply_slow'
@@ -1553,6 +1554,20 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     defaultAttribute: 'extra.slickAttackIntervalScale',
   },
   {
+    action: 'leave_gel',
+    key: 'duration',
+    label: 'Gel duration (s)',
+    hint: 'How long gel cells remain. Prefer extra.gelDurationSeconds (Slug Slimer = 10).',
+    defaultAttribute: 'extra.gelDurationSeconds',
+  },
+  {
+    action: 'leave_gel',
+    key: 'scale',
+    label: 'Gel move-speed scale',
+    hint: 'Insects on gel multiply move speed by this. Prefer extra.gelMoveSpeedScale (>1 = faster).',
+    defaultAttribute: 'extra.gelMoveSpeedScale',
+  },
+  {
     action: 'buff_move_speed',
     key: 'scale',
     label: 'Move speed scale',
@@ -2205,7 +2220,14 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'leave_slick',
     label: 'Leave slick',
-    hint: 'Leave a short slow trail in this lane (Slug Slimer)',
+    hint: 'Pulse nearby plants with a slower attack interval (legacy slick debuff)',
+    kind: 'insect',
+  },
+  {
+    type: 'leave_gel',
+    label: 'Leave gel',
+    hint:
+      'Paint a gel path cell (GelPath.png). Insects on gel move faster; plants cannot be placed on gel. Duration + scale from extras. Slug Slimer.',
     kind: 'insect',
   },
   {
@@ -4647,6 +4669,7 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   brace: 'brace',
   chain_damage: 'chain_damage',
   leave_slick: 'leave_slick',
+  leave_gel: 'leave_gel',
   reduce_ally_cooldown: 'reduce_ally_cooldown',
   pull_insect: 'pull_insect',
   apply_slow: 'apply_slow',

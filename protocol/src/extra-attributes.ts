@@ -213,6 +213,20 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     defaultValue: 4,
   },
   {
+    key: 'gelDurationSeconds',
+    label: 'Gel duration seconds',
+    hint: 'How long leave_gel cells remain before melting (Slug Slimer = 10)',
+    type: 'number',
+    defaultValue: 10,
+  },
+  {
+    key: 'gelMoveSpeedScale',
+    label: 'Gel move-speed scale',
+    hint: 'Insects standing on gel multiply move speed by this (Slug Slimer = 1.35)',
+    type: 'number',
+    defaultValue: 1.35,
+  },
+  {
     key: 'chillDurationSeconds',
     label: 'Chill duration seconds',
     hint: 'Slow leftover after Ice-shroom freeze thaws',
