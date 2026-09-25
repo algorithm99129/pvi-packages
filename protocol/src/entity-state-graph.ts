@@ -545,6 +545,7 @@ export type StateActionKind =
   | 'reverse_march'
   | 'enter_fly'
   | 'exit_fly'
+  | 'become_flyer'
   | 'redirect_lane'
   | 'charm_insect'
   | 'steal_metal'
@@ -1937,6 +1938,12 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     type: 'exit_fly',
     label: 'Exit fly / land',
     hint: 'Drop to the ground travel layer after lift is lost',
+    kind: 'insect',
+  },
+  {
+    type: 'become_flyer',
+    label: 'Become flyer',
+    hint: 'Once per life: enter flying, heal to full HP, and retarget past the plant edge into the house (Caterpillar Muncher metamorphosis). Gate with special_ready + health_below.',
     kind: 'insect',
   },
   {
@@ -4564,6 +4571,8 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   reverse_march: 'reverse_march',
   enter_fly: 'enter_fly',
   exit_fly: 'exit_fly',
+  become_flyer: 'become_flyer',
+  metamorphose_fly: 'become_flyer',
   redirect_lane: 'redirect_lane',
   charm_insect: 'charm_insect',
   steal_metal: 'steal_metal',
