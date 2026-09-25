@@ -792,6 +792,24 @@ export const STATE_ACTION_MODE_OPTIONS: ReadonlyArray<{
     hint: 'Heal this shell and the plant sharing its cell (Bubble Aloe)',
   },
   {
+    action: 'become_flyer',
+    id: 'full',
+    label: 'Full HP',
+    hint: 'Heal to max HP on metamorphosis (default)',
+  },
+  {
+    action: 'become_flyer',
+    id: 'remain',
+    label: 'Keep current HP',
+    hint: 'Do not heal — keep the HP that triggered the convert',
+  },
+  {
+    action: 'become_flyer',
+    id: 'fill',
+    label: 'Fill some HP',
+    hint: 'Heal by amount (<1 = fraction of max HP, ≥1 = flat). Prefer extra.metamorphHealAmount.',
+  },
+  {
     action: 'chomp_devour',
     id: 'trap',
     label: 'Eat light only',
@@ -1035,6 +1053,11 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
   hint: string;
   /** Default Extra attribute path when inserting the action. */
   defaultAttribute: string;
+  /**
+   * When set, this param is only shown / seeded for these action `mode` ids.
+   * Omit to show for every mode (including empty / Default).
+   */
+  modes?: ReadonlyArray<string>;
 }> = [
   {
     action: 'explode',
@@ -1233,6 +1256,14 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     label: 'Heal amount',
     hint: 'Flat heal or percent via extra.healPercentMaxHp / healMaxHpPercent',
     defaultAttribute: 'extra.healPercentMaxHp',
+  },
+  {
+    action: 'become_flyer',
+    key: 'amount',
+    label: 'Fill amount',
+    hint: 'Only for mode=fill: <1 = fraction of max HP, ≥1 = flat HP. Prefer extra.metamorphHealAmount.',
+    defaultAttribute: 'extra.metamorphHealAmount',
+    modes: ['fill'],
   },
   {
     action: 'heal_ally',
@@ -1742,8 +1773,16 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
   },
 ];
 
-export function actionParamFieldsFor(type: StateActionKind) {
-  return STATE_ACTION_PARAM_FIELDS.filter((f) => f.action === type);
+export function actionParamFieldsFor(
+  type: StateActionKind,
+  mode?: string | null,
+) {
+  const resolved = (mode ?? '').trim();
+  return STATE_ACTION_PARAM_FIELDS.filter((f) => {
+    if (f.action !== type) return false;
+    if (!f.modes || f.modes.length === 0) return true;
+    return resolved !== '' && f.modes.includes(resolved);
+  });
 }
 
 /**
@@ -1943,7 +1982,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'become_flyer',
     label: 'Become flyer',
-    hint: 'Once per life: enter flying, heal to full HP, and retarget past the plant edge into the house (Caterpillar Muncher metamorphosis). Gate with special_ready + health_below.',
+    hint: 'Once per life: enter flying and retarget past the plant edge into the house. HP via mode (full / remain / fill). Gate with special_ready + health_below.',
     kind: 'insect',
   },
   {
@@ -2242,7 +2281,17 @@ export interface StateStatModifiers {
    * Bare number (milliseconds) or StateDurationValue (extra.shotIntervalMs / stats.attackIntervalMs).
    */
   attackIntervalMs?: number | StateDurationValue;
-  moveSpeed?: number;
+  /**
+   * Absolute move speed while in this status (cells/s).
+   * Bare number or StateDurationValue — prefer `extra.rollMoveSpeed` for Inchworm roll.
+   * Used when {@link moveSpeedScale} is unset.
+   */
+  moveSpeed?: number | StateDurationValue;
+  /**
+   * Multiplier on base move speed while in this status.
+   * Prefer `extra.rollSpeedScale` (e.g. 2 = double speed). Preferred over {@link moveSpeed} when set.
+   */
+  moveSpeedScale?: StateDurationValue;
   /**
    * Combat range while in this status.
    * Bare number or StateDurationValue (extra.shotRange / stats.range).
@@ -5042,8 +5091,15 @@ function normalizeStatModifiers(raw: unknown): StateStatModifiers | undefined {
       out.attackIntervalMs = normalizeDurationValue(m.attackIntervalMs);
     }
   }
-  if (typeof m.moveSpeed === 'number' && Number.isFinite(m.moveSpeed)) {
-    out.moveSpeed = m.moveSpeed;
+  if (m.moveSpeed !== undefined && m.moveSpeed !== null) {
+    if (typeof m.moveSpeed === 'number' && Number.isFinite(m.moveSpeed)) {
+      out.moveSpeed = m.moveSpeed;
+    } else {
+      out.moveSpeed = normalizeDurationValue(m.moveSpeed);
+    }
+  }
+  if (m.moveSpeedScale !== undefined && m.moveSpeedScale !== null) {
+    out.moveSpeedScale = normalizeDurationValue(m.moveSpeedScale);
   }
   if (m.range !== undefined && m.range !== null) {
     if (typeof m.range === 'number' && Number.isFinite(m.range)) {
