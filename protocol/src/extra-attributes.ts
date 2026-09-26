@@ -150,6 +150,20 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     defaultValue: 1,
   },
   {
+    key: 'dustColumnRange',
+    label: 'Dust column range',
+    hint: 'Moon Moth dust_veil affection along the lane (walking ground insects skip ranged targeting)',
+    type: 'number',
+    defaultValue: 2.5,
+  },
+  {
+    key: 'dustLaneRange',
+    label: 'Dust lane range',
+    hint: 'Moon Moth dust_veil affection across lanes (0 = same lane only)',
+    type: 'number',
+    defaultValue: 1,
+  },
+  {
     key: 'aerialProtectRadius',
     label: 'Aerial protect radius',
     hint: 'Chebyshev cells protected from aerial steal when server.blocksAerialSteal (1 = 3×3)',

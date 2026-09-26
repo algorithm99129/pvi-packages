@@ -589,6 +589,7 @@ export type StateActionKind =
   | 'trap_skip'
   | 'grant_leaf_screen'
   | 'apply_camouflage'
+  | 'dust_veil'
   | 'hide'
   | 'unhide'
   | 'cleanse_move_debuff'
@@ -1770,6 +1771,22 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     defaultAttribute: 'extra.fogClearRadius',
   },
   {
+    action: 'dust_veil',
+    key: 'columnRange',
+    label: 'Affection column range',
+    hint:
+      'Moon Moth dust: columns along the lane where walking ground insects skip ranged plant targeting. Prefer extra.dustColumnRange.',
+    defaultAttribute: 'extra.dustColumnRange',
+  },
+  {
+    action: 'dust_veil',
+    key: 'laneRange',
+    label: 'Affection lane range',
+    hint:
+      'Moon Moth dust: lanes above/below (±). Prefer extra.dustLaneRange (0 = same lane only).',
+    defaultAttribute: 'extra.dustLaneRange',
+  },
+  {
     action: 'force_burrow_emerge',
     key: 'columnRange',
     label: 'Column range',
@@ -1905,6 +1922,10 @@ export function defaultActionParams(
   }
   if (type === 'reveal_camouflage' || type === 'force_burrow_emerge') {
     if (out.columnRange == null) out.columnRange = literalDuration(1);
+    if (out.laneRange == null) out.laneRange = literalDuration(1);
+  }
+  if (type === 'dust_veil') {
+    if (out.columnRange == null) out.columnRange = literalDuration(2.5);
     if (out.laneRange == null) out.laneRange = literalDuration(1);
   }
   if (type === 'squash_crush') {
@@ -2163,6 +2184,13 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     type: 'apply_camouflage',
     label: 'Apply camouflage',
     hint: 'Lower auto-target priority so shooters prefer other insects (Katydid / Walking Leaf / Stickbug)',
+    kind: 'insect',
+  },
+  {
+    type: 'dust_veil',
+    label: 'Dust veil',
+    hint:
+      'While this status is active, walking ground insects in columnRange × laneRange cannot be selected by ranged plants (Moon Moth Duster). Melee / area still hit. Flying and non-walk statuses stay targetable.',
     kind: 'insect',
   },
   {
@@ -4787,6 +4815,7 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   trap_skip: 'trap_skip',
   grant_leaf_screen: 'grant_leaf_screen',
   apply_camouflage: 'apply_camouflage',
+  dust_veil: 'dust_veil',
   hide: 'hide',
   unhide: 'unhide',
   cleanse_move_debuff: 'cleanse_move_debuff',
