@@ -54,7 +54,7 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
   {
     key: 'prepareSeconds',
     label: 'Prepare seconds',
-    hint: 'Arming delay before the burst (Burrow Beetroot)',
+    hint: 'Arming delay (Burrow Beetroot) or Butterfly Glider egg-lay wait',
     type: 'number',
     defaultValue: 15,
   },

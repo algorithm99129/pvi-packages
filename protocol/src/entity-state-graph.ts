@@ -579,6 +579,8 @@ export type StateActionKind =
   | 'arm_burst'
   | 'fly_to_ally'
   | 'heal_insect'
+  | 'fly_to_empty'
+  | 'place_egg_group'
   | 'mark_priority_target'
   | 'delay_plant_attack'
   | 'column_skip'
@@ -1317,6 +1319,13 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     key: 'recoverSeconds',
     label: 'One-way flight time (s)',
     hint: 'Seconds for this flight leg (outbound or return). Prefer extra.flySeconds.',
+    defaultAttribute: 'extra.flySeconds',
+  },
+  {
+    action: 'fly_to_empty',
+    key: 'recoverSeconds',
+    label: 'One-way flight time (s)',
+    hint: 'Seconds to reach the empty cell. Prefer extra.flySeconds.',
     defaultAttribute: 'extra.flySeconds',
   },
   {
@@ -2229,6 +2238,20 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     label: 'Heal insect',
     hint:
       'Heal an ally insect (mode: lowest_hp | random, or SupportTarget from fly_to_ally). amount = flat HP (Honeybee = 100).',
+    kind: 'insect',
+  },
+  {
+    type: 'fly_to_empty',
+    label: 'Fly to empty cell',
+    hint:
+      'Fly to a random empty ground cell at air height (Butterfly Glider). Pair with place_egg_group after prepareSeconds.',
+    kind: 'insect',
+  },
+  {
+    type: 'place_egg_group',
+    label: 'Place egg group',
+    hint:
+      'Lay a dirty egg group on this cell (not water). The egg hatches spawnInsectId on its own hatchIntervalSeconds timer — wave aphids are not moved onto eggs.',
     kind: 'insect',
   },
   {
@@ -4738,6 +4761,8 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   heal_ally: 'heal_ally',
   fly_to_ally: 'fly_to_ally',
   heal_insect: 'heal_insect',
+  fly_to_empty: 'fly_to_empty',
+  place_egg_group: 'place_egg_group',
   buff_attack_speed: 'buff_attack_speed',
   knockback_insects: 'knockback_insects',
   grant_shield: 'grant_shield',
