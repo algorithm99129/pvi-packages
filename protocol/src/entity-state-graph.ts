@@ -1771,8 +1771,15 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     action: 'hop_evade',
     key: 'scale',
     label: 'Hop miss chance',
-    hint: 'Prefer extra.hopMissChance',
+    hint: 'Linear bullet miss while airborne (0–1). Prefer extra.hopMissChance. Area/pierce ignore this.',
     defaultAttribute: 'extra.hopMissChance',
+  },
+  {
+    action: 'hop_evade',
+    key: 'duration',
+    label: 'Hop air time (s)',
+    hint: 'Prefer extra.hopSeconds',
+    defaultAttribute: 'extra.hopSeconds',
   },
   {
     action: 'chain_damage',
@@ -2280,7 +2287,8 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'hop_evade',
     label: 'Hop evade',
-    hint: 'Short hop past a plant and briefly raise projectile miss chance (Leafhopper Bouncer)',
+    hint:
+      'Periodic short hop (extra.hopSeconds). While airborne, linear projectiles can miss (extra.hopMissChance); area/pierce still hit. Does not clear special — pair vault_over_plant once at a plant to end hopping (Leafhopper Bouncer).',
     kind: 'insect',
   },
   {

@@ -129,6 +129,27 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     defaultValue: 0,
   },
   {
+    key: 'hopSeconds',
+    label: 'Hop air time (s)',
+    hint: 'Leafhopper airborne duration for hop_evade (default 0.4)',
+    type: 'number',
+    defaultValue: 0.4,
+  },
+  {
+    key: 'hopEverySeconds',
+    label: 'Hop every (s)',
+    hint: 'Leafhopper walk→hop cadence while special_ready (default 2)',
+    type: 'number',
+    defaultValue: 2,
+  },
+  {
+    key: 'hopMissChance',
+    label: 'Hop miss chance',
+    hint: 'Linear bullet miss while hop_evade / vault airborne (0–1). Area/pierce ignore.',
+    type: 'number',
+    defaultValue: 0.7,
+  },
+  {
     key: 'hideProximityColumns',
     label: 'Hide proximity columns',
     hint: 'Column distance that makes a shy shooter fold shut / hide',
