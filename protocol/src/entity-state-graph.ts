@@ -901,7 +901,7 @@ export const STATE_ACTION_MODE_OPTIONS: ReadonlyArray<{
     action: 'weaken_attack',
     id: 'song_delay',
     label: 'Song delay',
-    hint: 'Delay plant attack timers (Cicada song)',
+    hint: 'Delay plant attack timers (sonic control)',
   },
   {
     action: 'weaken_attack',
@@ -2254,7 +2254,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'delay_plant_attack',
     label: 'Delay plant attack',
-    hint: 'Add delay to the next attack of nearby plants (Cicada Singer)',
+    hint: 'Add delay to the next attack of nearby plants',
     kind: 'insect',
   },
   {

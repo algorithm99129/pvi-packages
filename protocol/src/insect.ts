@@ -120,7 +120,8 @@ export const LEGACY_INSECT_ID_ALIASES: Record<string, string> = {
   conehead_zombie: 'caterpillar_muncher',
   buckethead_zombie: 'treehopper_helmet',
   flag_zombie: 'cricket_chirper',
-  newspaper_zombie: 'cicada_singer',
+  newspaper_zombie: 'cricket_chirper',
+  cicada_singer: 'cricket_chirper',
   // Pre-rename PopCap-adjacent catalog ids
   gargantuar_beetle: 'bumble_queen',
   red_gargantuar_beetle: 'bumble_queen',
