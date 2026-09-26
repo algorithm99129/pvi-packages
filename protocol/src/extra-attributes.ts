@@ -24,6 +24,20 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
   defaultValue?: number | string;
 }> = [
   {
+    key: 'heavyUnit',
+    label: 'Heavy unit',
+    hint: 'Combat identity: counts as Heavy (not Light). Knockback/pillow/chomp treat it as heavy. >0 = on.',
+    type: 'number',
+    defaultValue: 1,
+  },
+  {
+    key: 'knockbackImmune',
+    label: 'Knockback immune',
+    hint: 'Ignores knockback / pillow bounce. Prefer heavyUnit when the unit is also Heavy. >0 = on.',
+    type: 'number',
+    defaultValue: 1,
+  },
+  {
     key: 'digestSeconds',
     label: 'Digest seconds',
     hint: 'Pitcher Snare / Maw digest duration before returning to idle',
@@ -369,7 +383,7 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
   {
     key: 'throwInsectId',
     label: 'Throw insect id',
-    hint: 'Catalog id spawned by throw_unit (Bumble Queen → Honeybee Courier)',
+    hint: 'Catalog id spawned by throw_unit (Damselfly Dancer → Honeybee Courier)',
     type: 'string',
     defaultValue: 'honeybee_courier',
   },
@@ -379,6 +393,48 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     hint: 'Catalog id spawned by summon_insect (Dancing Firefly → backup_gnat)',
     type: 'string',
     defaultValue: 'glowworm_trail',
+  },
+  {
+    key: 'cloneColumnRange',
+    label: 'Clone affection column range',
+    hint: 'Bumble Queen clone_nearby_insects: columns along the lane when picking allies',
+    type: 'number',
+    defaultValue: 2.5,
+  },
+  {
+    key: 'cloneLaneRange',
+    label: 'Clone affection lane range',
+    hint: 'Bumble Queen clone_nearby_insects: lanes above/below when picking allies',
+    type: 'number',
+    defaultValue: 1,
+  },
+  {
+    key: 'cloneCount',
+    label: 'Clone count',
+    hint: 'Bumble Queen: how many random allies to clone per pulse',
+    type: 'number',
+    defaultValue: 2,
+  },
+  {
+    key: 'cloneBehindCells',
+    label: 'Clone behind offset (cells)',
+    hint: 'Bumble Queen: spawn each clone this many cells behind the original',
+    type: 'number',
+    defaultValue: 0.1,
+  },
+  {
+    key: 'marchSeconds',
+    label: 'March seconds',
+    hint: 'Bumble Queen: how long to crawl before pausing to clone',
+    type: 'number',
+    defaultValue: 10,
+  },
+  {
+    key: 'pauseSeconds',
+    label: 'Pause seconds',
+    hint: 'Bumble Queen: wait time before cloning after stopping',
+    type: 'number',
+    defaultValue: 3,
   },
   {
     key: 'crushesPlantsWhileMoving',
@@ -438,6 +494,41 @@ export function getExtraNumber(
   if (!attr) return undefined;
   const n = Number(attr.value);
   return Number.isFinite(n) ? n : undefined;
+}
+
+/** True when extra key is present and value ≥ 0.5 (or string "true" / "1"). */
+export function getExtraFlag(
+  attrs: ExtraAttributes | undefined | null,
+  key: string,
+): boolean {
+  const attr = findExtraAttribute(attrs, key);
+  if (!attr) return false;
+  if (typeof attr.value === 'string') {
+    const s = attr.value.trim().toLowerCase();
+    if (s === 'true' || s === '1') return true;
+    if (s === 'false' || s === '0') return false;
+  }
+  const n = Number(attr.value);
+  return Number.isFinite(n) && n >= 0.5;
+}
+
+/** Set or clear a boolean identity flag stored as an extra number (1 / absent). */
+export function setExtraFlag(
+  attrs: ExtraAttributes | undefined | null,
+  key: string,
+  on: boolean,
+  label?: string,
+): ExtraAttributes {
+  const next = (attrs ?? []).filter((a) => a.key !== key);
+  if (on) {
+    next.push({
+      key,
+      type: 'number',
+      value: 1,
+      ...(label ? { label } : {}),
+    });
+  }
+  return next;
 }
 
 export function getExtraString(

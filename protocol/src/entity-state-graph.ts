@@ -570,6 +570,7 @@ export type StateActionKind =
   | 'destroy_egg_group'
   | 'leave_crater'
   | 'summon_insect'
+  | 'clone_nearby_insects'
   | 'throw_unit'
   | 'place_ladder'
   | 'steal_plant'
@@ -1741,6 +1742,34 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     defaultAttribute: 'extra.speedBuffLaneRange',
   },
   {
+    action: 'clone_nearby_insects',
+    key: 'columnRange',
+    label: 'Affection column range',
+    hint: 'Columns along the lane when picking clone targets. Prefer extra.cloneColumnRange.',
+    defaultAttribute: 'extra.cloneColumnRange',
+  },
+  {
+    action: 'clone_nearby_insects',
+    key: 'laneRange',
+    label: 'Affection lane range',
+    hint: 'Lanes across when picking clone targets. Prefer extra.cloneLaneRange.',
+    defaultAttribute: 'extra.cloneLaneRange',
+  },
+  {
+    action: 'clone_nearby_insects',
+    key: 'cap',
+    label: 'Clone count',
+    hint: 'How many random allies to clone (default 2). Prefer extra.cloneCount.',
+    defaultAttribute: 'extra.cloneCount',
+  },
+  {
+    action: 'clone_nearby_insects',
+    key: 'scale',
+    label: 'Behind offset (cells)',
+    hint: 'Spawn each clone this many cells behind the original (default 0.1). Prefer extra.cloneBehindCells.',
+    defaultAttribute: 'extra.cloneBehindCells',
+  },
+  {
     action: 'leave_speed_trail',
     key: 'scale',
     label: 'Trail speed scale',
@@ -2031,6 +2060,12 @@ export function defaultActionParams(
     if (out.columnRange == null) out.columnRange = literalDuration(2.5);
     if (out.laneRange == null) out.laneRange = literalDuration(1);
   }
+  if (type === 'clone_nearby_insects') {
+    if (out.columnRange == null) out.columnRange = literalDuration(2.5);
+    if (out.laneRange == null) out.laneRange = literalDuration(1);
+    if (out.cap == null) out.cap = literalDuration(2);
+    if (out.scale == null) out.scale = literalDuration(0.1);
+  }
   if (type === 'sleep_plants') {
     if (out.columnRange == null) out.columnRange = literalDuration(2);
     if (out.laneRange == null) out.laneRange = literalDuration(1);
@@ -2241,9 +2276,16 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     kind: 'insect',
   },
   {
+    type: 'clone_nearby_insects',
+    label: 'Clone nearby insects',
+    hint:
+      'Pick up to cap random allies in affection range and spawn copies slightly behind each (Bumble Queen). scale = behind cells (default 0.1).',
+    kind: 'insect',
+  },
+  {
     type: 'throw_unit',
     label: 'Throw / lob unit',
-    hint: 'Hurl a small ally or lobbed shot ahead (Bumble Queen, Damselfly Dancer)',
+    hint: 'Hurl a small ally or lobbed shot ahead (Damselfly Dancer)',
     kind: 'insect',
   },
   {
@@ -4939,6 +4981,7 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   destroy_egg_group: 'destroy_egg_group',
   leave_crater: 'leave_crater',
   summon_insect: 'summon_insect',
+  clone_nearby_insects: 'clone_nearby_insects',
   throw_unit: 'throw_unit',
   place_ladder: 'place_ladder',
   steal_plant: 'steal_plant',
