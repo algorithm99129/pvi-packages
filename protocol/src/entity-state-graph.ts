@@ -2377,12 +2377,12 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'apply_freeze',
     label: 'Apply freeze',
-    hint: 'Freeze or chill targets in the blast or on contact (Frost Bloom, Pebble Beetle roll)',
+    hint: 'Freeze or chill targets in the blast or on contact (Frost Bloom)',
   },
   {
     type: 'smash_plant',
     label: 'Smash plant',
-    hint: 'Instantly destroy the plant being chewed (Bumble Queen smash)',
+    hint: 'Jump onto the nearest plant and squash-crush it (Pebble Beetle). Optional damage; otherwise one-shot.',
     kind: 'insect',
   },
   {
@@ -4572,8 +4572,7 @@ export function createInsectThrowStateGraph(opts?: {
         loop: false,
         actions: [
           { type: 'stop_moving', when: 'on_enter' },
-          { type: 'smash_plant', when: 'after_anim' },
-          { type: 'deal_contact_damage', when: 'after_anim' },
+          { type: 'smash_plant', when: 'on_enter' },
           { type: 'reset_attack_timer', when: 'after_anim' },
         ],
         position: { x: 360, y: 200 },
