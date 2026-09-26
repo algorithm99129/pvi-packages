@@ -172,6 +172,7 @@ export type StateConditionKind =
   | 'enemy_in_proximity'
   | 'no_enemy_in_proximity'
   | 'plant_ahead'
+  | 'no_plant_ahead'
   | 'metal_in_range'
   | 'no_metal_in_range'
   | 'holding_metal'
@@ -206,6 +207,7 @@ export type StateCondition =
   | { type: 'enemy_in_proximity' }
   | { type: 'no_enemy_in_proximity' }
   | { type: 'plant_ahead' }
+  | { type: 'no_plant_ahead' }
   | { type: 'metal_in_range' }
   | { type: 'no_metal_in_range' }
   | { type: 'holding_metal' }
@@ -383,7 +385,12 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
     type: 'plant_ahead',
     label: 'Plant ahead',
     hint:
-      'A plant is within melee reach ahead in this lane — works for flying insects that normally skip plant contact (Firefly Lantern dive).',
+      'A plant is within melee reach ahead in this lane — works for flying insects that normally skip plant contact (Firefly Lantern dive / Dragonfly air melee).',
+  },
+  {
+    type: 'no_plant_ahead',
+    label: 'No plant ahead',
+    hint: 'No plant within melee reach ahead (resume flying march).',
   },
   {
     type: 'metal_in_range',
@@ -5062,6 +5069,8 @@ function normalizeCondition(raw: unknown): StateCondition | null {
       return { type: c.type } as StateCondition;
     case 'plant_ahead':
       return { type: 'plant_ahead' };
+    case 'no_plant_ahead':
+      return { type: 'no_plant_ahead' };
     case 'after_seconds':
       return { type: 'after_seconds', value: normalizeDurationValue(c.value ?? c) };
     case 'not_damaged_for':
@@ -5401,6 +5410,8 @@ export function conditionLabel(condition: StateCondition): string {
       return 'No enemy in proximity';
     case 'plant_ahead':
       return 'Plant ahead';
+    case 'no_plant_ahead':
+      return 'No plant ahead';
     case 'metal_in_range':
       return 'Metal in range';
     case 'no_metal_in_range':
