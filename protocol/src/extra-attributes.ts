@@ -220,6 +220,20 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     defaultValue: 1,
   },
   {
+    key: 'explodeColumnRange',
+    label: 'Explode column range',
+    hint: 'Firefly / suicide blast affection along the lane',
+    type: 'number',
+    defaultValue: 1,
+  },
+  {
+    key: 'explodeLaneRange',
+    label: 'Explode lane range',
+    hint: 'Firefly / suicide blast affection across lanes',
+    type: 'number',
+    defaultValue: 1,
+  },
+  {
     key: 'craterRadiusCells',
     label: 'Crater radius (cells)',
     hint: 'Crater Cap leave_crater Chebyshev radius (0 = plant cell only)',

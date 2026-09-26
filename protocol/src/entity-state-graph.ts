@@ -171,6 +171,7 @@ export type StateConditionKind =
   | 'no_enemy_in_range'
   | 'enemy_in_proximity'
   | 'no_enemy_in_proximity'
+  | 'plant_ahead'
   | 'metal_in_range'
   | 'no_metal_in_range'
   | 'holding_metal'
@@ -204,6 +205,7 @@ export type StateCondition =
   | { type: 'no_enemy_in_range' }
   | { type: 'enemy_in_proximity' }
   | { type: 'no_enemy_in_proximity' }
+  | { type: 'plant_ahead' }
   | { type: 'metal_in_range' }
   | { type: 'no_metal_in_range' }
   | { type: 'holding_metal' }
@@ -376,6 +378,12 @@ export const STATE_CONDITION_OPTIONS: ReadonlyArray<{
     type: 'no_enemy_in_proximity',
     label: 'No enemy in proximity',
     hint: 'No enemy within hide/scare distance',
+  },
+  {
+    type: 'plant_ahead',
+    label: 'Plant ahead',
+    hint:
+      'A plant is within melee reach ahead in this lane — works for flying insects that normally skip plant contact (Firefly Lantern dive).',
   },
   {
     type: 'metal_in_range',
@@ -577,6 +585,9 @@ export type StateActionKind =
   | 'weaken_attack'
   | 'dash'
   | 'arm_burst'
+  | 'arm_death_burst'
+  | 'disarm_death_burst'
+  | 'land_on_plant'
   | 'fly_to_ally'
   | 'heal_insect'
   | 'fly_to_empty'
@@ -928,13 +939,31 @@ export const STATE_ACTION_MODE_OPTIONS: ReadonlyArray<{
     action: 'explode',
     id: 'blast',
     label: 'Blast',
-    hint: 'One-shot area blast (ArmorFirst, explode VFX). Default.',
+    hint: 'One-shot area blast vs opposite team (ArmorFirst, explode VFX). Default.',
   },
   {
     action: 'explode',
     id: 'pulse',
     label: 'Pulse',
     hint: 'Repeating close area hit (Pierce, melee VFX). Use for fans / cones.',
+  },
+  {
+    action: 'explode',
+    id: 'plants',
+    label: 'Plants only',
+    hint: 'One-shot blast that damages plants only (Firefly fuse on a plant).',
+  },
+  {
+    action: 'explode',
+    id: 'insects',
+    label: 'Insects only',
+    hint: 'One-shot blast that damages insects only.',
+  },
+  {
+    action: 'explode',
+    id: 'both',
+    label: 'Both teams',
+    hint: 'One-shot blast that damages plants and insects (Firefly death while flying).',
   },
   {
     action: 'clear_fog',
@@ -1837,6 +1866,27 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     defaultAttribute: 'extra.fuseSeconds',
   },
   {
+    action: 'arm_death_burst',
+    key: 'columnRange',
+    label: 'Affection column range',
+    hint: 'Death blast column radius. Prefer extra.triggerColumnRange / extra.explodeColumnRange.',
+    defaultAttribute: 'extra.explodeColumnRange',
+  },
+  {
+    action: 'arm_death_burst',
+    key: 'laneRange',
+    label: 'Affection lane range',
+    hint: 'Death blast lane radius. Prefer extra.explodeLaneRange.',
+    defaultAttribute: 'extra.explodeLaneRange',
+  },
+  {
+    action: 'arm_death_burst',
+    key: 'damage',
+    label: 'Death blast damage',
+    hint: 'Prefer stats.baseDamage.',
+    defaultAttribute: 'stats.baseDamage',
+  },
+  {
     action: 'chomp_devour',
     key: 'duration',
     label: 'Heavy chill seconds',
@@ -1990,7 +2040,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     type: 'explode',
     label: 'Explode',
     hint:
-      'Area hit. mode=blast (default): one-shot ArmorFirst blast + VFX. mode=pulse: repeating Pierce pulse (fans / cones). Bind column/lane on the action.',
+      'Area hit. mode=blast (default opposite team), pulse, plants, insects, or both. Bind column/lane on the action.',
   },
   {
     type: 'produce_sun',
@@ -2418,6 +2468,26 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     type: 'arm_burst',
     label: 'Arm burst',
     hint: 'Once, after fuseDuration (extra.fuseSeconds), explode and leave. Re-entering does not reset the fuse.',
+    kind: 'insect',
+  },
+  {
+    type: 'arm_death_burst',
+    label: 'Arm death burst',
+    hint:
+      'While armed, dying detonates explode with this action’s mode / columnRange / laneRange / damage (Firefly: mode=both while flying). Pair with disarm_death_burst when landing.',
+    kind: 'insect',
+  },
+  {
+    type: 'disarm_death_burst',
+    label: 'Disarm death burst',
+    hint: 'Clear arm_death_burst so a later death does not detonate (Firefly after landing).',
+    kind: 'insect',
+  },
+  {
+    type: 'land_on_plant',
+    label: 'Land on plant',
+    hint:
+      'Snap to the first plant ahead, exit fly to ground height, and stop moving (Firefly Lantern dive).',
     kind: 'insect',
   },
 ];
@@ -4807,6 +4877,9 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   weaken_attack: 'weaken_attack',
   dash: 'dash',
   arm_burst: 'arm_burst',
+  arm_death_burst: 'arm_death_burst',
+  disarm_death_burst: 'disarm_death_burst',
+  land_on_plant: 'land_on_plant',
   mark_priority_target: 'mark_priority_target',
   delay_plant_attack: 'delay_plant_attack',
   column_skip: 'column_skip',
@@ -4986,7 +5059,9 @@ function normalizeCondition(raw: unknown): StateCondition | null {
     case 'special_ready':
     case 'reached_target':
     case 'boomerang_returned':
-      return { type: c.type };
+      return { type: c.type } as StateCondition;
+    case 'plant_ahead':
+      return { type: 'plant_ahead' };
     case 'after_seconds':
       return { type: 'after_seconds', value: normalizeDurationValue(c.value ?? c) };
     case 'not_damaged_for':
@@ -5324,6 +5399,8 @@ export function conditionLabel(condition: StateCondition): string {
       return 'Enemy in proximity';
     case 'no_enemy_in_proximity':
       return 'No enemy in proximity';
+    case 'plant_ahead':
+      return 'Plant ahead';
     case 'metal_in_range':
       return 'Metal in range';
     case 'no_metal_in_range':
