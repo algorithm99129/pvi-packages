@@ -59,6 +59,13 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     defaultValue: 15,
   },
   {
+    key: 'chewSeconds',
+    label: 'Chew seconds',
+    hint: 'Nest Breaker digest time before destroy_egg_group (default 3)',
+    type: 'number',
+    defaultValue: 3,
+  },
+  {
     key: 'detonateDelaySeconds',
     label: 'Detonate delay seconds',
     hint: 'Delay before instant explode',
