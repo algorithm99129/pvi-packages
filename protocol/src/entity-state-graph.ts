@@ -121,7 +121,8 @@ export const PLANT_GRAPH_STATUSES: ReadonlyArray<{
   {
     id: 'temporal',
     label: 'Temporal',
-    hint: 'Hold with no animation; optional engine actions; exit via cooldown / after_seconds / range',
+    hint:
+      'Hold with no animation; optional engine actions; exit via cooldown / after_seconds / range. Unset water/ground clip modifiers inherit from the previous status (avoids snorkel bounce).',
     defaultLoop: true,
   },
   { id: 'die', label: 'Die', hint: 'Special — HP≤0 only; not edged', defaultLoop: false },
@@ -159,7 +160,8 @@ export const INSECT_GRAPH_STATUSES: ReadonlyArray<{
   {
     id: 'temporal',
     label: 'Temporal',
-    hint: 'Hold with no animation; optional engine actions; exit via cooldown / after_seconds / range',
+    hint:
+      'Hold with no animation; optional engine actions; exit via cooldown / after_seconds / range. Unset water/ground clip modifiers inherit from the previous status (avoids snorkel bounce).',
     defaultLoop: true,
   },
   { id: 'die', label: 'Die', hint: 'Special — HP≤0 only; not edged', defaultLoop: false },
