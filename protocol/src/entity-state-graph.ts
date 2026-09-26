@@ -2289,7 +2289,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'apply_camouflage',
     label: 'Apply camouflage',
-    hint: 'Lower auto-target priority so shooters prefer other insects (Katydid / Walking Leaf / Stickbug)',
+    hint: 'Lower auto-target priority so shooters prefer other insects (Walking Leaf / Stickbug)',
     kind: 'insect',
   },
   {
