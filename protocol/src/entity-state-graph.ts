@@ -610,6 +610,7 @@ export type StateActionKind =
   | 'trap_skip'
   | 'grant_leaf_screen'
   | 'apply_camouflage'
+  | 'clear_camouflage'
   | 'dust_veil'
   | 'hide'
   | 'unhide'
@@ -713,7 +714,7 @@ export interface StateAction {
   duration?: StateDurationValue;
   /**
    * Generic scale: attackSpeedScale, weaken scale, shield pct, brace incoming,
-   * slow scale, mark damage, dash / trail / camouflage / hop miss, explode maxHpPercent;
+   * slow scale, mark damage, dash / trail / hop miss, explode maxHpPercent;
    * bounce_bullet optional shooter damage scale (`extra.bounceBulletDamageScale`).
    */
   scale?: StateDurationValue;
@@ -865,6 +866,18 @@ export const STATE_ACTION_MODE_OPTIONS: ReadonlyArray<{
     id: 'fill',
     label: 'Fill some HP',
     hint: 'Heal by amount (<1 = fraction of max HP, ≥1 = flat). Prefer extra.metamorphHealAmount.',
+  },
+  {
+    action: 'apply_camouflage',
+    id: 'stealth',
+    label: 'Stealth',
+    hint: 'Untargetable by direct auto-target / chew. Overlapping bullets still hit. Shows leaf particle motes. Area always hits.',
+  },
+  {
+    action: 'apply_camouflage',
+    id: 'ghost',
+    label: 'Ghost',
+    hint: 'Untargetable. Body at 50% opacity. Non-area bullets pass through. Area / splash still hit.',
   },
   {
     action: 'chomp_devour',
@@ -1741,16 +1754,9 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
   },
   {
     action: 'apply_camouflage',
-    key: 'scale',
-    label: 'Camouflage priority scale',
-    hint: 'Prefer extra.camouflagePriorityScale',
-    defaultAttribute: 'extra.camouflagePriorityScale',
-  },
-  {
-    action: 'apply_camouflage',
     key: 'duration',
     label: 'Camouflage duration (s)',
-    hint: 'Prefer extra.camouflageSeconds',
+    hint: 'Prefer extra.camouflageSeconds. Stealth/ghost until expiry or clear_camouflage.',
     defaultAttribute: 'extra.camouflageSeconds',
   },
   {
@@ -2306,7 +2312,14 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'apply_camouflage',
     label: 'Apply camouflage',
-    hint: 'Lower auto-target priority so shooters prefer other insects (Walking Leaf / Stickbug)',
+    hint:
+      'mode=stealth (default): untargetable, bullets still hit, leaf particle motes. mode=ghost: untargetable, 50% opacity, bullets pass through, area still hits. clear_camouflage or duration ends it.',
+    kind: 'insect',
+  },
+  {
+    type: 'clear_camouflage',
+    label: 'Clear camouflage',
+    hint: 'Restore direct targeting (Walking Leaf / Stickbug attack reveal)',
     kind: 'insect',
   },
   {
@@ -4969,6 +4982,8 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   trap_skip: 'trap_skip',
   grant_leaf_screen: 'grant_leaf_screen',
   apply_camouflage: 'apply_camouflage',
+  clear_camouflage: 'clear_camouflage',
+  end_camouflage: 'clear_camouflage',
   dust_veil: 'dust_veil',
   hide: 'hide',
   unhide: 'unhide',
