@@ -601,6 +601,8 @@ export type StateActionKind =
   | 'place_egg_group'
   | 'mark_priority_target'
   | 'delay_plant_attack'
+  | 'sleep_plants'
+  | 'pass_sleeping_plants'
   | 'column_skip'
   | 'hop_evade'
   | 'coil_roll'
@@ -1548,6 +1550,34 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     defaultAttribute: 'extra.delayMaxTargets',
   },
   {
+    action: 'sleep_plants',
+    key: 'duration',
+    label: 'Sleep duration (s)',
+    hint: 'How long plants stay asleep (Zzz). Prefer extra.sleepSeconds.',
+    defaultAttribute: 'extra.sleepSeconds',
+  },
+  {
+    action: 'sleep_plants',
+    key: 'columnRange',
+    label: 'Affection column range',
+    hint: 'Chirp affection along the lane. Prefer extra.sleepColumnRange.',
+    defaultAttribute: 'extra.sleepColumnRange',
+  },
+  {
+    action: 'sleep_plants',
+    key: 'laneRange',
+    label: 'Affection lane range',
+    hint: 'Chirp affection across lanes (0 = same lane only). Prefer extra.sleepLaneRange.',
+    defaultAttribute: 'extra.sleepLaneRange',
+  },
+  {
+    action: 'sleep_plants',
+    key: 'cap',
+    label: 'Max targets',
+    hint: 'Max plants put to sleep per chirp. Prefer extra.sleepMaxTargets.',
+    defaultAttribute: 'extra.sleepMaxTargets',
+  },
+  {
     action: 'grant_leaf_screen',
     key: 'amount',
     label: 'Leaf screen HP',
@@ -1985,6 +2015,11 @@ export function defaultActionParams(
     if (out.columnRange == null) out.columnRange = literalDuration(2.5);
     if (out.laneRange == null) out.laneRange = literalDuration(1);
   }
+  if (type === 'sleep_plants') {
+    if (out.columnRange == null) out.columnRange = literalDuration(2);
+    if (out.laneRange == null) out.laneRange = literalDuration(1);
+    if (out.duration == null) out.duration = literalDuration(2);
+  }
   if (type === 'squash_crush') {
     out.crushStyle = 'hop';
   }
@@ -2210,7 +2245,21 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'delay_plant_attack',
     label: 'Delay plant attack',
-    hint: 'Add delay to the next attack of nearby plants (Cricket Chirper / Cicada Singer)',
+    hint: 'Add delay to the next attack of nearby plants (Cicada Singer)',
+    kind: 'insect',
+  },
+  {
+    type: 'sleep_plants',
+    label: 'Sleep plants',
+    hint:
+      'Put plants in columnRange × laneRange to sleep (block actions + Zzz FX). Cricket Chirper chirp. Configure affection via extra.sleepColumnRange / sleepLaneRange.',
+    kind: 'insect',
+  },
+  {
+    type: 'pass_sleeping_plants',
+    label: 'Pass sleeping plants',
+    hint:
+      'While this status is active, walk through sleeping plants (day-sleep or combat sleep) without stopping. Still blocked by awake plants (Cricket Chirper).',
     kind: 'insect',
   },
   {
@@ -4889,6 +4938,8 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   land_on_plant: 'land_on_plant',
   mark_priority_target: 'mark_priority_target',
   delay_plant_attack: 'delay_plant_attack',
+  sleep_plants: 'sleep_plants',
+  pass_sleeping_plants: 'pass_sleeping_plants',
   column_skip: 'column_skip',
   hop_evade: 'hop_evade',
   coil_roll: 'coil_roll',
