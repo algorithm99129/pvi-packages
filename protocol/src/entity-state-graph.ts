@@ -577,6 +577,8 @@ export type StateActionKind =
   | 'weaken_attack'
   | 'dash'
   | 'arm_burst'
+  | 'fly_to_ally'
+  | 'heal_insect'
   | 'mark_priority_target'
   | 'delay_plant_attack'
   | 'column_skip'
@@ -791,6 +793,36 @@ export const STATE_ACTION_MODE_OPTIONS: ReadonlyArray<{
     id: 'self_behind',
     label: 'Self + host',
     hint: 'Heal this shell and the plant sharing its cell (Bubble Aloe)',
+  },
+  {
+    action: 'fly_to_ally',
+    id: 'lowest_hp',
+    label: 'Lowest HP ally',
+    hint: 'Fly to the ally insect with the lowest current HP (Honeybee Courier)',
+  },
+  {
+    action: 'fly_to_ally',
+    id: 'random',
+    label: 'Random ally',
+    hint: 'Fly to a random ally insect',
+  },
+  {
+    action: 'fly_to_ally',
+    id: 'return',
+    label: 'Return home',
+    hint: 'Optional: fly back to the spawn-edge column (Honeybee stays at the ally by default)',
+  },
+  {
+    action: 'heal_insect',
+    id: 'lowest_hp',
+    label: 'Lowest HP ally',
+    hint: 'Heal the lowest-HP ally insect (or SupportTarget from fly_to_ally)',
+  },
+  {
+    action: 'heal_insect',
+    id: 'random',
+    label: 'Random ally',
+    hint: 'Heal a random ally insect',
   },
   {
     action: 'become_flyer',
@@ -1279,6 +1311,20 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     label: 'Overheal shield %',
     hint: 'Shield fraction of max HP when heal overfills (extra.overhealShieldPercent)',
     defaultAttribute: 'extra.overhealShieldPercent',
+  },
+  {
+    action: 'fly_to_ally',
+    key: 'recoverSeconds',
+    label: 'One-way flight time (s)',
+    hint: 'Seconds for this flight leg (outbound or return). Prefer extra.flySeconds.',
+    defaultAttribute: 'extra.flySeconds',
+  },
+  {
+    action: 'heal_insect',
+    key: 'amount',
+    label: 'Heal amount',
+    hint: 'Flat HP restored. Prefer extra.healAmount (Honeybee Courier = 100).',
+    defaultAttribute: 'extra.healAmount',
   },
   {
     action: 'buff_attack_speed',
@@ -2172,6 +2218,20 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     kind: 'plant',
   },
   {
+    type: 'fly_to_ally',
+    label: 'Fly to ally',
+    hint:
+      'Insect flies to an ally lane/column (mode: lowest_hp | random) at air height and locks SupportTarget. Pair with heal_insect. Optional mode return flies home. Cadence is graph after_seconds (healIntervalSeconds), not special_ready.',
+    kind: 'insect',
+  },
+  {
+    type: 'heal_insect',
+    label: 'Heal insect',
+    hint:
+      'Heal an ally insect (mode: lowest_hp | random, or SupportTarget from fly_to_ally). amount = flat HP (Honeybee = 100).',
+    kind: 'insect',
+  },
+  {
     type: 'buff_attack_speed',
     label: 'Buff attack speed',
     hint: 'Briefly speed up nearby plants (Drum Gourd)',
@@ -2205,7 +2265,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'grant_shield',
     label: 'Grant shield',
-    hint: 'Temporary absorb shield (Honeybee Courier lowest-HP ally; self_behind for shell hosts)',
+    hint: 'Temporary absorb shield (plant allies / self_behind for shell hosts)',
     kind: 'plant',
   },
   {
@@ -4676,6 +4736,8 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   apply_freeze: 'apply_freeze',
   smash_plant: 'smash_plant',
   heal_ally: 'heal_ally',
+  fly_to_ally: 'fly_to_ally',
+  heal_insect: 'heal_insect',
   buff_attack_speed: 'buff_attack_speed',
   knockback_insects: 'knockback_insects',
   grant_shield: 'grant_shield',

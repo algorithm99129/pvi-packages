@@ -87,6 +87,27 @@ export const EXTRA_ATTRIBUTE_SUGGESTIONS: ReadonlyArray<{
     defaultValue: 0.15,
   },
   {
+    key: 'healAmount',
+    label: 'Heal amount (flat)',
+    hint: 'Flat HP restored by heal_insect (Honeybee Courier = 100)',
+    type: 'number',
+    defaultValue: 100,
+  },
+  {
+    key: 'healIntervalSeconds',
+    label: 'Heal interval seconds',
+    hint: 'Graph after_seconds between Honeybee deliveries (not special_ready)',
+    type: 'number',
+    defaultValue: 8,
+  },
+  {
+    key: 'flySeconds',
+    label: 'Fly leg seconds',
+    hint: 'One-way flight time for fly_to_ally',
+    type: 'number',
+    defaultValue: 0.55,
+  },
+  {
     key: 'hideOpacity',
     label: 'Hide opacity',
     hint: 'Alpha while hide action is active (shy plants)',
