@@ -603,6 +603,7 @@ export type StateActionKind =
   | 'delay_plant_attack'
   | 'sleep_plants'
   | 'pass_sleeping_plants'
+  | 'pass_non_economy_plants'
   | 'column_skip'
   | 'hop_evade'
   | 'coil_roll'
@@ -2260,6 +2261,13 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     label: 'Pass sleeping plants',
     hint:
       'While this status is active, walk through sleeping plants (day-sleep or combat sleep) without stopping. Still blocked by awake plants (Cricket Chirper).',
+    kind: 'insect',
+  },
+  {
+    type: 'pass_non_economy_plants',
+    label: 'Pass non-economy plants',
+    hint:
+      'While active, if a support/economy plant is ahead in the lane, walk through other plants; otherwise stop and attack them (Ant Forager).',
     kind: 'insect',
   },
   {
@@ -4940,6 +4948,7 @@ const ACTION_ALIASES: Record<string, StateActionKind> = {
   delay_plant_attack: 'delay_plant_attack',
   sleep_plants: 'sleep_plants',
   pass_sleeping_plants: 'pass_sleeping_plants',
+  pass_non_economy_plants: 'pass_non_economy_plants',
   column_skip: 'column_skip',
   hop_evade: 'hop_evade',
   coil_roll: 'coil_roll',
@@ -4968,7 +4977,9 @@ function normalizeAction(raw: unknown): StateAction | null {
   const rawType = typeof a.type === 'string' ? a.type.trim() : '';
   // Drop removed no-op / combo verbs (use after_seconds / clear_fog+blow_away_flying).
   if (rawType === 'begin_charge' || rawType === 'blow_away') return null;
-  const type = rawType ? ACTION_ALIASES[rawType] : undefined;
+  // Prefer catalog aliases; keep unrecognized authored types so a stale editor
+  // bundle cannot silently strip new actions (e.g. pass_non_economy_plants).
+  const type = (rawType ? ACTION_ALIASES[rawType] : undefined) ?? (rawType as StateActionKind);
   if (!type) return null;
   const when =
     a.when === 'on_enter' || a.when === 'after_anim' || a.when === 'on_exit' ? a.when : undefined;
