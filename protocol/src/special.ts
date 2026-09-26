@@ -1,10 +1,12 @@
 import type { UnitCellAnchor } from './unit-sizing';
 
 export const EGG_GROUP_SPECIAL_ID = 'egg_group';
+export const LADDER_SPECIAL_ID = 'ladder';
 export const DEFAULT_EGG_SPAWN_INSECT_ID = 'aphid_nibbler';
 export const DEFAULT_EGG_HATCH_INTERVAL_SECONDS = 10;
+export const DEFAULT_LADDER_MAX_HEALTH = 100;
 
-/** Lawn special props (egg groups, etc.) authored in the editor. */
+/** Lawn special props (egg groups, ladders, etc.) authored in the editor. */
 export interface SpecialDefinition {
   id: string;
   displayName: string;
@@ -21,11 +23,17 @@ export interface SpecialDefinition {
   spawnInsectId?: string;
   /** Seconds between hatches from each egg group. */
   hatchIntervalSeconds?: number;
+  /** Hit points for destructible props (Climbing Ladder). */
+  maxHealth?: number;
   schemaVersion?: number;
 }
 
 export function defaultEggGroupSpritePath(): string {
   return 'Special/EggGroup';
+}
+
+export function defaultLadderSpritePath(): string {
+  return 'Special/Ladder';
 }
 
 export function defaultEggGroupDefinition(): SpecialDefinition {
@@ -36,6 +44,17 @@ export function defaultEggGroupDefinition(): SpecialDefinition {
     cellWidthFill: 0.82,
     spawnInsectId: DEFAULT_EGG_SPAWN_INSECT_ID,
     hatchIntervalSeconds: DEFAULT_EGG_HATCH_INTERVAL_SECONDS,
+    schemaVersion: 2,
+  };
+}
+
+export function defaultLadderDefinition(): SpecialDefinition {
+  return {
+    id: LADDER_SPECIAL_ID,
+    displayName: 'Climbing Ladder',
+    sprite: defaultLadderSpritePath(),
+    cellWidthFill: 0.7,
+    maxHealth: DEFAULT_LADDER_MAX_HEALTH,
     schemaVersion: 2,
   };
 }

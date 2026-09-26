@@ -62,6 +62,9 @@ export const SERVER_EXPORT_PATHS = {
   flagsDir: `${SERVER_RESOURCES_DIR}/Flags`,
   chat: `${SERVER_RESOURCES_DIR}/Chat/chat.json`,
   chatDir: `${SERVER_RESOURCES_DIR}/Chat`,
+  specialCatalog: `${SERVER_RESOURCES_DIR}/Special/special.json`,
+  specialDir: `${SERVER_RESOURCES_DIR}/Special`,
+  eggGroupConfig: `${SERVER_RESOURCES_DIR}/Special/egg_group.json`,
   balanceVersion: `${SERVER_RESOURCES_DIR}/balance-version.json`,
   logic: `${SERVER_RESOURCES_DIR}/Systems/logic.json`,
 } as const;

@@ -2234,13 +2234,14 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
   {
     type: 'place_ladder',
     label: 'Place ladder',
-    hint: 'Legacy climb flag on a plant. Prefer grant_leaf_screen for Ant Builder leaf screens.',
+    hint:
+      'One-shot Climbing Ladder on the plant ahead (Special/Ladder, 100 HP). Insects walk over that plant; plants prefer shooting the ladder. Gate with special_ready; Ant Builder waits 3s then places.',
     kind: 'insect',
   },
   {
     type: 'grant_leaf_screen',
     label: 'Grant leaf screen',
-    hint: 'Give a nearby ally plant a leaf screen that absorbs up to 2 linear projectiles / 120 HP (Ant Builder)',
+    hint: 'Give a nearby ally insect a leaf screen that absorbs up to 2 linear projectiles / 120 HP',
     kind: 'insect',
   },
   {
@@ -4605,15 +4606,17 @@ export function createInsectThrowStateGraph(opts?: {
   };
 }
 
-/** Ladder ant: walk → place ladder on plant, else attack. */
+/** Ladder ant: walk → wait 3s → place Climbing Ladder on plant, else attack. */
 export function createInsectLadderStateGraph(opts?: {
   walkAnim?: string;
   attackAnim?: string;
   dieAnim?: string;
+  buildSeconds?: number;
 }): EntityStateGraph {
   const walkId = createStateNodeId();
   const attackId = createStateNodeId();
   const ladderId = createStateNodeId();
+  const buildSeconds = opts?.buildSeconds ?? 3;
   return {
     version: 1,
     entryNodeId: walkId,
@@ -4629,12 +4632,12 @@ export function createInsectLadderStateGraph(opts?: {
       {
         id: ladderId,
         status: 'special',
-        label: 'Place ladder',
+        label: 'Build ladder',
         spineAnim: opts?.attackAnim,
-        loop: false,
+        loop: true,
         actions: [
           { type: 'stop_moving', when: 'on_enter' },
-          { type: 'place_ladder', when: 'after_anim' },
+          { type: 'place_ladder', when: 'on_exit' },
         ],
         position: { x: 360, y: 40 },
       },
@@ -4662,7 +4665,10 @@ export function createInsectLadderStateGraph(opts?: {
         id: createStateEdgeId(),
         from: ladderId,
         to: walkId,
-        conditions: cond({ type: 'anim_ended' }),
+        conditions: cond({
+          type: 'after_seconds',
+          value: { kind: 'literal', seconds: buildSeconds },
+        }),
       },
       {
         id: createStateEdgeId(),
