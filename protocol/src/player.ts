@@ -48,8 +48,12 @@ export interface UserMissionProgress {
 export interface MissionCompleteRequest {
   missionId: EntityId;
   triedLevel: MissionDifficulty;
-  /** Stars earned this run (0–3). Server keeps the max with existing progress. */
-  stars?: number;
+  /**
+   * Stars earned this run (1–3). Server keeps the max with existing progress.
+   * A victory always scores at least 1, so the endpoint rejects 0 rather than completing
+   * the mission — see docs/PROGRESSION_AUDIT_2026-09-26.md P4.
+   */
+  stars: number;
 }
 
 export interface UserGameState {
@@ -129,9 +133,15 @@ export const STARTER_INSECT_IDS: EntityId[] = [
 /**
  * Premium plants that are gem-shop only (no mission / hub unlock grants).
  * Author `server.unlockSource: 'event'` + `unlockGemCost` and gem `upgrade.baseUpgradeCost`.
+ *
+ * Must stay in step with `unlockSource: 'event'` in the catalog — `blocksMissionUnlock` is
+ * what actually keeps a unit out of reward tables, so a name here that the catalog calls
+ * `default` is only a stale comment. `burr_gatler` was such a name: listed as gem-only,
+ * authored `default`, and granted by no mission, so it was purchase-only by omission. It is
+ * now a chapter 2 story grant. `honeycomb_clover` moved the other way — see
+ * docs/PROGRESSION_AUDIT_2026-09-26.md P1 / P5.
  */
 export const GEM_ONLY_PLANT_IDS: EntityId[] = [
-  'burr_gatler',
   'storm_tulip',
   'spore_lantern',
   'thistle_duelist',
@@ -141,14 +151,15 @@ export const GEM_ONLY_PLANT_IDS: EntityId[] = [
 /**
  * Premium insects that are gem-shop only (no mission / hub unlock grants).
  * Author `server.unlockSource: 'event'` + `unlockGemCost` and gem `upgrade.baseUpgradeCost`.
+ *
+ * `pillbug_tumbler` (chapter 3) and `firefly_lantern` (chapter 5 finale) are story grants
+ * and were removed for the reason given on {@link GEM_ONLY_PLANT_IDS}.
  */
 export const GEM_ONLY_INSECT_IDS: EntityId[] = [
-  'pillbug_tumbler',
   'silkworm_spinner',
   'earthworm_tunneler',
   'pebble_beetle',
   'bumble_queen',
-  'firefly_lantern',
 ];
 
 /** Default roster upgrade base for gem-only units (coin replaced by gem). */

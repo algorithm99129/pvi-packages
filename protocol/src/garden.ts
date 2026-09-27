@@ -16,6 +16,19 @@ export const GARDEN_UPGRADE_COST_FORMULA_ID = 'garden_upgrade_resource_cost';
 export const GARDEN_DIG_REFUND_RATIO = 0.5;
 
 /**
+ * How many copies of one plant id may be stationed in the village at once.
+ *
+ * Garden production is per placed copy, so without a cap one plant id can be tiled across
+ * the whole lawn and its faucet multiplied by the cell count — `honeycomb_clover` at 30
+ * reachable cells produced ~30 gems/day against a designed daily rate of ~4
+ * (docs/PROGRESSION_AUDIT_2026-09-26.md P5). Capping copies rather than special-casing one
+ * plant also bounds every future producer, and forces roster breadth in the defence layout.
+ *
+ * Enforced on placement only; layouts that already exceed it are grandfathered until dug up.
+ */
+export const GARDEN_MAX_COPIES_PER_PLANT = 3;
+
+/**
  * Default wall-clock window for unclaimed garden production (hours).
  * Long enough for day/week gem intervals to still accrue.
  */
