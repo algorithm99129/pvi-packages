@@ -76,3 +76,44 @@ export interface AdminPopularityResult {
   kind?: CatalogUsageKind;
   error?: string;
 }
+
+/** Who receives an admin announcement email. */
+export type AdminAnnouncementRecipient =
+  | 'all'
+  | { userIds: string[] }
+  | { emails: string[] };
+
+/** POST /admin/announcements/email — Resend announcement to players. */
+export interface AdminSendAnnouncementEmailRequest {
+  /** Inbox subject line. */
+  subject: string;
+  /** Headline inside the email body. */
+  title: string;
+  /** Plain-text body; newlines become paragraphs in HTML. */
+  body: string;
+  /** `all` humans, selected user ids, or raw email addresses (single/bulk). */
+  recipient: AdminAnnouncementRecipient;
+  /** Optional absolute https URL shown as a CTA button. */
+  ctaUrl?: string;
+  /** Optional CTA button label (default "Open Greenkeep"). */
+  ctaLabel?: string;
+  /**
+   * When true, include humans who have not verified email yet.
+   * Default false — only verified accounts are emailed.
+   */
+  includeUnverified?: boolean;
+}
+
+export interface AdminSendAnnouncementEmailResult {
+  requested: number;
+  sent: number;
+  failed: number;
+  skipped: number;
+  failures?: Array<{ email: string; error: string }>;
+}
+
+export interface AdminSendAnnouncementResult {
+  ok: boolean;
+  result?: AdminSendAnnouncementEmailResult;
+  error?: string;
+}
