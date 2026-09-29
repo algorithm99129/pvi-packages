@@ -51,19 +51,27 @@ export interface GfxClipPreviewInfo {
 /** Spine skeleton preview metadata for a unit animations folder. */
 export interface GfxSpinePreviewInfo {
   kind: 'spine';
+  /** Basename of the chosen skeleton (any name under `anim/`). */
+  basename: string;
   skeletonPath: string;
+  /** `json` text skeleton or binary `skel` (`.skel` / `.skel.bytes`). */
+  skeletonFormat: 'json' | 'skel';
   atlasPath: string;
   texturePath: string;
   animationNames: string[];
   spineVersion?: string;
-  /** Skeleton bounds from JSON (for preview aspect ratio). */
+  /** Skeleton bounds from JSON (for preview aspect ratio). Binary may use defaults. */
   boundsWidth: number;
   boundsHeight: number;
 }
 
-/** Spine assets loaded for editor preview (skeleton JSON + atlas text + texture data URL). */
+/** Spine assets loaded for editor preview. */
 export interface GfxSpineAssets {
-  skeletonJson: Record<string, unknown>;
+  skeletonFormat: 'json' | 'skel';
+  /** Present when skeletonFormat is `json`. */
+  skeletonJson?: Record<string, unknown>;
+  /** Base64 of `.skel` / `.skel.bytes` when skeletonFormat is `skel`. */
+  skeletonBinaryBase64?: string;
   atlasText: string;
   textureDataUrl: string;
 }
@@ -107,12 +115,17 @@ export interface CreateGfxClipRequest {
   frameFilePaths: string[];
 }
 
-/** Import Spine skeleton trio into `{unit}/anim/` as character.json / .atlas.txt / .png. */
+/** Import Spine skeleton trio into `{unit}/anim/` (keeps source basename; json or skel). */
 export interface ImportGfxSpineRequest {
   category: 'Plants' | 'Insects' | 'Bullets';
   unitFolder: string;
-  /** Absolute path to spine *.json */
-  skeletonJsonPath: string;
+  /**
+   * Absolute path to skeleton `.json`, `.skel`, or `.skel.bytes`.
+   * @deprecated Prefer `skeletonPath` — still accepted for older callers.
+   */
+  skeletonJsonPath?: string;
+  /** Absolute path to spine skeleton (`.json` | `.skel` | `.skel.bytes`). */
+  skeletonPath?: string;
   /** Absolute path to *.atlas or *.atlas.txt */
   atlasPath: string;
   /** Absolute path to atlas texture (usually *.png) */
