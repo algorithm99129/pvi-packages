@@ -625,7 +625,7 @@ export type StateActionKind =
   | 'bounce_hopper'
   | 'bounce_bullet'
 
-export type StateActionWhen = 'on_enter' | 'after_anim' | 'on_exit';
+export type StateActionWhen = 'on_enter' | 'after_anim' | 'on_exit' | 'at_seconds';
 
 /**
  * Optional numeric params on engine actions.
@@ -639,9 +639,15 @@ export interface StateAction {
    * - on_enter — as soon as the status begins
    * - after_anim — after the status Spine clip ends (or immediately if none / looping)
    * - on_exit — when leaving the status
+   * - at_seconds — once, when {@link whenSeconds} elapses from status enter (anim start)
    * Default: after_anim if a non-looping spineAnim is set, else on_enter.
    */
   when?: StateActionWhen;
+  /**
+   * Delay from status enter for `when: 'at_seconds'` (e.g. fire_bullet at 0.33s into the attack clip).
+   * Prefer a literal; attribute/constant also supported.
+   */
+  whenSeconds?: StateDurationValue;
   /** Explode / area blast: column radius in cells. */
   columnRange?: StateDurationValue;
   /** Explode / area blast: lane radius (0 = same lane only). */
@@ -5055,8 +5061,18 @@ function normalizeAction(raw: unknown): StateAction | null {
   const type = (rawType ? ACTION_ALIASES[rawType] : undefined) ?? (rawType as StateActionKind);
   if (!type) return null;
   const when =
-    a.when === 'on_enter' || a.when === 'after_anim' || a.when === 'on_exit' ? a.when : undefined;
+    a.when === 'on_enter'
+    || a.when === 'after_anim'
+    || a.when === 'on_exit'
+    || a.when === 'at_seconds'
+      ? a.when
+      : undefined;
   const action: StateAction = when ? { type, when } : { type };
+  if (a.whenSeconds != null) {
+    action.whenSeconds = normalizeDurationValue(a.whenSeconds);
+  } else if (when === 'at_seconds') {
+    action.whenSeconds = literalDuration(0.33);
+  }
   const paramKeys = [
     'columnRange',
     'laneRange',
