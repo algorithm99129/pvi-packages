@@ -280,6 +280,62 @@ export interface AiConfigPublic {
   imageStyle: DalleStyle;
 }
 
+/** Result of Settings → OpenAI "Test" (auth, chat + image credits, optional spend). */
+export interface AiApiStatus {
+  ok: boolean;
+  /** Human-readable multi-part summary. */
+  message?: string;
+  /** Number of models returned by `/v1/models` when the key works. */
+  modelCount?: number;
+  /** Whether the request used the configured HTTP proxy. */
+  usedProxy: boolean;
+  /** `/v1/models` succeeded. */
+  authOk?: boolean;
+  /**
+   * Both chat and image probes succeeded — key can spend on the APIs this editor uses.
+   * False when either probe hits quota/credits exhaustion or fails.
+   */
+  billingOk?: boolean;
+  /** Parsed chat (completions) probe outcome. */
+  billingStatus?:
+    | 'ok'
+    | 'insufficient_quota'
+    | 'credit_balance_exhausted'
+    | 'rate_limited'
+    | 'error'
+    | 'skipped';
+  billingDetail?: string;
+  /** Model used for the chat billing probe. */
+  probeModel?: string;
+  /** Tiny `/v1/images/generations` probe succeeded. */
+  imageOk?: boolean;
+  imageStatus?:
+    | 'ok'
+    | 'insufficient_quota'
+    | 'credit_balance_exhausted'
+    | 'rate_limited'
+    | 'error'
+    | 'skipped';
+  imageDetail?: string;
+  /** Model used for the image billing probe. */
+  probeImageModel?: string;
+  /**
+   * USD spent in the recent lookback window from `/v1/organization/costs`
+   * (requires an Admin API key; undefined when unavailable).
+   */
+  recentSpendUsd?: number;
+  recentSpendDays?: number;
+  spendDetail?: string;
+  /** Recent completion token usage when Usage API is available. */
+  recentInputTokens?: number;
+  recentOutputTokens?: number;
+  usageDetail?: string;
+  /** Remaining / limit from OpenAI rate-limit response headers. */
+  rateLimitRequests?: string;
+  rateLimitTokens?: string;
+  error?: string;
+}
+
 export function getImageModelOption(modelId: string): ImageModelOption {
   return IMAGE_MODEL_OPTIONS.find((entry) => entry.id === modelId) ?? IMAGE_MODEL_OPTIONS[1];
 }
