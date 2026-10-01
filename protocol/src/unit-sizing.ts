@@ -30,8 +30,8 @@ export interface UnitCellAnchor {
 }
 
 /** Soft bounds for authored cell-anchor edges (allows overflow past the cell). */
-export const UNIT_CELL_ANCHOR_EDGE_MIN = -0.75;
-export const UNIT_CELL_ANCHOR_EDGE_MAX = 1.75;
+export const UNIT_CELL_ANCHOR_EDGE_MIN = -1.5;
+export const UNIT_CELL_ANCHOR_EDGE_MAX = 2.5;
 
 /** Soft max for cell-width fill (may exceed 1 when the art overflows the cell). */
 export const UNIT_CELL_WIDTH_FILL_MAX = 2.5;
