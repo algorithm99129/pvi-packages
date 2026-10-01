@@ -77,6 +77,9 @@ export interface AdminPopularityResult {
   error?: string;
 }
 
+/** Re-export for editor IPC convenience (see app-settings.ts). */
+export type { AdminAppSettingsResult } from './app-settings';
+
 /** Who receives an admin announcement email. */
 export type AdminAnnouncementRecipient =
   | 'all'
