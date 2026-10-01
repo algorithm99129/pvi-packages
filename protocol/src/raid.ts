@@ -175,6 +175,11 @@ export interface GardenRaidScoutSnapshot {
   itemBox?: GardenRaidItemBox;
   scoutTimeoutSec: number;
   battleDurationSec: number;
+  /**
+   * Most leaf the raider may deploy in this raid — `raidAttackBudget` of the placed plants'
+   * DP. The raider starts with min(wallet leaf, this). Absent on legacy snapshots (no cap).
+   */
+  attackBudget?: number;
 }
 
 /** One timed action in a garden raid replay. */

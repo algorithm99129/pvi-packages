@@ -58,7 +58,8 @@ export const DEFAULT_INSECT_UPGRADE: InsectUpgradeConfig = {
   statFormulaId: 'plant_stat_at_level',
   costFormulaId: 'plant_upgrade_resource_cost',
   /** v0.2 gem-primary upgrades — matches authored attribute `upgrade.baseUpgradeCost`. */
-  baseUpgradeCost: { coin: 35, gem: 5, leaf: 1 },
+  // gem 8 is the §12.2 standard tier (was 5); the fallback must match the authored catalog.
+  baseUpgradeCost: { coin: 35, gem: 8, leaf: 1 },
 };
 
 export function resolveInsectUpgrade(insect: Pick<InsectDefinition, 'upgrade'>): InsectUpgradeConfig {
@@ -98,10 +99,15 @@ export interface InsectStatCurve {
   levelScaling: {
     healthPerLevel: number;
     damagePerLevel: number;
+    /** At max level the insect attacks at this fraction of attackIntervalMs. See level-scaling.ts. */
+    attackIntervalMinScale?: number;
+    /** At max level the card recharges in this fraction of server.rechargeSeconds. */
+    rechargeMinScale?: number;
     milestones?: Record<number, { trait?: string }>;
   };
 }
 
+import { scaleAttackIntervalMs, scaleRechargeSeconds } from './level-scaling';
 import type { GfxRectCrop, GfxAnimationSlot } from './gfx';
 import type { UnitCellAnchor } from './unit-sizing';
 import type { ExtraAttributes } from './extra-attributes';
@@ -400,6 +406,33 @@ export function resolveInsectRechargeSeconds(insect: {
   if (insect.archetype === 'siege' || insect.archetype === 'tank') return 20;
   if (insect.archetype === 'support') return 15;
   return INSECT_RECHARGE_DEFAULT;
+}
+
+/** Card recharge at an upgrade level — see level-scaling.ts. */
+export function resolveInsectRechargeSecondsAtLevel(
+  insect: Parameters<typeof resolveInsectRechargeSeconds>[0] &
+    Pick<InsectDefinition, 'upgrade'> & { stats?: Pick<InsectStatCurve, 'levelScaling'> },
+  level: number,
+): number {
+  return scaleRechargeSeconds(
+    resolveInsectRechargeSeconds(insect),
+    insect.stats?.levelScaling?.rechargeMinScale,
+    level,
+    resolveInsectUpgrade(insect).maxLevel,
+  );
+}
+
+/** Milliseconds between attacks at an upgrade level — see level-scaling.ts. */
+export function resolveInsectAttackIntervalMs(
+  insect: Pick<InsectDefinition, 'stats' | 'upgrade'>,
+  level: number,
+): number {
+  return scaleAttackIntervalMs(
+    insect.stats.attackIntervalMs,
+    insect.stats.levelScaling?.attackIntervalMinScale,
+    level,
+    resolveInsectUpgrade(insect).maxLevel,
+  );
 }
 
 /** Default deploy cost when not authored (matches client archetype heuristics). */

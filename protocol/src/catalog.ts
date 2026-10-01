@@ -24,6 +24,8 @@ export interface ResolvedPlantCombatStats {
   damage: number;
   attackIntervalMs: number;
   range: number;
+  /** Card recharge seconds at the resolved level. */
+  rechargeSeconds?: number;
 }
 
 export interface ResolvedInsectCombatStats {
@@ -33,6 +35,8 @@ export interface ResolvedInsectCombatStats {
   moveSpeed: number;
   /** Attack / detect range in cells (melee default ~0.75). */
   range?: number;
+  /** Card recharge seconds at the resolved level. */
+  rechargeSeconds?: number;
 }
 
 /**

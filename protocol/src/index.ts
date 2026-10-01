@@ -6,6 +6,7 @@ export const BALANCE_VERSION = '2.1.0-gdd';
 
 export * from './resources';
 export * from './gfx';
+export * from './level-scaling';
 export * from './plant';
 export * from './plant-behavior';
 export * from './extra-attributes';
@@ -50,3 +51,4 @@ export * from './chat';
 export * from './live-events';
 export * from './strength';
 export * from './client-update';
+export * from './telemetry';

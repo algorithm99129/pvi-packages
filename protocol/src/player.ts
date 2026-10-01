@@ -1,7 +1,7 @@
 import type { EntityId } from './index';
 import type { InsectArchetype } from './insect';
 import type { ServerMapExport } from './map';
-import type { ServerMissionExport } from './mission';
+import type { MissionEntryGate, ServerMissionExport } from './mission';
 import type { PlantRole } from './plant';
 import type { ActivePotionBuff, UserPotionStack } from './potion';
 import type { UserProfile } from './user';
@@ -42,6 +42,8 @@ export interface UserMissionProgress {
   /** Difficulty cleared on the most recent successful run. */
   triedLevel?: MissionDifficulty;
   completedAt?: string;
+  /** Successful clears of this mission (used for diminishing replay XP). */
+  clearCount?: number;
 }
 
 /** Request body for POST /api/player/missions/complete */
@@ -165,8 +167,8 @@ export const GEM_ONLY_INSECT_IDS: EntityId[] = [
 /** Default roster upgrade base for gem-only units (coin replaced by gem). */
 export const GEM_ONLY_UPGRADE_BASE: WalletResources = {
   coin: 0,
-  gem: 5,
-  leaf: 1,
+  gem: 40,
+  leaf: 2,
 };
 
 /** Rarity → gem buyout when `server.unlockGemCost` is omitted (non-starters). */
@@ -216,12 +218,20 @@ export interface UserPlantView {
   rarity: string;
   unlocked: boolean;
   level: number;
+  /** Catalog ceiling (normally 20). */
   maxLevel: number;
+  /**
+   * Ceiling this account may currently upgrade to — `min(maxLevel, unitMaxLevelForAccount)`.
+   * `atMax` and `upgradeCost` are computed against this, not `maxLevel`. §12.4.
+   */
+  accountMaxLevel: number;
   stats: {
     health: number;
     damage: number;
     attackIntervalMs: number;
     range: number;
+    /** Seed-packet recharge seconds at this level. */
+    rechargeSeconds: number;
   };
   /** Formula-evaluated stats at `level + 1`; `null` when locked or at max. */
   nextStats: UserPlantView['stats'] | null;
@@ -244,12 +254,17 @@ export interface UserInsectView {
   rarity: string;
   unlocked: boolean;
   level: number;
+  /** Catalog ceiling (normally 20). */
   maxLevel: number;
+  /** Ceiling this account may currently upgrade to — see {@link UserPlantView.accountMaxLevel}. */
+  accountMaxLevel: number;
   stats: {
     health: number;
     damage: number;
     attackIntervalMs: number;
     moveSpeed: number;
+    /** Card recharge seconds at this level. */
+    rechargeSeconds: number;
   };
   /** Formula-evaluated stats at `level + 1`; `null` when locked or at max. */
   nextStats: UserInsectView['stats'] | null;
@@ -269,4 +284,10 @@ export type UnlockInsectResult = UpgradeInsectResult;
 export interface MissionDetailView extends ServerMissionExport {
   progress: UserMissionProgress;
   map: ServerMapExport;
+  /**
+   * Soft power gate against `recommendedPlantLevel` — the first deterministic step of
+   * SYSTEMS_ANALYSIS §12.5. The client reads `status` before launching; the API also rejects a
+   * `missions/complete` for a `blocked` mission as a backstop.
+   */
+  entry: MissionEntryGate;
 }

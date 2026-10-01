@@ -90,7 +90,8 @@ export const DEFAULT_PLANT_UPGRADE: PlantUpgradeConfig = {
   statFormulaId: 'plant_stat_at_level',
   costFormulaId: 'plant_upgrade_resource_cost',
   /** v0.2 gem-primary upgrades — matches authored attribute `upgrade.baseUpgradeCost`. */
-  baseUpgradeCost: { coin: 35, gem: 5, leaf: 1 },
+  // gem 8 is the §12.2 standard tier (was 5); the fallback must match the authored catalog.
+  baseUpgradeCost: { coin: 35, gem: 8, leaf: 1 },
 };
 
 export function resolvePlantUpgrade(plant: Pick<PlantDefinition, 'upgrade'>): PlantUpgradeConfig {
@@ -154,10 +155,16 @@ export interface PlantStatCurve {
      * Shooters use this instead of health growth.
      */
     attackIntervalMinScale?: number;
+    /**
+     * At max upgrade level the seed packet recharges in this fraction of
+     * server.rechargeSeconds (0.8 = 20% faster). Omitted or ≥ 1 leaves it unchanged.
+     */
+    rechargeMinScale?: number;
     milestones?: Record<number, { trait?: string; bonusDamage?: number; pierce?: number }>;
   };
 }
 
+import { scaleRechargeSeconds } from './level-scaling';
 import type { GfxRectCrop, GfxAnimationSlot } from './gfx';
 import type { PlantBehaviorConfig } from './plant-behavior';
 import type { ExtraAttributes } from './extra-attributes';
@@ -716,6 +723,20 @@ export function resolvePlantRechargeSeconds(plant: {
   if (plant.role === 'splash' || plant.role === 'blocker' || plant.role === 'trap')
     return PLANT_RECHARGE_SLOW;
   return PLANT_RECHARGE_FAST;
+}
+
+/** Seed-packet recharge at an upgrade level — see level-scaling.ts. */
+export function resolvePlantRechargeSecondsAtLevel(
+  plant: Parameters<typeof resolvePlantRechargeSeconds>[0] &
+    Pick<PlantDefinition, 'upgrade'> & { stats?: Pick<PlantStatCurve, 'levelScaling'> },
+  level: number,
+): number {
+  return scaleRechargeSeconds(
+    resolvePlantRechargeSeconds(plant),
+    plant.stats?.levelScaling?.rechargeMinScale,
+    level,
+    resolvePlantUpgrade(plant).maxLevel,
+  );
 }
 
 export const PLANT_HITS_TRAVEL_LAYER_OPTIONS: ReadonlyArray<{

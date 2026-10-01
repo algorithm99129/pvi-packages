@@ -91,16 +91,113 @@ export interface MissionXpGainInput {
   stars: number;
   firstClear: boolean;
   difficulty: string | undefined;
+  /**
+   * How many successful clears this mission already has before this run.
+   * Used to diminish replay XP (first clear ignores this).
+   */
+  priorClears?: number;
+  /**
+   * Stars already banked on this mission before this run. On `hard`, a mission banked at 3★
+   * pays no replay XP at all — see SYSTEMS_ANALYSIS §12.7 (G4).
+   */
+  bankedStars?: number;
 }
 
 /**
  * XP awarded on a successful mission clear.
- * `round((40 + 15*stars + firstClearBonus) * difficultyMult)`
+ * `round((40 + 15*stars + firstClearBonus) * difficultyMult * replayMult)`
+ *
+ * Replay mult = max(0.15, 1 − 0.15 × priorClears) so grinding the shortest
+ * mission is no longer optimal XP/hour after a few clears.
  */
 export function missionXpGain(input: MissionXpGainInput): number {
   const stars = Math.max(0, Math.min(3, Math.floor(input.stars)));
   const firstClearBonus = input.firstClear ? 80 : 0;
   const base = 40 + 15 * stars + firstClearBonus;
   const mult = missionDifficultyCoinMultiplier(input.difficulty);
-  return Math.round(base * mult);
+  let xp = Math.round(base * mult);
+  if (!input.firstClear) {
+    // G4: once a hard mission is banked at 3★ there is nothing left to earn from it. Easy and
+    // medium keep the sliding decay below as a catch-up lane.
+    const banked = Math.max(0, Math.floor(input.bankedStars ?? 0));
+    if (String(input.difficulty ?? '').toLowerCase() === 'hard' && banked >= 3) return 0;
+
+    const prior = Math.max(0, Math.floor(input.priorClears ?? 0));
+    const replayMult = Math.max(0.15, 1 - 0.15 * prior);
+    xp = Math.round(xp * replayMult);
+  }
+  return xp;
+}
+
+/** Soft daily cap for non-mission XP sources (raids / rooms / team). */
+export const DAILY_COMPETITIVE_XP_CAP = 400;
+
+/** Garden raid XP: 8 + 6×stars (1–5), small and star-scaled. */
+export function gardenRaidXpGain(stars: number): number {
+  const s = Math.max(0, Math.min(5, Math.floor(stars)));
+  return 8 + 6 * s;
+}
+
+/** Battle room finish XP (both sides). */
+export function battleRoomXpGain(): number {
+  return 45;
+}
+
+/** Team-match raid attempt XP. */
+export function teamMatchRaidXpGain(stars: number): number {
+  const s = Math.max(0, Math.min(5, Math.floor(stars)));
+  return 10 + 4 * s;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Competitive gems — SYSTEMS_ANALYSIS §12.3
+//
+// Before this, every gem faucet was a calendar tick (login, dailies, one-time streaks); the
+// campaign, raids, rooms and war all paid zero, so playing more never produced more gems. That
+// made the 2–3 year F2P roster target (G5) unreachable by an order of magnitude. These gains put
+// gems in the play loop under the same soft daily cap shape as competitive XP.
+//
+// The cap is reachable only with volume (~10 five-star raids ≈ 32 min), which is what produces the
+// ramp §12.1 relies on: a campaign-phase player landing near 40/day with dailies, an engaged
+// endgame player near 130/day.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Soft daily cap for gems from raids / rooms / team matches. */
+export const DAILY_COMPETITIVE_GEM_CAP = 120;
+
+/** Garden raid gems: 2 + 2×stars (0–5) — a loss still pays the floor. */
+export function gardenRaidGemGain(stars: number): number {
+  const s = Math.max(0, Math.min(5, Math.floor(stars)));
+  return 2 + 2 * s;
+}
+
+/** Battle room gems: both seats are paid, the winner more. */
+export function battleRoomGemGain(won: boolean): number {
+  return won ? 10 : 4;
+}
+
+/** Team-match raid attempt gems: 3 + 2×stars (0–5). */
+export function teamMatchRaidGemGain(stars: number): number {
+  const s = Math.max(0, Math.min(5, Math.floor(stars)));
+  return 3 + 2 * s;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Account level → unit level cap — SYSTEMS_ANALYSIS §12.4
+//
+// Village is capped at 10 and account 10 (9,237 XP) is covered by the campaign alone, which left
+// account levels 11–50 gating nothing and made competitive XP inert. Tying the roster's upgrade
+// ceiling to account level gives those levels a job and makes XP buy the right to spend gems.
+//
+//   account 10 → 10 · 14 → 12 · 20 → 15 · 26 → 18 · 30 → 20 (full cap); 31–50 are headroom.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Account level at which the full unit level cap unlocks. */
+export const UNIT_CAP_FULL_AT_ACCOUNT_LEVEL = 30;
+
+/** Highest unit level this account level may upgrade to. */
+export function unitMaxLevelForAccount(accountLevel: number, hardMax = 20): number {
+  const a = Math.max(1, Math.floor(Number(accountLevel) || 1));
+  const cap = 10 + Math.floor(Math.max(0, a - 10) / 2);
+  return Math.max(1, Math.min(hardMax, cap));
 }

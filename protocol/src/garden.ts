@@ -3,8 +3,8 @@ import type { ServerMapExport } from './map';
 import type { PlantServerConfig } from './plant';
 import type { WalletResources } from './wallet';
 
-/** Max garden / village level. */
-export const GARDEN_MAX_LEVEL = 20;
+/** Max garden / village level (rarity + item-box gates complete by 10). */
+export const GARDEN_MAX_LEVEL = 10;
 
 /** Default map for new gardens. */
 export const DEFAULT_GARDEN_MAP_ID: EntityId = 'front_yard';

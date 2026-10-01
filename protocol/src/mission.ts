@@ -75,6 +75,68 @@ export interface MissionObjective {
 /** Raid / mission seed-tray capacity — also the max for `max_plants` star goals. */
 export const MISSION_MAX_CARD_SLOTS = 10;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Mission entry gate — SYSTEMS_ANALYSIS §12.5, deterministic first step.
+//
+// `recommendedPlantLevel` was authored on all 50 missions and read by nothing, so the campaign
+// had no power gate at all (7 h 49 m, start to finish, at level 1). This turns it into a soft
+// gate on the player's roster: warn below the recommended level, block when further below it by
+// `MISSION_ENTRY_BLOCK_MARGIN`. Because levels cost gems, this is what paces the campaign to the
+// ~60-day F2P / ~30-day $10 targets. Exact margins are a tuning knob and expected to move once a
+// deterministic simulator exists.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** How many of the player's strongest unlocked plants are averaged (fewer if fewer are owned). */
+export const MISSION_ENTRY_PLANT_SAMPLE = 8;
+
+/**
+ * Attacker (insect) missions gate on the insect roster instead. A raid deck leans on a few core
+ * insects rather than a full board, so the sample is smaller — which also keeps the campaign's
+ * total upgrade demand from doubling now that it runs two rosters.
+ */
+export const MISSION_ENTRY_INSECT_SAMPLE = 4;
+
+/** Levels below `recommendedPlantLevel` at which entry is blocked rather than warned. */
+export const MISSION_ENTRY_BLOCK_MARGIN = 2;
+
+export type MissionEntryStatus = 'ok' | 'warn' | 'blocked';
+
+export interface MissionEntryGate {
+  /** Authored target for this mission; 0 when the mission has none. */
+  recommendedPlantLevel: number;
+  /** Mean level of the player's top {@link MISSION_ENTRY_PLANT_SAMPLE} unlocked plants. */
+  playerPlantLevel: number;
+  /** Below this mean level the mission refuses entry. */
+  blockBelowLevel: number;
+  status: MissionEntryStatus;
+}
+
+/**
+ * Evaluate the entry gate from the player's unlocked plant levels. Unlocked-but-unlevelled
+ * plants count as level 1; a player with no plants is treated as level 1.
+ */
+export function evaluateMissionEntry(
+  recommendedPlantLevel: number | null | undefined,
+  unlockedPlantLevels: readonly number[],
+  sampleSize: number = MISSION_ENTRY_PLANT_SAMPLE,
+): MissionEntryGate {
+  const rec = Math.max(0, Math.floor(Number(recommendedPlantLevel) || 0));
+  const levels = unlockedPlantLevels
+    .map((l) => Math.max(1, Math.floor(Number(l) || 1)))
+    .sort((a, b) => b - a)
+    .slice(0, Math.max(1, Math.floor(sampleSize)));
+  const mean = levels.length ? levels.reduce((s, l) => s + l, 0) / levels.length : 1;
+  const playerPlantLevel = Math.round(mean * 10) / 10;
+  const blockBelowLevel = Math.max(1, rec - MISSION_ENTRY_BLOCK_MARGIN);
+
+  let status: MissionEntryStatus = 'ok';
+  if (rec > 1) {
+    if (playerPlantLevel < blockBelowLevel) status = 'blocked';
+    else if (playerPlantLevel < rec) status = 'warn';
+  }
+  return { recommendedPlantLevel: rec, playerPlantLevel, blockBelowLevel, status };
+}
+
 export type MissionMode =
   | 'adventure'
   | 'conveyor'
@@ -108,6 +170,23 @@ export interface MissionRules {
    * (column 5 on a 9-col grid, classic right-side fog).
    */
   fogStartColumn?: number;
+  /**
+   * Authored battle length in seconds. Defender missions derive their length from the wave
+   * schedule; attacker missions have no waves and previously fell back to a flat 90 s, so they
+   * author it here.
+   */
+  battleDurationSec?: number;
+  /**
+   * Attacker missions: the insect deploy budget ("sun") the player starts with. There is no
+   * income during an attacker mission, so this is the whole puzzle — spend it across lanes.
+   */
+  attackerBudget?: number;
+  /**
+   * Lanes (0-based) that have a lawn mower. Only read when `mowersEnabled` is not false.
+   * Omitted or empty ⇒ every lane has one (the classic default); "no mowers at all" is
+   * `mowersEnabled: false`. Lets an insect mission protect some lanes and leave others open.
+   */
+  mowerLanes?: number[];
 }
 
 /** Inclusive column indices on the shared lane grid (0 = seed / left side). */

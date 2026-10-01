@@ -314,6 +314,40 @@ export const BALANCE_VERSION_STRENGTH = '2.1.0-gdd';
 /** Competitive DP/CP ceiling (spent defense budget). */
 export const COMPETITIVE_RAID_CP_CAP = 1500;
 
+/**
+ * Insect deploy budget a raider gets per 1 DP of the garden being raided.
+ *
+ * The parity rule (GDD §10.15) is "equal attack and defence strength ⇒ a coin flip". Strength
+ * is DP × levelPower on both sides, so at equal unit level the two strengths are equal by
+ * construction — what decides the fight is how much the raider may actually deploy. That is
+ * NOT 1 CP per DP: the raider needs one lane and may spend everything there, the defender has
+ * to cover five, and a 180 s raid is paced by card recharge long before a large budget runs
+ * out (above ~0.5 × DP extra budget changes nothing).
+ *
+ * Measured with the Unity auto-pilot on 40 random garden × deck matchups at unit levels 1, 10
+ * and 20 (720 fights, greedy-v3, docs/GDD_CHECKLIST.md §11):
+ *
+ *   budget ÷ DP   raider wins     by level 1 / 10 / 20
+ *      0.20           51%            56 / 51 / 46
+ *      0.30           69%            80 / 66 / 61
+ *      0.40           70%            78 / 74 / 60
+ *
+ * Re-measure after any combat-stat change:
+ *   node scripts/generate-parity-scenarios.mjs --raw --ratios 0.15,0.2,0.3
+ *   node scripts/run-sim-batch.mjs --scenarios --repeats 2
+ */
+export const RAID_BUDGET_PER_DEFENSE_DP = 0.2;
+
+/** A raid always gets at least this much to deploy, however small the garden. */
+export const RAID_BUDGET_FLOOR = 150;
+
+/** Deploy budget for raiding a garden whose placed plants cost `placedDefenseDp` sun in total. */
+export function raidAttackBudget(placedDefenseDp: number): number {
+  const dp = Math.max(0, Number(placedDefenseDp) || 0);
+  const budget = Math.round((dp * RAID_BUDGET_PER_DEFENSE_DP) / 25) * 25;
+  return Math.max(RAID_BUDGET_FLOOR, budget);
+}
+
 /** Level power: 1 + 0.058 × (L − 1), L clamped 1–20. */
 export function levelPower(level: number): number {
   const L = Math.max(1, Math.min(20, Math.floor(Number(level) || 1)));
