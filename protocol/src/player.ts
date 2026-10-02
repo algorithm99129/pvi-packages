@@ -168,7 +168,7 @@ export const GEM_ONLY_INSECT_IDS: EntityId[] = [
 export const GEM_ONLY_UPGRADE_BASE: WalletResources = {
   coin: 0,
   gem: 40,
-  leaf: 2,
+  leaf: 20,
 };
 
 /** Rarity → gem buyout when `server.unlockGemCost` is omitted (non-starters). */

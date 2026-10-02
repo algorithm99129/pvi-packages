@@ -157,29 +157,40 @@ export function teamMatchRaidXpGain(stars: number): number {
 // made the 2–3 year F2P roster target (G5) unreachable by an order of magnitude. These gains put
 // gems in the play loop under the same soft daily cap shape as competitive XP.
 //
-// The cap is reachable only with volume (~10 five-star raids ≈ 32 min), which is what produces the
-// ramp §12.1 relies on: a campaign-phase player landing near 40/day with dailies, an engaged
-// endgame player near 130/day.
+// The cap is reachable only with volume, which is what produces the ramp §12.1 relies on.
+//
+// Sized with scripts/model-progression.mjs (2026-10-02). The first numbers (raid 2 + 2×stars,
+// room 10 / 4) assumed five-star raids; at the legal raid budget a raid takes ONE lane or none,
+// so a raid paid about 3 gems, an engaged free player earned ~57 gems a day, and the roster
+// (118,000 gems) was a 5.7-year project against a 2–3 year target. Doubling the gains puts that
+// player near 100 a day (≈3.3 years) and one who plays to the cap at ≈2.4 years.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Soft daily cap for gems from raids / rooms / team matches. */
 export const DAILY_COMPETITIVE_GEM_CAP = 120;
 
-/** Garden raid gems: 2 + 2×stars (0–5) — a loss still pays the floor. */
+/**
+ * Garden raid gems: 4 + 4×stars (0–5). A loss pays the floor only when the raid was really
+ * fought ({@link GARDEN_RAID_COMMIT_SHARE} of the budget spent) — otherwise starting a raid and
+ * walking away would be the fastest gem farm in the game.
+ */
 export function gardenRaidGemGain(stars: number): number {
   const s = Math.max(0, Math.min(5, Math.floor(stars)));
-  return 2 + 2 * s;
+  return 4 + 4 * s;
 }
+
+/** Share of the raid budget that must be spent for a lost raid to pay its floor. */
+export const GARDEN_RAID_COMMIT_SHARE = 0.5;
 
 /** Battle room gems: both seats are paid, the winner more. */
 export function battleRoomGemGain(won: boolean): number {
-  return won ? 10 : 4;
+  return won ? 16 : 8;
 }
 
-/** Team-match raid attempt gems: 3 + 2×stars (0–5). */
+/** Team-match raid attempt gems: 6 + 4×stars (0–5). */
 export function teamMatchRaidGemGain(stars: number): number {
   const s = Math.max(0, Math.min(5, Math.floor(stars)));
-  return 3 + 2 * s;
+  return 6 + 4 * s;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

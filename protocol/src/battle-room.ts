@@ -286,6 +286,36 @@ export const BATTLE_ROOM_DEFAULT_STARTING_SUN = 2000;
  */
 export const BATTLE_ROOM_DEFENDER_STARTING_SUN = 900;
 
+/** Sky sun the plant side is paid: RaidNaturalSunSpawner — 25, at best every 7 s. */
+export const BATTLE_ROOM_SKY_SUN_AMOUNT = 25;
+export const BATTLE_ROOM_SKY_SUN_MIN_INTERVAL_SEC = 7;
+
+/**
+ * Most sun a seat can have SPENT by `elapsedSec` into the fight — an upper bound the server
+ * holds each side to. It is deliberately generous (it assumes every sky sun at the fastest
+ * interval, and every producer planted at the first second), so an honest client is never
+ * refused; what it stops is a client that simply spends sun it does not have.
+ *
+ *   plant side    its starting purse + sky sun + what its producers can have paid
+ *   insect side   its starting purse + what it can have chewed out of the other side's producers
+ */
+export function battleRoomSpendCap(opts: {
+  side: 'attacker' | 'defender';
+  elapsedSec: number;
+  /** Sum over the plant side's producers of (sun per payout ÷ payout interval), per second. */
+  producerSunPerSec: number;
+  /** Sun the insect side can chew out of the producers planted so far. */
+  producerChewSun: number;
+}): number {
+  const elapsed = Math.max(0, Number(opts.elapsedSec) || 0);
+  if (opts.side === 'attacker') {
+    return BATTLE_ROOM_DEFAULT_STARTING_SUN + Math.max(0, Math.floor(opts.producerChewSun || 0));
+  }
+  const sky = BATTLE_ROOM_SKY_SUN_AMOUNT * (1 + Math.floor(elapsed / BATTLE_ROOM_SKY_SUN_MIN_INTERVAL_SEC));
+  const producers = Math.ceil(Math.max(0, opts.producerSunPerSec || 0) * elapsed);
+  return BATTLE_ROOM_DEFENDER_STARTING_SUN + sky + producers;
+}
+
 /** Starting sun for a seat in a room match. */
 export function battleRoomStartingSun(side: 'attacker' | 'defender'): number {
   return side === 'defender' ? BATTLE_ROOM_DEFENDER_STARTING_SUN : BATTLE_ROOM_DEFAULT_STARTING_SUN;

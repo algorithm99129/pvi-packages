@@ -5,12 +5,18 @@ import type { GardenProductionPickup } from './garden';
  * Garden-raid leaf economy.
  *
  * An insect's deploy price is authored in SUN (50–150) for missions and rooms. A garden raid
- * charges LEAF, and leaf is the scarce upgrade currency: a whole unit costs 153 leaf to take
- * to level 20 and a garden yields a few leaf per plant per hour. Charging the sun number as
- * leaf made one raid on a 1,500-DP garden a 300-leaf stake — two maxed units — so nobody could
- * afford to raid. In a garden raid an insect costs its sun price ÷ 25: 2 to 6 leaf.
+ * charges LEAF. Leaf is what the garden grows — a planted-out garden collected a few times a
+ * day yields roughly 150 (casual) to 500 (engaged) leaf — and upgrades use little of it (153 to
+ * take a unit to level 20), so raiding is where leaf goes: the garden is the fuel, the raid is
+ * the engine.
+ *
+ * Charging the sun number as leaf made one raid on a 1,500-DP garden a ~290-leaf stake that a
+ * one-lane win paid half of back: about −205 leaf a raid, most of a day's harvest. At ÷ 5 an
+ * insect costs 10–30 leaf and that raid stakes ~60 — a tenth to a third of a day's leaf, enough
+ * that a loss is felt and a streak of wins is worth having.
+ * (scripts/model-progression.mjs for the leaf income; analyze-raid-economy.mjs for the return.)
  */
-export const GARDEN_RAID_LEAF_COST_DIVISOR = 25;
+export const GARDEN_RAID_LEAF_COST_DIVISOR = 5;
 
 /** Leaf to deploy one insect in a garden raid, from its authored sun cost. */
 export function gardenRaidLeafCost(sunCost: number): number {

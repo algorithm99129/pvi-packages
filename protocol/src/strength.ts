@@ -324,28 +324,33 @@ export const COMPETITIVE_RAID_CP_CAP = 1500;
  * to cover five, and a 180 s raid is paced by card recharge long before a large budget runs
  * out (above ~0.5 × DP extra budget changes nothing).
  *
- * Measured with the Unity auto-pilot on random garden × deck matchups, 2 seeds each
- * (greedy-v3, upgrade growth as of 2026-10-02 — docs/BATTLE_BALANCE_2026-10-02.md):
+ * Measured with the Unity auto-pilot on 40 random garden × deck matchups at unit levels 1, 10
+ * and 20, 2 seeds each (greedy-v3, upgrade growth as of 2026-10-02 —
+ * docs/BATTLE_BALANCE_2026-10-02.md):
  *
  *   budget ÷ DP   raider wins     by unit level 1 / 10 / 20        n
- *      0.20           47%            48 / 49 / 43                 240
+ *      0.15           40%            40 / 41 / 39                 240
+ *      0.17           43%            45 / 45 / 39                 240   ← live
+ *      0.20           48%            49 / 50 / 44                 240
  *      0.30           60%            70 / 57 / 53                 360   (earlier growth pass)
- *   with the raider's units 3 levels above the garden's, at 0.20: 56 / 51 / — %
+ *
+ * 0.20 is the coin flip. The live value sits below it on purpose — see the note under the
+ * constant.
  *
  * Re-measure after any combat-stat change:
  *   node scripts/generate-parity-scenarios.mjs --raw --ratios 0.15,0.2,0.3
  *   node scripts/run-sim-batch.mjs --scenarios --repeats 2
  */
-export const RAID_BUDGET_PER_DEFENSE_DP = 0.2;
+export const RAID_BUDGET_PER_DEFENSE_DP = 0.17;
 
 /*
  * Who this favours, by mode:
  *   - A room match starts both sides from an empty lawn; its fairness is set by the two
  *     starting purses (battle-room.ts), not by this constant.
- *   - A garden raid attacks a garden that is already built and waiting. At this budget the
- *     raider is the slight underdog at equal unit level (47%, and 43% at level 20) and gets to
- *     a coin flip or better with about three unit levels over the garden — attacking a
- *     prepared village is meant to take a little more strength than defending it.
+ *   - A garden raid attacks a garden that is already built and waiting, so it is NOT set to a
+ *     coin flip: at this budget the raider wins 43% at equal unit level. Attacking a prepared
+ *     village is meant to take more strength than defending it — the raider makes up the
+ *     difference with stronger units, a better read of the layout, or a softer target.
  */
 
 /** A raid always gets at least this much to deploy, however small the garden. */

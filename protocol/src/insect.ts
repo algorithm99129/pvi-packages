@@ -59,7 +59,7 @@ export const DEFAULT_INSECT_UPGRADE: InsectUpgradeConfig = {
   costFormulaId: 'plant_upgrade_resource_cost',
   /** v0.2 gem-primary upgrades — matches authored attribute `upgrade.baseUpgradeCost`. */
   // gem 8 is the §12.2 standard tier (was 5); the fallback must match the authored catalog.
-  baseUpgradeCost: { coin: 35, gem: 8, leaf: 1 },
+  baseUpgradeCost: { coin: 35, gem: 8, leaf: 10 },
 };
 
 export function resolveInsectUpgrade(insect: Pick<InsectDefinition, 'upgrade'>): InsectUpgradeConfig {

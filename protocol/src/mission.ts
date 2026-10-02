@@ -74,6 +74,9 @@ export function missionClientRewardPreviews(reward: MissionReward | null | undef
  *   budget_left          finish with at least `value` % of the starting sun / leaf unspent
  *   max_losses           lose at most `value` of your own units
  *   protect_core/survive win (plant missions)
+ *   lanes_kept           win with at least `value` lanes still standing (plant missions). As the
+ *                        1★ objective it is the WIN line: the mission is lost the moment fewer
+ *                        than `value` lanes can still be standing, not only when all five fall
  *   no_lawn_mowers_lost  win without losing a lane (plant missions)
  *   mowers_kept          win with at least `value` lawn mowers unused (plant missions)
  *   max_plants           win with at most `value` plants standing (plant missions, ≤ tray max 10)
@@ -88,7 +91,8 @@ export type MissionObjectiveType =
   | 'destroy_plants'
   | 'budget_left'
   | 'max_losses'
-  | 'mowers_kept';
+  | 'mowers_kept'
+  | 'lanes_kept';
 
 export interface MissionObjective {
   type: MissionObjectiveType;
