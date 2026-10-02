@@ -324,19 +324,29 @@ export const COMPETITIVE_RAID_CP_CAP = 1500;
  * to cover five, and a 180 s raid is paced by card recharge long before a large budget runs
  * out (above ~0.5 × DP extra budget changes nothing).
  *
- * Measured with the Unity auto-pilot on 40 random garden × deck matchups at unit levels 1, 10
- * and 20 (720 fights, greedy-v3, card recharge on game time, docs/GDD_CHECKLIST.md §11):
+ * Measured with the Unity auto-pilot on random garden × deck matchups, 2 seeds each
+ * (greedy-v3, upgrade growth as of 2026-10-02 — docs/BATTLE_BALANCE_2026-10-02.md):
  *
- *   budget ÷ DP   raider wins     by level 1 / 10 / 20
- *      0.20           50%            56 / 50 / 45
- *      0.35           70%            76 / 70 / 65
- *      0.50           78%            83 / 74 / 78
+ *   budget ÷ DP   raider wins     by unit level 1 / 10 / 20        n
+ *      0.20           47%            48 / 49 / 43                 240
+ *      0.30           60%            70 / 57 / 53                 360   (earlier growth pass)
+ *   with the raider's units 3 levels above the garden's, at 0.20: 56 / 51 / — %
  *
  * Re-measure after any combat-stat change:
  *   node scripts/generate-parity-scenarios.mjs --raw --ratios 0.15,0.2,0.3
  *   node scripts/run-sim-batch.mjs --scenarios --repeats 2
  */
 export const RAID_BUDGET_PER_DEFENSE_DP = 0.2;
+
+/*
+ * Who this favours, by mode:
+ *   - A room match starts both sides from an empty lawn; its fairness is set by the two
+ *     starting purses (battle-room.ts), not by this constant.
+ *   - A garden raid attacks a garden that is already built and waiting. At this budget the
+ *     raider is the slight underdog at equal unit level (47%, and 43% at level 20) and gets to
+ *     a coin flip or better with about three unit levels over the garden — attacking a
+ *     prepared village is meant to take a little more strength than defending it.
+ */
 
 /** A raid always gets at least this much to deploy, however small the garden. */
 export const RAID_BUDGET_FLOOR = 150;

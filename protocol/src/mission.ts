@@ -62,12 +62,37 @@ export function missionClientRewardPreviews(reward: MissionReward | null | undef
   };
 }
 
+/**
+ * What a star tier asks for. Tiers gate in order (2★ needs 1★, 3★ needs 2★), so each one only
+ * states its own condition. On an insect ("attacker") mission the 1★ objective is also the WIN
+ * line — it is checked when the clock runs out or the player ends the raid — and the fight ends
+ * early the moment all three are met.
+ *
+ *   clear_lanes          destroy at least `value` lanes (insect missions)
+ *   destroy_plants       destroy at least `value` of the garden's plants (insect missions)
+ *   time_limit           finish within `value` seconds of battle time
+ *   budget_left          finish with at least `value` % of the starting sun / leaf unspent
+ *   max_losses           lose at most `value` of your own units
+ *   protect_core/survive win (plant missions)
+ *   no_lawn_mowers_lost  win without losing a lane (plant missions)
+ *   mowers_kept          win with at least `value` lawn mowers unused (plant missions)
+ *   max_plants           win with at most `value` plants standing (plant missions, ≤ tray max 10)
+ */
+export type MissionObjectiveType =
+  | 'survive'
+  | 'clear_lanes'
+  | 'protect_core'
+  | 'time_limit'
+  | 'no_lawn_mowers_lost'
+  | 'max_plants'
+  | 'destroy_plants'
+  | 'budget_left'
+  | 'max_losses'
+  | 'mowers_kept';
+
 export interface MissionObjective {
-  type: 'survive' | 'clear_lanes' | 'protect_core' | 'time_limit' | 'no_lawn_mowers_lost' | 'max_plants';
-  /**
-   * For `max_plants`: max plants/insects used for the lean-defense star.
-   * Must be ≤ raid tray max (10). 0 is reserved for special “lose none” wording.
-   */
+  type: MissionObjectiveType;
+  /** Threshold for the type — see {@link MissionObjectiveType}. */
   value?: number;
   description: string;
 }

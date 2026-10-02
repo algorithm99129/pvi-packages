@@ -111,7 +111,10 @@ export interface BattleRoomLoadoutResult {
 export interface BattleRoomStartPayload {
   roomId: string;
   mapTemplateId: string;
+  /** Insect side's starting sun. */
   startingSun: number;
+  /** Plant side's starting sun (it also earns sun during the fight). Absent on old servers. */
+  defenderStartingSun?: number;
   battleDurationSec: number;
   players: BattleRoomPlayer[];
   /** Client that runs the authoritative Raid simulation. */
@@ -264,7 +267,29 @@ export const BATTLE_ROOM_SOCKET_EVENTS = {
   roomLoadout: 'room:loadout',
 } as const;
 
+/**
+ * Sun the INSECT side starts a room match with. It earns nothing during the fight, so this is
+ * its whole army.
+ */
 export const BATTLE_ROOM_DEFAULT_STARTING_SUN = 2000;
+
+/**
+ * Sun the PLANT side starts with. It is deliberately less than the insect side's: the plant
+ * side is paid throughout the fight (sky sun, and every producer it plants), and with equal
+ * starting sun it simply out-built the raid — simulated raider win rate 23% at 2000 / 2000.
+ * Both sides still start from an empty lawn with the same card limit and their own unit
+ * levels; this is the split at which that fight is a coin flip.
+ *
+ * Measured (30 random 10-card decks a side, levels 1 and 10, n≈119 per cell), raider wins: plant side 700 → 59%, 850 → 57%, 1000 → 42%, 2000 → 23%. Paying the raider during the fight instead (40 or 80 sun per 10 s) barely moved it.
+ * Re-measure: node scripts/generate-parity-scenarios.mjs --room --defender-sun 700,850,1000
+ *             node scripts/run-sim-batch.mjs --scenarios --repeats 2
+ */
+export const BATTLE_ROOM_DEFENDER_STARTING_SUN = 900;
+
+/** Starting sun for a seat in a room match. */
+export function battleRoomStartingSun(side: 'attacker' | 'defender'): number {
+  return side === 'defender' ? BATTLE_ROOM_DEFENDER_STARTING_SUN : BATTLE_ROOM_DEFAULT_STARTING_SUN;
+}
 /** Default max battle length: 5 minutes. */
 export const BATTLE_ROOM_DEFAULT_BATTLE_DURATION_SEC = 300;
 /** Lobby expires if battle has not started within this many seconds after create. */

@@ -2,23 +2,61 @@ import type { EntityId } from './index';
 import type { GardenProductionPickup } from './garden';
 
 /**
- * Leaves granted per insect type used, multiplied by stars (1–5).
- * Same numeric rate as the retired upgrade-card grant.
+ * Garden-raid leaf economy.
+ *
+ * An insect's deploy price is authored in SUN (50–150) for missions and rooms. A garden raid
+ * charges LEAF, and leaf is the scarce upgrade currency: a whole unit costs 153 leaf to take
+ * to level 20 and a garden yields a few leaf per plant per hour. Charging the sun number as
+ * leaf made one raid on a 1,500-DP garden a 300-leaf stake — two maxed units — so nobody could
+ * afford to raid. In a garden raid an insect costs its sun price ÷ 25: 2 to 6 leaf.
  */
-export const RAID_INSECT_LEAVES_PER_STAR = 2;
+export const GARDEN_RAID_LEAF_COST_DIVISOR = 25;
 
-/** @deprecated Use {@link RAID_INSECT_LEAVES_PER_STAR}. */
-export const RAID_INSECT_CARDS_PER_STAR = RAID_INSECT_LEAVES_PER_STAR;
+/** Leaf to deploy one insect in a garden raid, from its authored sun cost. */
+export function gardenRaidLeafCost(sunCost: number): number {
+  const sun = Math.max(0, Number(sunCost) || 0);
+  if (sun <= 0) return 0;
+  return Math.max(1, Math.ceil(sun / GARDEN_RAID_LEAF_COST_DIVISOR));
+}
+
+/** A raid budget in battle points (sun scale) expressed as the leaf the raider may spend. */
+export function gardenRaidBudgetLeaf(budgetPoints: number): number {
+  return Math.max(1, Math.ceil(Math.max(0, Number(budgetPoints) || 0) / GARDEN_RAID_LEAF_COST_DIVISOR));
+}
+
+/**
+ * A raid may not pay out more than this multiple of the leaf the garden was WORTH raiding
+ * (its un-floored budget). Without it a one-plant garden — four open lanes, minimum budget —
+ * is a five-star leaf faucet.
+ */
+export const GARDEN_RAID_PROFIT_CAP_PER_BUDGET = 3.5;
+
+/** Most leaf a raid can return above what was spent, for a garden of this placed-plant DP. */
+export function gardenRaidProfitCapLeaf(placedDefenseDp: number, budgetPerDp: number): number {
+  const dp = Math.max(0, Number(placedDefenseDp) || 0);
+  const worth = (dp * budgetPerDp) / GARDEN_RAID_LEAF_COST_DIVISOR;
+  return Math.max(1, Math.floor(worth * GARDEN_RAID_PROFIT_CAP_PER_BUDGET));
+}
 
 /** Max stars for garden / live lane-clear scoring. */
 export const GARDEN_RAID_MAX_STARS = 5;
 
 /**
- * Leaf spend refund multipliers by star (index = stars).
- * Index 0 unused; ≥2★ aims for positive EV vs leavesSpent.
+ * Leaf returned per leaf spent, by stars (index = stars = lanes destroyed).
+ *
+ * The spend is always debited; this is what comes back. One lane is what a raid at the legal
+ * budget nearly always tops out at (simulated: 0 / 1 / 2 lanes = 58 / 42 / 0% at the parity
+ * budget), so the 1★ value decides whether raiding is worth it at all. It used to be 0.5 — a
+ * WIN lost half the stake, and with a coin-flip win rate a raid returned about a quarter of
+ * what it cost.
+ *
+ * At 2.0 an evenly matched raider (≈43% wins — the garden is built and waiting, so equal
+ * strength favours it) gets back ≈ 0.86 of the stake in leaf and makes up the rest in gems and
+ * XP; a raider a few levels up (≈60%) profits. More lanes pay more, but only a stronger deck
+ * gets there.
  */
 export const GARDEN_RAID_LEAF_REFUND_BY_STAR: readonly number[] = [
-  0, 0.5, 1.1, 1.35, 1.6, 2.0,
+  0, 2.0, 2.6, 3.2, 3.8, 4.5,
 ];
 
 /**
@@ -176,8 +214,10 @@ export interface GardenRaidScoutSnapshot {
   scoutTimeoutSec: number;
   battleDurationSec: number;
   /**
-   * Most leaf the raider may deploy in this raid — `raidAttackBudget` of the placed plants'
-   * DP. The raider starts with min(wallet leaf, this). Absent on legacy snapshots (no cap).
+   * Most LEAF the raider may deploy in this raid — `raidAttackBudget` of the placed plants'
+   * DP, converted with {@link gardenRaidBudgetLeaf}. The raider starts with
+   * min(wallet leaf, this) and the server rejects a result that spent more (plus any leaf
+   * stolen mid-raid). Absent on legacy snapshots (no cap).
    */
   attackBudget?: number;
 }

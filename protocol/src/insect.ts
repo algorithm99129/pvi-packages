@@ -103,11 +103,13 @@ export interface InsectStatCurve {
     attackIntervalMinScale?: number;
     /** At max level the card recharges in this fraction of server.rechargeSeconds. */
     rechargeMinScale?: number;
+    /** At max level the insect moves at this multiple of moveSpeed (1.2 = 20% faster). */
+    moveSpeedMaxScale?: number;
     milestones?: Record<number, { trait?: string }>;
   };
 }
 
-import { scaleAttackIntervalMs, scaleRechargeSeconds } from './level-scaling';
+import { scaleAttackIntervalMs, scaleMoveSpeed, scaleRechargeSeconds } from './level-scaling';
 import type { GfxRectCrop, GfxAnimationSlot } from './gfx';
 import type { UnitCellAnchor } from './unit-sizing';
 import type { ExtraAttributes } from './extra-attributes';
@@ -430,6 +432,19 @@ export function resolveInsectAttackIntervalMs(
   return scaleAttackIntervalMs(
     insect.stats.attackIntervalMs,
     insect.stats.levelScaling?.attackIntervalMinScale,
+    level,
+    resolveInsectUpgrade(insect).maxLevel,
+  );
+}
+
+/** Cells per second at an upgrade level — see level-scaling.ts. */
+export function resolveInsectMoveSpeed(
+  insect: Pick<InsectDefinition, 'stats' | 'upgrade'>,
+  level: number,
+): number {
+  return scaleMoveSpeed(
+    insect.stats.moveSpeed,
+    insect.stats.levelScaling?.moveSpeedMaxScale,
     level,
     resolveInsectUpgrade(insect).maxLevel,
   );

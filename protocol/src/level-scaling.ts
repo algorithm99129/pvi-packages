@@ -32,6 +32,23 @@ export function scaleAttackIntervalMs(
   return Math.max(50, Math.round(baseMs * scale));
 }
 
+/**
+ * Move speed (cells per second) at a level. Unlike the two timings above this one rises,
+ * easing from the authored speed at level 1 to maxScale × that speed at max level.
+ */
+export function scaleMoveSpeed(
+  baseSpeed: number,
+  maxScale: number | undefined | null,
+  level: number,
+  maxLevel: number,
+): number {
+  if (!(baseSpeed > 0) || maxScale == null || !Number.isFinite(maxScale) || maxScale <= 1.001) {
+    return baseSpeed;
+  }
+  const speed = baseSpeed * (1 + levelT(level, maxLevel) * (maxScale - 1));
+  return Math.round(speed * 1000) / 1000;
+}
+
 /** Card recharge ("refresh") seconds at a level, to one decimal. Never below 0.5 s. */
 export function scaleRechargeSeconds(
   baseSeconds: number,
