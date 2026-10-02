@@ -216,6 +216,12 @@ export interface MissionRules {
    * `mowersEnabled: false`. Lets an insect mission protect some lanes and leave others open.
    */
   mowerLanes?: number[];
+  /**
+   * Lanes (0-based) open for play. Omitted or empty ⇒ every lane. The rest are shaded, cannot be
+   * planted and have no mower — for tutorial missions (Sunlit 1-1 plays in the middle lane only).
+   * Closed lanes are not "lost": they never count against lane-based star objectives.
+   */
+  activeLanes?: number[];
 }
 
 /** Inclusive column indices on the shared lane grid (0 = seed / left side). */

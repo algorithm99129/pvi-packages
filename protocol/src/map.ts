@@ -1,6 +1,20 @@
-export type MapCellType = 'ground' | 'water' | 'bridge' | 'pot';
+/**
+ * Cell surface. `ground` is grass (drawn with the grass pattern), `water` is water (water
+ * pattern), `stone` is bare paving (no pattern; plays exactly like ground). `bridge` and `pot`
+ * are special surfaces for canal bridges and roof pots.
+ */
+export type MapCellType = 'ground' | 'water' | 'stone' | 'bridge' | 'pot';
 
-export const MAP_CELL_TYPES: MapCellType[] = ['ground', 'water', 'bridge', 'pot'];
+export const MAP_CELL_TYPES: MapCellType[] = ['ground', 'water', 'stone', 'bridge', 'pot'];
+
+/** Editor labels: `ground` is shown as Grass. */
+export const MAP_CELL_TYPE_LABELS: Record<MapCellType, string> = {
+  ground: 'Grass',
+  water: 'Water',
+  stone: 'Stone',
+  bridge: 'Bridge',
+  pot: 'Pot',
+};
 
 export const DEFAULT_MAP_GRID_COLUMNS = 9;
 
@@ -17,7 +31,7 @@ export interface MapLaneConfig {
   plantColumns?: number;
 }
 
-/** Per-grid-cell terrain / surface type. Omitted cells default to `ground`. */
+/** Per-grid-cell terrain / surface type. Omitted cells default to `ground` (grass). */
 export interface MapGridCellType {
   lane: number;
   column: number;
