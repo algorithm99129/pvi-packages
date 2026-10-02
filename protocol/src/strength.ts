@@ -325,12 +325,12 @@ export const COMPETITIVE_RAID_CP_CAP = 1500;
  * out (above ~0.5 × DP extra budget changes nothing).
  *
  * Measured with the Unity auto-pilot on 40 random garden × deck matchups at unit levels 1, 10
- * and 20 (720 fights, greedy-v3, docs/GDD_CHECKLIST.md §11):
+ * and 20 (720 fights, greedy-v3, card recharge on game time, docs/GDD_CHECKLIST.md §11):
  *
  *   budget ÷ DP   raider wins     by level 1 / 10 / 20
- *      0.20           51%            56 / 51 / 46
- *      0.30           69%            80 / 66 / 61
- *      0.40           70%            78 / 74 / 60
+ *      0.20           50%            56 / 50 / 45
+ *      0.35           70%            76 / 70 / 65
+ *      0.50           78%            83 / 74 / 78
  *
  * Re-measure after any combat-stat change:
  *   node scripts/generate-parity-scenarios.mjs --raw --ratios 0.15,0.2,0.3
