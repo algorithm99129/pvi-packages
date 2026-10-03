@@ -194,6 +194,8 @@ export interface BattleRoomActionEnvelope {
   column?: number;
   level?: number;
   fromUserId?: string;
+  /** Sender-unique id for this input; a resend with the same id is not applied twice. */
+  clientActionId?: string;
 }
 
 /** One persisted combat input on the server action log. */
@@ -207,6 +209,7 @@ export interface BattleRoomLoggedAction {
   column: number;
   level: number;
   at: string;
+  clientActionId?: string;
 }
 
 /** POST /battle-rooms/:id/actions — reliable input path (also mirrored on socket). */
@@ -217,11 +220,18 @@ export interface BattleRoomPostActionRequest {
   lane?: number;
   column?: number;
   level?: number;
+  /**
+   * Sender-unique id (e.g. a GUID). A retried POST whose first attempt already landed
+   * returns the original logged action instead of logging it again.
+   */
+  clientActionId?: string;
 }
 
 export interface BattleRoomPostActionResult {
   ok: boolean;
   action: BattleRoomLoggedAction;
+  /** True when this was a resend of an already-logged clientActionId. */
+  duplicate?: boolean;
 }
 
 /** GET /battle-rooms/:id/actions?after=N */
@@ -241,6 +251,11 @@ export interface BattleRoomEndedRequest {
    * (not required for mid-battle forfeit via leave).
    */
   statusSeq?: number;
+  /**
+   * The authority's terminal snapshot, sent with the end call so the end does not depend on
+   * the socket having delivered it first. Applied when its seq is newer than the stored one.
+   */
+  status?: BattleRoomStatusSnapshot;
 }
 
 export interface BattleRoomEndedResult {
@@ -265,7 +280,26 @@ export const BATTLE_ROOM_SOCKET_EVENTS = {
   subscribe: 'room:subscribe',
   /** Optional client hint; authoritative loadout is POST /loadout + room:updated. */
   roomLoadout: 'room:loadout',
+  /** Client latency probe; the server answers the sender with netPong echoing the payload. */
+  netPing: 'net:ping',
+  netPong: 'net:pong',
+  /** A room member's socket went away or came back (opponent connection state). */
+  roomPresence: 'room:presence',
 } as const;
+
+/** net:ping / net:pong payload. `t` is the client's own clock, echoed back untouched. */
+export interface NetPingPayload {
+  t: number;
+  /** Server clock (ms since epoch) on the pong. */
+  serverTime?: number;
+}
+
+/** room:presence payload. */
+export interface BattleRoomPresencePayload {
+  roomId: string;
+  userId: string;
+  online: boolean;
+}
 
 /**
  * Sun the INSECT side starts a room match with. It earns nothing during the fight, so this is
@@ -329,8 +363,12 @@ export const BATTLE_ROOM_MAX_PLAYERS = 2;
 export const BATTLE_ROOM_MAX_LOADOUT = 10;
 /** Max plants/insects allowed on a status snapshot. */
 export const BATTLE_ROOM_STATUS_MAX_UNITS = 80;
-/** Minimum ms between accepted battle:status publishes per room. */
-export const BATTLE_ROOM_STATUS_MIN_INTERVAL_MS = 100;
+/**
+ * Minimum ms between accepted battle:status publishes per room. Measured on server arrival,
+ * so it stays well under the client's send interval: a slow link that delivers two snapshots
+ * back to back must not get the newer one refused.
+ */
+export const BATTLE_ROOM_STATUS_MIN_INTERVAL_MS = 40;
 
 export function normalizeBattleRoomDurationSec(value: unknown): BattleRoomDurationSec {
   const n = Math.floor(Number(value) || 0);

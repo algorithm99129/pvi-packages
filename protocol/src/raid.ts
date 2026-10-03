@@ -156,6 +156,11 @@ export interface GardenRaidCompleteRequest {
   teamMatchId?: EntityId;
   /** Lanes fully cleared this raid — used for war star table when teamMatchId is set. */
   lanesDestroyed?: number;
+  /**
+   * Client-unique id for this settlement (e.g. a GUID made when the raid starts). A resend
+   * after a lost reply returns the result of the first, already-settled attempt.
+   */
+  submitId?: string;
 }
 
 /** Response from POST /api/raids/garden/complete */
