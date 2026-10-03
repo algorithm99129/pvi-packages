@@ -138,7 +138,7 @@ export interface GardenRaidCompleteRequest {
   insectIds: EntityId[];
   /** Stars earned this raid (0–5). */
   stars: number;
-  /** Lanes where the lawn mower fired (secured, not fully destroyed). */
+  /** Lanes where the insect detector fired (secured, not fully destroyed). */
   lanesSecured?: number;
   victory: boolean;
   /** Optional defender account id (must not be the attacker). */

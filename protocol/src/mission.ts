@@ -77,8 +77,9 @@ export function missionClientRewardPreviews(reward: MissionReward | null | undef
  *   lanes_kept           win with at least `value` lanes still standing (plant missions). As the
  *                        1★ objective it is the WIN line: the mission is lost the moment fewer
  *                        than `value` lanes can still be standing, not only when all five fall
- *   no_lawn_mowers_lost  win without losing a lane (plant missions)
- *   mowers_kept          win with at least `value` lawn mowers unused (plant missions)
+ *   no_lawn_mowers_lost  win without losing a lane (plant missions; historical id)
+ *   mowers_kept          win with at least `value` insect detectors unused (plant missions;
+ *                        historical id — the detector replaced the lawn mower)
  *   max_plants           win with at most `value` plants standing (plant missions, ≤ tray max 10)
  */
 export type MissionObjectiveType =
@@ -179,7 +180,10 @@ export type MissionSide = 'defender' | 'attacker';
 export interface MissionRules {
   /** Gameplay variant within the mission side (conveyor, last stand, …). */
   mode?: MissionMode;
-  /** Lawn mowers on each lane (classic PVZ). Default true for defender. */
+  /**
+   * Insect detectors at the house end of each lane (the last line of defence; the field keeps
+   * its historical "mowers" name). Default true for defender.
+   */
   mowersEnabled?: boolean;
   /** Player can place plants during battle. Default true for defender. */
   plantingEnabled?: boolean;
@@ -211,14 +215,14 @@ export interface MissionRules {
    */
   attackerBudget?: number;
   /**
-   * Lanes (0-based) that have a lawn mower. Only read when `mowersEnabled` is not false.
-   * Omitted or empty ⇒ every lane has one (the classic default); "no mowers at all" is
+   * Lanes (0-based) that have an insect detector. Only read when `mowersEnabled` is not false.
+   * Omitted or empty ⇒ every lane has one (the classic default); "no detectors at all" is
    * `mowersEnabled: false`. Lets an insect mission protect some lanes and leave others open.
    */
   mowerLanes?: number[];
   /**
    * Lanes (0-based) open for play. Omitted or empty ⇒ every lane. The rest are shaded, cannot be
-   * planted and have no mower — for tutorial missions (Sunlit 1-1 plays in the middle lane only).
+   * planted and have no detector — for tutorial missions (Sunlit 1-1 plays in the middle lane only).
    * Closed lanes are not "lost": they never count against lane-based star objectives.
    */
   activeLanes?: number[];
