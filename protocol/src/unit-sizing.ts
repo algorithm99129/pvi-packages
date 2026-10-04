@@ -29,6 +29,69 @@ export interface UnitCellAnchor {
   maxY: number;
 }
 
+/**
+ * A hole rimmed with soil at a unit's base (pieces of Resources/Screen/GroundEdgePattern laid
+ * along an ellipse), authored in Studio's cell placement section. Same space as
+ * {@link UnitCellAnchor}: fractions of the placement cell (or footprint), bottom-left origin.
+ * The far half of the rim is drawn behind the unit and the near half in front of it. Units
+ * that burrow get a hole at their dig line without this; it is for plants that should look
+ * rooted in the lawn.
+ */
+export interface UnitGroundEdge {
+  enabled: boolean;
+  /** Centre of the ellipse, 0 = left edge of the cell, 1 = right edge. */
+  x: number;
+  /** Centre of the ellipse (the groundline), 0 = bottom edge of the cell, 1 = top edge. */
+  y: number;
+  /** Width of the ellipse as a fraction of the cell (placement box) width. */
+  width: number;
+  /** Height of the ellipse as a fraction of the cell (placement box) height. */
+  height: number;
+  /** Which arrangement of soil pieces ("Shuffle" in Studio). */
+  seed: number;
+}
+
+export const UNIT_GROUND_EDGE_WIDTH_MIN = 0.1;
+export const UNIT_GROUND_EDGE_WIDTH_MAX = 3;
+export const UNIT_GROUND_EDGE_HEIGHT_MIN = 0.02;
+export const UNIT_GROUND_EDGE_HEIGHT_MAX = 2;
+/**
+ * Default height of the hole per unit of width, both as cell fractions. A cell is about 1.5×
+ * wider than tall, so 0.45 draws an ellipse roughly 3.3 times wider than it is high — a round
+ * hole seen at the lawn's angle.
+ */
+export const UNIT_GROUND_EDGE_HEIGHT_PER_WIDTH = 0.45;
+
+/** The hole a unit gets when the option is first switched on: around the base of its art. */
+export function defaultUnitGroundEdge(anchor: UnitCellAnchor): UnitGroundEdge {
+  const round = (n: number) => Math.round(n * 10000) / 10000;
+  const width = Math.min(
+    UNIT_GROUND_EDGE_WIDTH_MAX,
+    Math.max(UNIT_GROUND_EDGE_WIDTH_MIN, (anchor.maxX - anchor.minX) * 0.8),
+  );
+  return {
+    enabled: true,
+    x: round((anchor.minX + anchor.maxX) / 2),
+    y: round(anchor.minY),
+    width: round(width),
+    height: round(width * UNIT_GROUND_EDGE_HEIGHT_PER_WIDTH),
+    seed: 1,
+  };
+}
+
+/** Fill in what older data lacks (height, seed) so every reader sees the full shape. */
+export function resolveUnitGroundEdge(edge: Partial<UnitGroundEdge> & { enabled: boolean }): UnitGroundEdge {
+  const width = Number.isFinite(edge.width) ? (edge.width as number) : 1;
+  return {
+    enabled: edge.enabled,
+    x: Number.isFinite(edge.x) ? (edge.x as number) : 0.5,
+    y: Number.isFinite(edge.y) ? (edge.y as number) : 0,
+    width,
+    height: Number.isFinite(edge.height) ? (edge.height as number) : width * UNIT_GROUND_EDGE_HEIGHT_PER_WIDTH,
+    seed: Number.isFinite(edge.seed) ? Math.trunc(edge.seed as number) : 0,
+  };
+}
+
 /** Soft bounds for authored cell-anchor edges (allows overflow past the cell). */
 export const UNIT_CELL_ANCHOR_EDGE_MIN = -1.5;
 export const UNIT_CELL_ANCHOR_EDGE_MAX = 2.5;

@@ -170,7 +170,7 @@ import type { PlantBehaviorConfig } from './plant-behavior';
 import type { ExtraAttributes } from './extra-attributes';
 import type { EntityStateGraph } from './entity-state-graph';
 import { mirrorPlantClipsFromGraph } from './entity-state-graph';
-import type { UnitCellAnchor } from './unit-sizing';
+import type { UnitCellAnchor, UnitGroundEdge } from './unit-sizing';
 
 /** Normalized point on the plant sprite (0–1 from bottom-left of displayed bounds). */
 export interface PlantBulletSpawnPoint {
@@ -501,6 +501,8 @@ export interface PlantClientAssets {
    * Prefer this over legacy `cellWidthFill` / `scale`.
    */
   cellAnchor?: UnitCellAnchor;
+  /** Soil mound at the plant's base (Studio: cell placement → Ground edge). */
+  groundEdge?: UnitGroundEdge;
   /**
    * @deprecated Prefer `cellAnchor`. Fraction of grid cell width (0–1).
    * Kept in sync with `cellAnchor.maxX - cellAnchor.minX` when the editor saves.
