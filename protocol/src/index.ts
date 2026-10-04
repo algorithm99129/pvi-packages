@@ -50,6 +50,7 @@ export * from './app-settings';
 export * from './metrics';
 export * from './chat';
 export * from './hub-unlock';
+export * from './demo';
 export * from './live-events';
 export * from './strength';
 export * from './client-update';
