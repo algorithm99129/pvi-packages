@@ -109,6 +109,11 @@ export interface PlayerProfile extends UserProfile, UserProgression {
    * attacking another garden clears this early.
    */
   gardenSafeModeUntil: string | null;
+  /**
+   * Hub villages open for this player (`HubFeatureId`s, see hub-unlock.ts). A village not
+   * listed is locked: the hub shows its requirement and the server refuses its actions.
+   */
+  hubUnlocks: string[];
 }
 
 /** Response from POST /api/player/missions/complete */

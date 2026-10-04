@@ -49,6 +49,7 @@ export * from './admin-api';
 export * from './app-settings';
 export * from './metrics';
 export * from './chat';
+export * from './hub-unlock';
 export * from './live-events';
 export * from './strength';
 export * from './client-update';

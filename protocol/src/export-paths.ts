@@ -27,6 +27,8 @@ export const CLIENT_EXPORT_PATHS = {
   flagsDir: `${CLIENT_RESOURCES_ROOT}/Flags`,
   chat: `${CLIENT_RESOURCES_ROOT}/Chat/chat.json`,
   chatDir: `${CLIENT_RESOURCES_ROOT}/Chat`,
+  /** Village unlock table (hub-unlock.ts) — the client paints locks and requirement text from it. */
+  hubUnlocks: `${CLIENT_RESOURCES_ROOT}/Progression/hub_unlocks.json`,
   specialCatalog: `${CLIENT_RESOURCES_ROOT}/Special/special.json`,
   specialDir: `${CLIENT_RESOURCES_ROOT}/Special`,
   eggGroupConfig: `${CLIENT_RESOURCES_ROOT}/Special/egg_group.json`,
@@ -62,6 +64,8 @@ export const SERVER_EXPORT_PATHS = {
   flagsDir: `${SERVER_RESOURCES_DIR}/Flags`,
   chat: `${SERVER_RESOURCES_DIR}/Chat/chat.json`,
   chatDir: `${SERVER_RESOURCES_DIR}/Chat`,
+  /** Village unlock table (hub-unlock.ts) — the server enforces it. */
+  hubUnlocks: `${SERVER_RESOURCES_DIR}/Progression/hub_unlocks.json`,
   specialCatalog: `${SERVER_RESOURCES_DIR}/Special/special.json`,
   specialDir: `${SERVER_RESOURCES_DIR}/Special`,
   eggGroupConfig: `${SERVER_RESOURCES_DIR}/Special/egg_group.json`,
