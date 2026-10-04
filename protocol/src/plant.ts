@@ -562,6 +562,41 @@ export function withPlantStateGraph(
   };
 }
 
+/** Just the placement fields the stacking rules read (any plant export satisfies it). */
+type PlantStackingFields = {
+  stackRole?: string;
+  canBeCovered?: boolean;
+  canStandOnPad?: boolean;
+  footprintColumns?: number;
+  footprintLanes?: number;
+};
+
+/**
+ * May a shell (Bubble Aloe) cover this plant? Authored per plant in Studio
+ * (`server.canBeCovered`, default yes). A shell is one cell wide, so a multi-cell plant
+ * (Chestnut Cannon) is never covered, and neither is a pad, a shell or a ground hazard.
+ */
+export function plantCanBeCovered(server: PlantStackingFields | null | undefined): boolean {
+  if (server?.stackRole) return false;
+  if ((Number(server?.footprintColumns) || 1) > 1 || (Number(server?.footprintLanes) || 1) > 1) {
+    return false;
+  }
+  return server?.canBeCovered !== false;
+}
+
+/**
+ * May this plant stand on a pad (Mangrove Bridge) on water / roof cells? Authored per plant in
+ * Studio (`server.canStandOnPad`, default yes). Pads, ground hazards and multi-cell plants
+ * never do.
+ */
+export function plantCanStandOnPad(server: PlantStackingFields | null | undefined): boolean {
+  if (server?.stackRole === 'pad' || server?.stackRole === 'hazard') return false;
+  if ((Number(server?.footprintColumns) || 1) > 1 || (Number(server?.footprintLanes) || 1) > 1) {
+    return false;
+  }
+  return server?.canStandOnPad !== false;
+}
+
 export interface PlantServerConfig {
   /**
    * How the plant enters the roster:
@@ -601,6 +636,16 @@ export interface PlantServerConfig {
    * - `hazard`: spikeweed-style ground hazard (walk-over)
    */
   stackRole?: 'pad' | 'shell' | 'hazard';
+  /**
+   * A shell (Bubble Aloe) may cover this plant. Omit = yes. Multi-cell plants are never
+   * covered whatever this says — see {@link plantCanBeCovered}.
+   */
+  canBeCovered?: boolean;
+  /**
+   * This plant may stand on a pad (Mangrove Bridge). Omit = yes — see
+   * {@link plantCanStandOnPad}.
+   */
+  canStandOnPad?: boolean;
   /**
    * Classic plant-on-plant upgrade: this packet cannot plant on empty cells.
    * It must be planted onto a living plant with this id, which is replaced.
