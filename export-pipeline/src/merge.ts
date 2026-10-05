@@ -167,6 +167,7 @@ export function mergeMap(client: ClientMapExport, server?: ServerMapExport): Map
     laneCount: client.laneCount ?? server?.laneCount ?? 5,
     gridColumns: client.gridColumns ?? server?.gridColumns ?? (legacyColumns > 0 ? legacyColumns : 9),
     lanes: mergePreferPrimary(client.lanes, server?.lanes) ?? client.lanes ?? server?.lanes ?? [],
+    maxFootprintLanes: client.maxFootprintLanes ?? server?.maxFootprintLanes,
     client: client.client,
     server: server?.server ?? {
       corePosition: client.corePosition ?? { lane: 0, column: 0 },

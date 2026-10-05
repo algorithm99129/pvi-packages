@@ -111,6 +111,11 @@ export interface MapTemplateDefinition {
    */
   gridColumns: number;
   lanes: MapLaneConfig[];
+  /**
+   * Most lanes one unit may span on this map. 1 = single-lane units only (Sky Terrace's curved
+   * lanes cannot hold a 2×2 plant). Omitted = no limit.
+   */
+  maxFootprintLanes?: number;
   /** Client background / tileset — paths relative to Assets/Resources */
   client: {
     backgroundImage: string;
@@ -155,6 +160,7 @@ export interface ServerMapExport {
   laneCount: number;
   gridColumns: number;
   lanes: MapLaneConfig[];
+  maxFootprintLanes?: number;
   server: MapTemplateDefinition['server'];
 }
 
@@ -166,8 +172,18 @@ export interface ClientMapExport {
   laneCount: number;
   gridColumns: number;
   lanes: MapLaneConfig[];
+  maxFootprintLanes?: number;
   corePosition: MapTemplateDefinition['server']['corePosition'];
   client: MapTemplateDefinition['client'];
+}
+
+/** True when a unit spanning `footprintLanes` lanes may be placed on this map. */
+export function mapAllowsFootprintLanes(
+  map: Pick<MapTemplateDefinition, 'maxFootprintLanes'> | null | undefined,
+  footprintLanes: number,
+): boolean {
+  const max = Math.floor(Number(map?.maxFootprintLanes) || 0);
+  return max <= 0 || Math.max(1, Math.floor(footprintLanes || 1)) <= max;
 }
 
 /** Default Resources-relative path (no extension) for the square map list thumbnail. */

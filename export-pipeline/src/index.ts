@@ -201,6 +201,7 @@ export function toServerMap(map: MapTemplateDefinition): ServerMapExport {
     laneCount: map.laneCount,
     gridColumns: map.gridColumns,
     lanes: map.lanes,
+    ...(map.maxFootprintLanes ? { maxFootprintLanes: map.maxFootprintLanes } : {}),
     server: map.server,
   };
 }
@@ -214,6 +215,7 @@ export function toClientMap(map: MapTemplateDefinition): ClientMapExport {
     laneCount: map.laneCount,
     gridColumns: map.gridColumns,
     lanes: map.lanes,
+    ...(map.maxFootprintLanes ? { maxFootprintLanes: map.maxFootprintLanes } : {}),
     corePosition: map.server.corePosition,
     client: map.client,
   };
