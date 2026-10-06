@@ -70,6 +70,13 @@ export interface AdminMetricsSummaryResult {
   error?: string;
 }
 
+/** Studio → GET /admin/shop/orders. */
+export interface AdminShopOrdersResult {
+  ok: boolean;
+  data?: import('./shop').AdminShopOrdersResponse;
+  error?: string;
+}
+
 export interface AdminPopularityResult {
   ok: boolean;
   rows?: CatalogUsageRow[];

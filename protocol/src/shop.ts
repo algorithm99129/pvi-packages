@@ -48,7 +48,19 @@ export interface BuyResourceCatalog {
   gemPack10Amount: number;
 }
 
-/** POST /shop/purchase */
+/** USD price of each real-money SKU, in cents. The catalog's priceLabel is derived from it. */
+export const SHOP_SKU_PRICE_CENTS: Readonly<Record<string, number>> = {
+  [SHOP_SKU_COIN_PACK]: 199,
+  [SHOP_SKU_GEM_PACK_10]: 1000,
+  [SHOP_SKU_STARTER_PACK]: 499,
+};
+
+/** Is this SKU paid with real money (a payment order) rather than gems? */
+export function isPaidShopSku(sku: string): boolean {
+  return Object.prototype.hasOwnProperty.call(SHOP_SKU_PRICE_CENTS, String(sku ?? '').trim());
+}
+
+/** POST /shop/purchase — gem-priced SKUs only; paid SKUs go through POST /shop/orders. */
 export interface ShopPurchaseRequest {
   sku: string;
 }
@@ -56,4 +68,89 @@ export interface ShopPurchaseRequest {
 export interface ShopPurchaseResult {
   sku: string;
   wallet: WalletResources;
+}
+
+/** Lifecycle of a real-money purchase. Credited once, by the provider's webhook. */
+export type ShopOrderStatus = 'pending' | 'paid' | 'expired' | 'failed';
+
+/** Payment provider that took the money. */
+export type ShopPaymentProvider = 'cryptumpay';
+
+/** POST /shop/orders */
+export interface ShopOrderCreateRequest {
+  sku: string;
+  /** Where the pay page sends the player afterwards: 'web' (default), 'webgl' or 'android'. */
+  platform?: 'web' | 'webgl' | 'android';
+}
+
+/** POST /shop/orders → an order to pay; GET /shop/orders/:id → its state. */
+export interface ShopOrderView {
+  id: string;
+  sku: string;
+  provider: ShopPaymentProvider;
+  status: ShopOrderStatus;
+  priceCents: number;
+  currency: string;
+  /** The website page that hosts the provider's checkout for this order. */
+  payUrl: string;
+  /** The provider's own order id, for the checkout widget. */
+  providerOrderId: string;
+  createdAt: string;
+  expiresAt: string | null;
+  paidAt: string | null;
+  /** Present once paid: the wallet after the grant. */
+  wallet?: WalletResources;
+}
+
+/** GET /shop/orders — the player's recent orders, newest first. */
+export interface ShopOrderListResponse {
+  orders: ShopOrderView[];
+}
+
+/** What the pay page needs to open the checkout widget (public, by order id). */
+export interface ShopOrderCheckout {
+  id: string;
+  sku: string;
+  status: ShopOrderStatus;
+  provider: ShopPaymentProvider;
+  providerOrderId: string;
+  /** Provider public project id for the widget. */
+  projectId: string;
+  priceCents: number;
+  currency: string;
+  title: string;
+  /** Display name of the buying account, so the page can show who is paying. */
+  buyerName: string;
+  /** Deep link / URL to return to the client that started the order, if any. */
+  returnUrl: string | null;
+}
+
+/** GET /admin/shop/orders — one purchase as Studio lists it. */
+export interface AdminShopOrderRow {
+  id: string;
+  userId: string;
+  displayName: string;
+  email: string;
+  sku: string;
+  provider: ShopPaymentProvider;
+  providerOrderId: string;
+  status: ShopOrderStatus;
+  priceCents: number;
+  currency: string;
+  platform: string;
+  createdAt: string;
+  paidAt: string | null;
+  paidCrypto: string | null;
+  paidCryptoAmount: string | null;
+  /** Fiat received after the provider's fees, as it reported it. */
+  incomeFiat: string | null;
+  granted: WalletResources | null;
+}
+
+export interface AdminShopOrdersResponse {
+  orders: AdminShopOrderRow[];
+  /** Totals over the listed window: paid count and gross / net in cents. */
+  paidCount: number;
+  grossCents: number;
+  netCents: number;
 }
