@@ -435,6 +435,52 @@ export function computeDefenseStrength(opts: {
   return Math.round(sum);
 }
 
+/** What {@link computeRosterPotential} describes: the best garden a roster could fill. */
+export type RosterPotential = {
+  /** Defence strength of that garden (DP × levelPower per copy). */
+  strength: number;
+  /** DP it would spend — the attack CP cap it earns. */
+  dp: number;
+};
+
+/**
+ * The strongest legal garden a player could build from the plants they have unlocked:
+ * the top plants by DP × levelPower, each up to `maxCopies` times, until `cells` are full.
+ *
+ * Placement is what a raider actually faces, so {@link computeDefenseStrength} stays on
+ * placed plants. This is the floor under it: a player whose garden is still locked (it
+ * opens at Sunlit 1-3) or empty still has an army, and the home screen should say so
+ * rather than show 0 / 0. It also sets the attack cap for the same player, so unlocking
+ * and levelling plants raises both numbers while digging up the garden lowers neither.
+ */
+export function computeRosterPotential(opts: {
+  unlocked: PlacedPlantSlot[];
+  cells: number;
+  maxCopies?: number;
+}): RosterPotential {
+  const cells = Math.max(0, Math.floor(Number(opts.cells) || 0));
+  const copies = Math.max(1, Math.floor(Number(opts.maxCopies) || 1));
+  const ranked = (opts.unlocked ?? [])
+    .map((p) => ({
+      dp: Math.max(0, Number(p.dpCost) || 0),
+      power: Math.max(0, Number(p.dpCost) || 0) * levelPower(p.level),
+    }))
+    .filter((p) => p.dp > 0)
+    .sort((a, b) => b.power - a.power);
+
+  let left = cells;
+  let strength = 0;
+  let dp = 0;
+  for (const p of ranked) {
+    if (left <= 0) break;
+    const n = Math.min(copies, left);
+    strength += n * p.power;
+    dp += n * p.dp;
+    left -= n;
+  }
+  return { strength: Math.round(strength), dp: Math.round(dp) };
+}
+
 /** PvP stars from destroyed lanes (GDD §10.7). */
 export function starsFromDestroyedLanes(
   destroyedLanes: number,
