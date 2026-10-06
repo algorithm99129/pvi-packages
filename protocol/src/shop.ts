@@ -46,6 +46,11 @@ export interface BuyResourceCatalog {
   leafGemPrice: number;
   /** Gems in the $10 pack (`GEM_PACK_10_USD`). */
   gemPack10Amount: number;
+  /**
+   * Payment provider's public project id for the checkout widget, or null when
+   * real-money packs are not configured on this server.
+   */
+  paymentProjectId: string | null;
 }
 
 /** USD price of each real-money SKU, in cents. The catalog's priceLabel is derived from it. */
