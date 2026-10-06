@@ -574,6 +574,14 @@ type PlantStackingFields = {
 };
 
 /**
+ * A garden item-box charge: goes in one of the garden's pots, never on the lawn grid, and
+ * fires once per battle (Storm Tulip, Sneezeweed, Nest Breaker, Tangle Root, Bubble Aloe).
+ */
+export function plantIsGardenItemBox(server: { gardenItemBox?: boolean | null } | null | undefined): boolean {
+  return server?.gardenItemBox === true;
+}
+
+/**
  * May a shell (Bubble Aloe) cover this plant? Authored per plant in Studio
  * (`server.canBeCovered`, default yes). A shell is one cell wide, so a multi-cell plant
  * (Chestnut Cannon) is never covered, and neither is a pad, a shell or a ground hazard.
@@ -648,6 +656,11 @@ export interface PlantServerConfig {
    * {@link plantCanStandOnPad}.
    */
   canStandOnPad?: boolean;
+  /**
+   * A garden item-box charge: goes in one of the garden's pots (never on the lawn grid) and
+   * fires once per battle. Omit = no — see {@link plantIsGardenItemBox}.
+   */
+  gardenItemBox?: boolean;
   /**
    * Classic plant-on-plant upgrade: this packet cannot plant on empty cells.
    * It must be planted onto a living plant with this id, which is replaced.

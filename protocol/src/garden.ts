@@ -86,25 +86,15 @@ export const GARDEN_ITEM_BOX_LEVEL_UNLOCKS: readonly number[] = [1, 5, 10];
  */
 export const GARDEN_ITEM_BOX_GEM_UNLOCK_COSTS: readonly number[] = [0, 50, 100];
 
-/** Plant ids that live in the item box (never on the permanent lawn grid). */
-export const GARDEN_ITEM_BOX_PLANT_IDS = new Set([
-  'storm_tulip',
-  'mint_mist',
-  'mallet_mushroom',
-]);
-
 /**
- * True when this plant is a village item-box charge (instant explode + squash),
- * not a permanent garden grid station.
+ * True when this plant is a village item-box charge (it goes in a pot and fires once per
+ * battle), not a permanent garden grid station. Authored per plant in Studio
+ * (`server.gardenItemBox`); the Unity client reads the same flag.
  */
 export function isGardenItemBoxPlant(plant: {
-  id?: string | null;
-  behavior?: { kind?: string | null } | null;
+  server?: { gardenItemBox?: boolean | null } | null;
 }): boolean {
-  const id = String(plant.id ?? '').trim().toLowerCase();
-  if (id && GARDEN_ITEM_BOX_PLANT_IDS.has(id)) return true;
-  const kind = String(plant.behavior?.kind ?? '').trim().toLowerCase();
-  return kind === 'instant_explode';
+  return plant.server?.gardenItemBox === true;
 }
 
 /** How many item-box slots village level alone unlocks (1..{@link GARDEN_ITEM_BOX_MAX_SLOTS}). */
