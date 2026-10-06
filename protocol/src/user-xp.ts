@@ -33,6 +33,61 @@ export function levelFromXp(totalXp: number): number {
   return level;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Level-up rewards
+//
+// Reaching an account level pays a one-off bundle the player claims from the level-up
+// dialogue (the claim is explicit so the moment is seen, not silently banked). Sized against
+// the shop: coins are cheap (10,000 for $1.99), gems are the play-loop faucet (~100 a day for
+// an engaged player), leaves trade at ~3 gems each. Every fifth level is a milestone and pays
+// double. Level 1 is the starting level and pays nothing.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface LevelUpReward {
+  level: number;
+  coin: number;
+  gem: number;
+  leaf: number;
+  /** Every fifth level pays double. */
+  milestone: boolean;
+}
+
+/** What reaching account level `level` pays. */
+export function levelUpReward(level: number): LevelUpReward {
+  const L = Math.max(1, Math.floor(Number(level) || 1));
+  if (L <= 1) return { level: L, coin: 0, gem: 0, leaf: 0, milestone: false };
+  const milestone = L % 5 === 0;
+  const mult = milestone ? 2 : 1;
+  return {
+    level: L,
+    coin: (150 + 50 * L) * mult,
+    gem: (10 + 2 * L) * mult,
+    leaf: (5 + 2 * L) * mult,
+    milestone,
+  };
+}
+
+/** Rewards for every level above `claimedLevel` up to and including `userLevel`. */
+export function pendingLevelUpRewards(claimedLevel: number, userLevel: number): LevelUpReward[] {
+  const from = Math.max(1, Math.floor(Number(claimedLevel) || 1));
+  const to = Math.max(from, Math.min(MAX_USER_LEVEL, Math.floor(Number(userLevel) || 1)));
+  const out: LevelUpReward[] = [];
+  for (let l = from + 1; l <= to; l++) out.push(levelUpReward(l));
+  return out;
+}
+
+/** POST /player/level-rewards/claim */
+export interface LevelRewardClaimResult {
+  /** Levels paid out by this call, lowest first (empty when nothing was pending). */
+  levels: number[];
+  /** Highest level whose reward is now claimed. */
+  levelRewardClaimed: number;
+  coin: number;
+  gem: number;
+  leaf: number;
+  wallet: { coin: number; gem: number; leaf: number };
+}
+
 /** Max village level allowed for this user level. */
 export function maxVillageLevelForUser(userLevel: number): number {
   return Math.min(Math.max(1, Math.floor(userLevel)), MAX_VILLAGE_LEVEL);
@@ -60,6 +115,8 @@ export function xpBarFromTotal(totalXp: number): UserXpBar {
 export interface UserProgression {
   totalXp: number;
   userLevel: number;
+  /** Highest account level whose level-up reward has been claimed (≥ 1). */
+  levelRewardClaimed: number;
   villageLevel: number;
   maxVillageLevel: number;
   xpIntoLevel: number;
@@ -70,6 +127,7 @@ export interface UserProgression {
 export function buildUserProgression(
   totalXp: number,
   villageLevel: number,
+  levelRewardClaimed = 1,
 ): UserProgression {
   const xp = Math.max(0, Math.floor(totalXp));
   const bar = xpBarFromTotal(xp);
@@ -78,6 +136,7 @@ export function buildUserProgression(
   return {
     totalXp: xp,
     userLevel: bar.userLevel,
+    levelRewardClaimed: Math.max(1, Math.min(bar.userLevel, Math.floor(levelRewardClaimed) || 1)),
     villageLevel: village,
     maxVillageLevel,
     xpIntoLevel: bar.xpIntoLevel,
