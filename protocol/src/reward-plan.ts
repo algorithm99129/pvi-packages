@@ -70,6 +70,94 @@ export interface AchievementDef {
   grant: HubRewardGrant;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Achievement ladders
+//
+// Achievements are tracks, one per condition type, and the player sees one goal per track:
+// the lowest tier not yet claimed. Claiming it moves the track to the next tier (win 10
+// missions → win 20 → win 30 …). The authored list seeds each track; past its last entry the
+// tiers continue by rule, so a long-term player never runs out of goals. Levels have caps
+// (account 50, village 10) and stop there.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ACHIEVEMENT_TIER_STEP: Record<AchievementConditionType, number> = {
+  user_level: 5,
+  village_level: 2,
+  mission_wins: 10,
+};
+
+const ACHIEVEMENT_TIER_CAP: Record<AchievementConditionType, number> = {
+  user_level: 50,
+  village_level: 10,
+  mission_wins: Number.POSITIVE_INFINITY,
+};
+
+const ACHIEVEMENT_TIER_LABEL: Record<AchievementConditionType, (value: number) => string> = {
+  user_level: (v) => `Reach player level ${v}`,
+  village_level: (v) => `Village level ${v}`,
+  mission_wins: (v) => `Win ${v} missions`,
+};
+
+/** The tier after `last` on a track, or null at the track's cap. */
+export function nextAchievementTier(last: AchievementDef): AchievementDef | null {
+  const type = last.condition.type;
+  const step = ACHIEVEMENT_TIER_STEP[type];
+  const cap = ACHIEVEMENT_TIER_CAP[type];
+  if (last.condition.value >= cap) return null;
+  // The last tier lands exactly on the cap (village 3 → 5 → 7 → 9 → 10).
+  const value = Math.min(cap, last.condition.value + step);
+  // Rewards grow with the tier: the reward per step of the seed, times the tiers climbed.
+  const tiers = value / step;
+  const perTier = last.condition.value > 0 ? last.condition.value / step : 1;
+  const scale = Math.max(1, tiers / Math.max(1, perTier));
+  const grow = (n?: number) => (n ? Math.round(n * scale) : undefined);
+  return {
+    id: `ach_${type}_${value}`,
+    displayName: ACHIEVEMENT_TIER_LABEL[type](value),
+    condition: { type, value },
+    grant: {
+      ...last.grant,
+      coin: grow(last.grant.coin),
+      gem: grow(last.grant.gem),
+      leaf: grow(last.grant.leaf),
+    },
+  };
+}
+
+/**
+ * The goal each track shows: the lowest authored tier not yet claimed, or — once every
+ * authored tier on the track is claimed — the next generated tier. One entry per track, in
+ * the order the tracks first appear in the plan.
+ */
+export function currentAchievementGoals(
+  authored: AchievementDef[],
+  claimedIds: ReadonlyArray<string>,
+): AchievementDef[] {
+  const claimed = new Set(claimedIds);
+  const byType = new Map<AchievementConditionType, AchievementDef[]>();
+  for (const a of authored) {
+    const list = byType.get(a.condition.type) ?? [];
+    list.push(a);
+    byType.set(a.condition.type, list);
+  }
+  const goals: AchievementDef[] = [];
+  for (const [, list] of byType) {
+    list.sort((a, b) => a.condition.value - b.condition.value);
+    const open = list.find((a) => !claimed.has(a.id));
+    if (open) {
+      goals.push(open);
+      continue;
+    }
+    let tier: AchievementDef | null = list[list.length - 1];
+    for (let guard = 0; guard < 10_000 && tier; guard++) {
+      tier = nextAchievementTier(tier);
+      if (tier && !claimed.has(tier.id)) break;
+    }
+    if (tier) goals.push(tier);
+  }
+  return goals;
+}
+
 /** Authorable hub rewards plan (editor → API Resources/Rewards/rewards.json only).
  * Item art PNGs are stored on the Unity client under Assets/Resources/Rewards/.
  */
