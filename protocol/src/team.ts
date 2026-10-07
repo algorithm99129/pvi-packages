@@ -10,8 +10,8 @@ export const TEAM_MAX_NAME_LEN = 24;
 export const TEAM_MAX_DESCRIPTION_LEN = 160;
 
 export const TEAM_DEFAULT_REGION = 'global';
-/** Matches DEFAULT_FLAG_ID / Flags/flag_000.png. */
-export const TEAM_DEFAULT_BANNER_ID = 'flag_000';
+/** Matches DEFAULT_FLAG_ID / Flags/flag_001.png. */
+export const TEAM_DEFAULT_BANNER_ID = 'flag_001';
 export const TEAM_DEFAULT_LEAGUE = 'bronze_1';
 
 /** Max names returned by GET /teams/random-name. */
@@ -117,7 +117,7 @@ export interface CreateTeamRequest {
   description?: string;
   joinType?: TeamJoinType;
   requiredScore?: number;
-  /** Team flag id from Flags catalog (e.g. `flag_000`). */
+  /** Team flag id from Flags catalog (e.g. `flag_001`). */
   bannerId?: string;
 }
 

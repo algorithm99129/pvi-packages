@@ -1,7 +1,7 @@
 /** Client/editor team flag entry — image is Unity Resources path (no extension). */
 export interface FlagDefinition {
   id: string;
-  /** Unity Resources path without extension, e.g. `Flags/flag_000`. */
+  /** Unity Resources path without extension, e.g. `Flags/flag_001`. */
   image: string;
 }
 
@@ -13,7 +13,7 @@ export interface FlagIdEntry {
 export const FLAGS_FOLDER = 'Flags';
 
 /** Default team banner when none is chosen. */
-export const DEFAULT_FLAG_ID = 'flag_000';
+export const DEFAULT_FLAG_ID = 'flag_001';
 
 export function flagImagePath(id: string): string {
   return `${FLAGS_FOLDER}/${id}`;
