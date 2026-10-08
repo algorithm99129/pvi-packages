@@ -1,3 +1,5 @@
+import type { WalletResources } from './wallet';
+
 /** Client/editor avatar entry — image is Unity Resources path (no extension). */
 export interface AvatarDefinition {
   id: string;
@@ -36,4 +38,30 @@ export function normalizeAvatarIds(raw: unknown): string[] {
     }
   }
   return [...new Set(ids)];
+}
+
+/** Every avatar past the one you were given unlocks once, for this many gems. */
+export const AVATAR_UNLOCK_COST_GEM = 1;
+
+/** One avatar as the picker shows it: owned already, or priced. */
+export interface AvatarCatalogEntry {
+  id: string;
+  owned: boolean;
+  /** Gems to unlock; 0 when owned. */
+  priceGem: number;
+}
+
+/** `GET /player/avatars` — the whole set, what the player owns, and what they wear. */
+export interface AvatarCatalogView {
+  avatars: AvatarCatalogEntry[];
+  selectedId: string;
+  priceGem: number;
+  wallet: WalletResources;
+}
+
+/** After an unlock or a pick: the avatar now worn, everything owned, the wallet. */
+export interface AvatarChangeResult {
+  avatarId: string;
+  ownedAvatarIds: string[];
+  wallet: WalletResources;
 }

@@ -68,6 +68,8 @@ export interface UserGameState {
 /** Authenticated player profile — account info, wallet, and XP / village progression. */
 export interface PlayerProfile extends UserProfile, UserProgression {
   wallet: WalletResources;
+  /** Avatars this player may wear: the one they were given plus every unlock. */
+  ownedAvatarIds: string[];
   /** Owned enhancement potion stacks (shop inventory). */
   potions: UserPotionStack[];
   /** Timed garden potion buffs currently in effect. */
