@@ -384,9 +384,13 @@ export type PlacedPlantSlot = {
 };
 
 /**
- * Attack army power from insect deck CP shares against raid CP cap
- * (= defender spent DP, capped at COMPETITIVE_RAID_CP_CAP).
+ * Attack army power from insect deck CP shares against the raid CP cap (= defender spent DP).
  * Equal CP shares across deck; optional per-card share cap (default 30%).
+ *
+ * The cap is not clamped to COMPETITIVE_RAID_CP_CAP here: strength is a measure of the units
+ * (CP and level), and must keep growing with them the way defence does with the plants.
+ * Before 2026-10-08 it was, so a player with every plant and insect unlocked saw 1,500 attack
+ * against 8,276 defence. Modes that want the competitive ceiling clamp the cap themselves.
  */
 export function computeAttackStrength(opts: {
   raidCPCap: number;
@@ -394,10 +398,7 @@ export function computeAttackStrength(opts: {
   potionValue?: number;
   maxSharePct?: number;
 }): number {
-  const cap = Math.max(
-    0,
-    Math.min(COMPETITIVE_RAID_CP_CAP, Math.floor(Number(opts.raidCPCap) || 0)),
-  );
+  const cap = Math.max(0, Math.floor(Number(opts.raidCPCap) || 0));
   const deck = Array.isArray(opts.deck) ? opts.deck : [];
   if (deck.length === 0 || cap <= 0) {
     return Math.round(Math.max(0, Number(opts.potionValue) || 0));
