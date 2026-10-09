@@ -59,6 +59,8 @@ export interface GfxSpinePreviewInfo {
   atlasPath: string;
   texturePath: string;
   animationNames: string[];
+  /** Skin names on the skeleton (JSON skeletons; `default` first when present). */
+  skinNames?: string[];
   spineVersion?: string;
   /** Skeleton bounds from JSON (for preview aspect ratio). Binary may use defaults. */
   boundsWidth: number;

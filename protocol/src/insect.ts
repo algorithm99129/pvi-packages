@@ -233,6 +233,18 @@ export interface InsectClientAssets {
   /** Optional equipment catalog id (helmet, door, …). */
   equipmentId?: EntityId;
   /**
+   * Spine skin worn while the equipment is intact (empty = the skeleton's default skin).
+   * Authored on the insect page under Equipment → Worn look.
+   */
+  spineSkinArmed?: string;
+  /**
+   * Spine skin once the equipment is gone (e.g. `unarmored`, which blanks the shell
+   * attachments), so every clip plays with and without the shell. Empty = no skin change.
+   */
+  spineSkinUnarmed?: string;
+  /** One-shot clip when the equipment breaks (e.g. `LadybugRollerShellPop`). */
+  spineAnimEquipmentBreak?: string;
+  /**
    * Per-insect equipment AABB (cell-width fractions, local to insect root).
    * Same catalog piece can sit differently on each insect — edit on the insect page.
    * Runtime falls back to the equipment catalog default when omitted.
