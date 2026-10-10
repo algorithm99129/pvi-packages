@@ -245,12 +245,20 @@ export interface InsectClientAssets {
   /** One-shot clip when the equipment breaks (e.g. `LadybugRollerShellPop`). */
   spineAnimEquipmentBreak?: string;
   /**
+   * What plays when the equipment breaks: Unity's break arc with the catalog image (default)
+   * or the Spine clip above. `spine` falls back to the arc when no clip is authored.
+   */
+  equipmentBreakAnim?: EquipmentBreakAnim;
+  /**
    * Per-insect equipment AABB (cell-width fractions, local to insect root).
    * Same catalog piece can sit differently on each insect — edit on the insect page.
    * Runtime falls back to the equipment catalog default when omitted.
    */
   equipmentHitbox?: EquipmentHitbox;
 }
+
+/** Which break animation an insect's equipment uses. */
+export type EquipmentBreakAnim = 'unity' | 'spine';
 
 /** Persist graph and keep legacy walk/attack/die fields mirrored. */
 export function withInsectStateGraph(
