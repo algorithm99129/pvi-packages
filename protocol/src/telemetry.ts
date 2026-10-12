@@ -78,3 +78,71 @@ export interface BattleTelemetrySummaryRow {
   meanPlantsLost: number;
   meanInsectsLost: number;
 }
+
+/* ------------------------------------------------------------- shop funnel */
+
+/**
+ * Shop funnel — what happens between a player opening the shop and money arriving.
+ *
+ * Before this the only purchase facts were the orders themselves, so conversion, the drop-off
+ * between "saw the price" and "pressed Pay", and revenue per active player could not be
+ * measured. The client sends the two steps only it can see (`shop_open`, `pay_click`); the API
+ * records the rest from the order lifecycle (`order_created`, `method_chosen`, `order_paid`,
+ * `order_closed`). Measurement only: nothing here grants anything.
+ */
+export type ShopFunnelEventKind =
+  | 'shop_open'
+  | 'pay_click'
+  | 'order_created'
+  | 'method_chosen'
+  | 'order_paid'
+  | 'order_closed';
+
+/** The kinds a client may post to POST /telemetry/shop; the API writes the others itself. */
+export const SHOP_FUNNEL_CLIENT_EVENTS: readonly ShopFunnelEventKind[] = ['shop_open', 'pay_click'];
+
+export interface ShopFunnelEvent {
+  event: ShopFunnelEventKind;
+  /** The SKU in question, when there is one (not for `shop_open`). */
+  sku?: string;
+  /** Where in the UI it happened: 'dialog', 'treasure', 'website', 'pay_page'… */
+  source?: string;
+  /** 'crypto' | 'card' once known. */
+  method?: string;
+  /** 'web' | 'webgl' | 'android' | 'editor'. */
+  platform?: string;
+}
+
+/** One SKU's row in the funnel. */
+export interface ShopFunnelSkuRow {
+  sku: string;
+  payClicks: number;
+  ordersCreated: number;
+  paid: number;
+  grossCents: number;
+}
+
+/** GET /telemetry/shop/funnel — the shop funnel over a window, for Studio. */
+export interface ShopFunnelSummary {
+  days: number;
+  /** Sum of daily active users over the window (from the daily metrics), for ARPDAU. */
+  activeUserDays: number;
+  /** Distinct players who opened the shop. */
+  shopOpeners: number;
+  shopOpens: number;
+  payClicks: number;
+  ordersCreated: number;
+  /** Method picks on the pay page or at order time. */
+  methodChosen: { card: number; crypto: number };
+  paidOrders: number;
+  /** Distinct players with a paid order. */
+  payers: number;
+  grossCents: number;
+  /** payers / distinct shop openers, 0–1. */
+  openerConversion: number;
+  /** grossCents / activeUserDays, in cents; 0 when no DAU was recorded. */
+  arpdauCents: number;
+  /** grossCents / payers, in cents. */
+  arppuCents: number;
+  bySku: ShopFunnelSkuRow[];
+}

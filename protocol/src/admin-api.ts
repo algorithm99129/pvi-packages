@@ -77,6 +77,13 @@ export interface AdminShopOrdersResult {
   error?: string;
 }
 
+/** Studio → GET /telemetry/shop/funnel. */
+export interface AdminShopFunnelResult {
+  ok: boolean;
+  data?: import('./telemetry').ShopFunnelSummary;
+  error?: string;
+}
+
 export interface AdminPopularityResult {
   ok: boolean;
   rows?: CatalogUsageRow[];
