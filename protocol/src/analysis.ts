@@ -115,8 +115,11 @@ export const ANALYSIS_RESET_DOMAINS = [
   'unlocks',
   'wallet',
   'potions',
+  'treasure',
   'rewards',
   'record',
+  'team',
+  'purchases',
 ] as const;
 
 export type AnalysisResetDomain = (typeof ANALYSIS_RESET_DOMAINS)[number];
@@ -141,7 +144,22 @@ export const ANALYSIS_RESET_DOMAIN_INFO: Record<AnalysisResetDomain, { label: st
     label: 'Rewards & quests',
     detail: 'Login streak, daily reward, daily quests, achievements and event claims start over.',
   },
-  record: { label: 'Battle record', detail: 'Trophies and attack / defense wins and losses back to 0.' },
+  treasure: {
+    label: 'Treasure boxes',
+    detail: 'Empty box slots, daily budget and licence back to the start, nothing opened yet.',
+  },
+  record: {
+    label: 'Battle record',
+    detail: 'Trophies back to the starting 1,000; attack / defense wins and losses to 0.',
+  },
+  team: {
+    label: 'Team',
+    detail: 'Leaves the team (leadership passes on; an empty team is removed) and drops pending join requests.',
+  },
+  purchases: {
+    label: 'Purchases',
+    detail: 'Deletes the account\'s shop orders, so first-purchase bonuses and the one-off starter pack are available again. For test accounts only.',
+  },
 };
 
 export interface AnalysisResetRequest {
@@ -151,6 +169,38 @@ export interface AnalysisResetRequest {
   insectIds?: string[];
   /** In mission order: the first one becomes available. */
   missionIds?: string[];
+}
+
+/**
+ * Studio → reset every account to a new account's state (every domain), for the move from
+ * testing to live play. Accounts keep their email, password, display name, avatar and role.
+ */
+export interface AnalysisResetAllRequest {
+  /** Also reset AI / bot accounts (default false: they keep their seeded rosters). */
+  includeAi?: boolean;
+  /** Also reset admin accounts (default true). */
+  includeAdmins?: boolean;
+  /** Remove every team, team match, season table and battle room (default true). */
+  wipeTeams?: boolean;
+  /** Delete every shop order (test purchases) (default true). */
+  wipePurchases?: boolean;
+  /** Delete battle / shop telemetry, daily metrics and catalog usage (default false). */
+  wipeTelemetry?: boolean;
+  plantIds?: string[];
+  insectIds?: string[];
+  missionIds?: string[];
+}
+
+export interface AnalysisResetAllResult {
+  /** Accounts reset. */
+  users: number;
+  /** Accounts skipped by the filters (AI, admins). */
+  skipped: number;
+  teams: number;
+  orders: number;
+  rooms: number;
+  telemetry: number;
+  failed: string[];
 }
 
 export interface AnalysisBulkPatch {
