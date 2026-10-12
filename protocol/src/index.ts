@@ -19,6 +19,7 @@ export * from './insect';
 export * from './mission';
 export * from './reward-plan';
 export * from './shop';
+export * from './treasure';
 export * from './map';
 export * from './workspace';
 export * from './export-paths';
