@@ -92,6 +92,8 @@ export interface BattleTelemetrySummaryRow {
  */
 export type ShopFunnelEventKind =
   | 'shop_open'
+  /** A cannot-afford moment that opened the shortfall sheet (`sku` = what was wanted, `source` = where). */
+  | 'wall_hit'
   | 'pay_click'
   | 'order_created'
   | 'method_chosen'
@@ -99,7 +101,7 @@ export type ShopFunnelEventKind =
   | 'order_closed';
 
 /** The kinds a client may post to POST /telemetry/shop; the API writes the others itself. */
-export const SHOP_FUNNEL_CLIENT_EVENTS: readonly ShopFunnelEventKind[] = ['shop_open', 'pay_click'];
+export const SHOP_FUNNEL_CLIENT_EVENTS: readonly ShopFunnelEventKind[] = ['shop_open', 'wall_hit', 'pay_click'];
 
 export interface ShopFunnelEvent {
   event: ShopFunnelEventKind;
@@ -130,6 +132,10 @@ export interface ShopFunnelSummary {
   /** Distinct players who opened the shop. */
   shopOpeners: number;
   shopOpens: number;
+  /** Cannot-afford moments that showed the shortfall sheet. */
+  wallHits: number;
+  /** Pay clicks made from the shortfall sheet (source starts with "wall"). */
+  wallPayClicks: number;
   payClicks: number;
   ordersCreated: number;
   /** Method picks on the pay page or at order time. */
