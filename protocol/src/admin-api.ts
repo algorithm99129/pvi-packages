@@ -119,6 +119,8 @@ export interface AdminSendAnnouncementEmailRequest {
    * Default false — only verified accounts are emailed.
    */
   includeUnverified?: boolean;
+  /** Hero image id from POST /admin/email/ai/image. */
+  imageId?: string;
 }
 
 export interface AdminSendAnnouncementEmailResult {
@@ -126,6 +128,86 @@ export interface AdminSendAnnouncementEmailResult {
   sent: number;
   failed: number;
   skipped: number;
+  failures?: Array<{ email: string; error: string }>;
+}
+
+/** What an update email says: the admin email page composes it, by hand or with AI. */
+export interface AdminEmailContent {
+  subject: string;
+  title: string;
+  body: string;
+  ctaUrl?: string;
+  ctaLabel?: string;
+  /** Hero image id from POST /admin/email/ai/image; shown above the headline. */
+  imageId?: string;
+}
+
+/** POST /admin/email/ai/draft — OpenAI writes the email from a short brief. */
+export interface AdminEmailDraftRequest {
+  /** What the update is about, in the admin's words. The model states only these facts. */
+  brief: string;
+  tone?: 'friendly' | 'hype' | 'calm';
+  /** The fields as they stand, so "make it shorter" style briefs can rework them. */
+  current?: Partial<Pick<AdminEmailContent, 'subject' | 'title' | 'body' | 'ctaLabel'>>;
+}
+
+export interface AdminEmailDraft {
+  subject: string;
+  title: string;
+  body: string;
+  ctaLabel: string;
+  /** A prompt for POST /admin/email/ai/image that fits the email. */
+  imagePrompt: string;
+}
+
+/** POST /admin/email/ai/image — OpenAI image, stored by the API and served from /mail/images/:id. */
+export interface AdminEmailImageRequest {
+  prompt: string;
+  shape?: 'wide' | 'square';
+}
+
+export interface AdminEmailImage {
+  id: string;
+  /** Absolute URL mail clients load the image from. */
+  url: string;
+  prompt: string;
+  width: number;
+  height: number;
+}
+
+/** POST /admin/email/preview — the email exactly as a recipient gets it (the admin's name in the greeting). */
+export interface AdminEmailPreview {
+  subject: string;
+  html: string;
+  text: string;
+}
+
+/** POST /admin/email/audience — how many addresses a recipient choice reaches right now. */
+export interface AdminEmailAudienceCount {
+  recipients: number;
+  /** Suspended, unverified (unless included) or unsubscribed. */
+  skipped: number;
+  unsubscribed: number;
+}
+
+export type AdminEmailCampaignStatus = 'sending' | 'sent' | 'failed';
+
+/** POST /admin/email/campaigns starts one; GET lists them. Sends run in the background. */
+export interface AdminEmailCampaign {
+  id: string;
+  subject: string;
+  title: string;
+  audience: 'all' | 'players' | 'emails';
+  status: AdminEmailCampaignStatus;
+  requested: number;
+  sent: number;
+  failed: number;
+  skipped: number;
+  imageUrl?: string;
+  createdAt: string;
+  finishedAt?: string;
+  createdByEmail?: string;
+  error?: string;
   failures?: Array<{ email: string; error: string }>;
 }
 
