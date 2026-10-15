@@ -161,11 +161,19 @@ export interface AdminEmailDraft {
 }
 
 /** POST /admin/email/ai/image — OpenAI image, stored by the API and served from /mail/images/:id. */
+export type AdminEmailImageQuality = 'low' | 'medium' | 'high';
+
 export interface AdminEmailImageRequest {
   prompt: string;
   shape?: 'wide' | 'square';
+  /** Image quality (default medium). Higher takes longer and costs more. */
+  quality?: AdminEmailImageQuality;
 }
 
+/**
+ * A header image: generated (POST /admin/email/ai/image) or uploaded
+ * (POST /admin/email/images, multipart field `file`).
+ */
 export interface AdminEmailImage {
   id: string;
   /** Absolute URL mail clients load the image from. */
