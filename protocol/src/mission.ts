@@ -401,6 +401,13 @@ export interface MissionDefinition {
   presetDefense?: MissionDefenseSlot[];
   /** Dirty egg groups placed on the lawn at battle start (night / siege missions). */
   eggGroups?: MissionEggGroupSlot[];
+  /**
+   * Chapter gate, authored on a chapter's first mission: the stars the player must hold in the
+   * previous chapter (best stars per mission, summed) before this mission opens. Missions open
+   * one after another, so finishing a chapter already gives one star per mission; a gate only
+   * bites above that, asking for some missions to be replayed on medium or hard.
+   */
+  previousChapterStars?: number;
   waves?: MissionWave[];
   /** Starting sun for offline PVZ-style battles */
   startingSun?: number;
@@ -447,6 +454,8 @@ export interface ServerMissionExport {
   rules?: MissionRules;
   presetDefense?: MissionDefenseSlot[];
   eggGroups?: MissionEggGroupSlot[];
+  /** See MissionDefinition.previousChapterStars. */
+  previousChapterStars?: number;
   waves?: MissionWave[];
   starCriteria: MissionDefinition['starCriteria'];
   rewards: MissionDefinition['rewards'];
