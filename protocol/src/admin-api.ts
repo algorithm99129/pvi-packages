@@ -219,6 +219,55 @@ export interface AdminEmailCampaign {
   failures?: Array<{ email: string; error: string }>;
 }
 
+/** Who an automatic email comes from: the founder (feedback, replies to him) or the team. */
+export type AdminLifecycleSender = 'founder' | 'team';
+
+/** One automatic (event-based) email: what triggers it and how it is doing. */
+export interface AdminLifecycleRule {
+  key: string;
+  name: string;
+  sender: AdminLifecycleSender;
+  /** The From line, e.g. "Andrew Yuan <andrew@greenkeep.org>". */
+  from: string;
+  /** When it is sent, in words. */
+  trigger: string;
+  subject: string;
+  enabled: boolean;
+  sentTotal: number;
+  sent7d: number;
+}
+
+export interface AdminLifecycleSendRow {
+  at: string;
+  key: string;
+  email: string;
+  status: 'sent' | 'failed';
+  error?: string;
+}
+
+/** GET /admin/email/automations */
+export interface AdminLifecycleStatus {
+  /** Master switch: nothing is sent while false. */
+  enabled: boolean;
+  /** How often the API looks for people to email, in minutes. */
+  checkEveryMinutes: number;
+  rules: AdminLifecycleRule[];
+  recent: AdminLifecycleSendRow[];
+}
+
+/** PATCH /admin/email/automations */
+export interface AdminLifecycleUpdate {
+  enabled?: boolean;
+  rules?: Array<{ key: string; enabled: boolean }>;
+}
+
+/** POST /admin/email/automations/run — one pass now. */
+export interface AdminLifecycleRunResult {
+  sent: number;
+  failed: number;
+  byRule: Record<string, number>;
+}
+
 export interface AdminSendAnnouncementResult {
   ok: boolean;
   result?: AdminSendAnnouncementEmailResult;
