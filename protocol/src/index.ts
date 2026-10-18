@@ -57,3 +57,4 @@ export * from './live-events';
 export * from './strength';
 export * from './client-update';
 export * from './telemetry';
+export * from './ranking';
