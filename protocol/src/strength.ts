@@ -36,6 +36,7 @@ export type SeasonMatchResolution = 'played' | 'auto_strength' | 'bye';
 
 /** Authorable Gold Cup rules on a live_events season document. */
 export interface GoldCupConfig {
+  /** Freeze leave/roster of enrolled cup teams. Create/join for teamless players stay open. */
   lockTeams: boolean;
   pointsWin: number;
   pointsDraw: number;
@@ -58,7 +59,7 @@ export function defaultGoldCupConfig(
   const formationSize: 5 | 10 | undefined =
     rawSize === 5 || rawSize === 10 ? rawSize : undefined;
   return {
-    lockTeams: partial?.lockTeams ?? true,
+    lockTeams: partial?.lockTeams ?? false,
     pointsWin: Math.max(0, Math.floor(partial?.pointsWin ?? GOLD_CUP_POINTS_WIN)),
     pointsDraw: Math.max(0, Math.floor(partial?.pointsDraw ?? GOLD_CUP_POINTS_DRAW)),
     pointsLoss: Math.max(0, Math.floor(partial?.pointsLoss ?? GOLD_CUP_POINTS_LOSS)),

@@ -402,10 +402,10 @@ export interface MissionDefinition {
   /** Dirty egg groups placed on the lawn at battle start (night / siege missions). */
   eggGroups?: MissionEggGroupSlot[];
   /**
-   * Chapter gate, authored on a chapter's first mission: the stars the player must hold in the
-   * previous chapter (best stars per mission, summed) before this mission opens. Missions open
-   * one after another, so finishing a chapter already gives one star per mission; a gate only
-   * bites above that, asking for some missions to be replayed on medium or hard.
+   * Chapter gate on a chapter's first mission: best stars held in the previous chapter
+   * (summed) before this mission opens. Finishing every mission on Easy already yields
+   * one star each (`missionMaxStarsForDifficulty('easy')`), so the gate must not exceed
+   * that — otherwise an Easy-only player never sees the next chapter.
    */
   previousChapterStars?: number;
   waves?: MissionWave[];

@@ -44,6 +44,11 @@ export interface UserMissionProgress {
   completedAt?: string;
   /** Successful clears of this mission (used for diminishing replay XP). */
   clearCount?: number;
+  /**
+   * Present on a locked chapter-opening mission: how many previous-chapter stars
+   * the player holds vs how many the gate wants. Empty when there is no gate.
+   */
+  starGate?: { need: number; have: number; previousChapterId: string };
 }
 
 /** Request body for POST /api/player/missions/complete */
@@ -148,6 +153,21 @@ export const STARTER_GARDEN_SLOTS: ReadonlyArray<{ plantId: EntityId; lane: numb
   { plantId: 'acorn_blaster', lane: 2, column: 1 },
   { plantId: 'acorn_blaster', lane: 3, column: 1 },
 ];
+
+/**
+ * True when the plot is still the authored starter (or empty). Those plants are ours,
+ * not a player choice, so they must not count as "this account already uses Garden".
+ */
+export function isAuthoredStarterGarden(
+  plants: ReadonlyArray<{ plantId?: string; lane?: number; column?: number }> | null | undefined,
+): boolean {
+  if (!plants || plants.length === 0) return true;
+  if (plants.length > STARTER_GARDEN_SLOTS.length) return false;
+  const keys = new Set(
+    STARTER_GARDEN_SLOTS.map((s) => `${s.plantId}:${s.lane}:${s.column}`),
+  );
+  return plants.every((p) => keys.has(`${p.plantId}:${p.lane}:${p.column}`));
+}
 
 /** Insects unlocked when a new account is created (classic: basic beetle only). */
 export const STARTER_INSECT_IDS: EntityId[] = [
