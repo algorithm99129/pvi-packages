@@ -140,18 +140,14 @@ export const STARTER_PLANT_IDS: EntityId[] = [
 ];
 
 /**
- * What a new keeper finds already growing: bankers at the back and blasters in front across
- * the three middle lanes of the starter map. A bare plot read as "nothing here" and showed a
- * defence strength of 0; this is a garden to tend from the first minute, and a raider meets
- * something. Each starter plant stays within GARDEN_MAX_COPIES_PER_PLANT.
+ * What a new keeper finds already growing: one banker and one blaster on the middle lane.
+ * A bare plot read as "nothing here" and showed a defence strength of 0; this is a garden
+ * to tend from the first minute, and a raider meets something. Copies stay well under
+ * GARDEN_MAX_COPIES_PER_PLANT so the first plant action is not already at the cap.
  */
 export const STARTER_GARDEN_SLOTS: ReadonlyArray<{ plantId: EntityId; lane: number; column: number }> = [
-  { plantId: 'sunleaf_banker', lane: 1, column: 0 },
   { plantId: 'sunleaf_banker', lane: 2, column: 0 },
-  { plantId: 'sunleaf_banker', lane: 3, column: 0 },
-  { plantId: 'acorn_blaster', lane: 1, column: 1 },
   { plantId: 'acorn_blaster', lane: 2, column: 1 },
-  { plantId: 'acorn_blaster', lane: 3, column: 1 },
 ];
 
 /**

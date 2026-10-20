@@ -23,7 +23,7 @@ export const TEAM_RANDOM_NAME_MAX_COUNT = 10;
  */
 export const TEAM_CREATE_COST_GEM_ID = 'TEAM_CREATE_COST_GEM';
 /** Fallback when the logic constant is missing or invalid. */
-export const TEAM_CREATE_COST_GEM_DEFAULT = 500;
+export const TEAM_CREATE_COST_GEM_DEFAULT = 200;
 
 export type TeamMemberRole = 'leader' | 'officer' | 'member';
 export type TeamJoinType = 'open' | 'invite';
@@ -126,10 +126,15 @@ export interface JoinTeamRequest {
   teamId?: EntityId;
 }
 
-/** Response from POST /teams/:id/join — creates a pending request (no membership yet). */
+/**
+ * Response from POST /teams/:id/join.
+ * Open teams join immediately (`pending: false`). Invite teams create a request
+ * (`pending: true` plus `requestId` for the leader to approve).
+ */
 export interface RequestJoinResult {
-  pending: true;
+  pending: boolean;
   teamId: EntityId;
+  requestId?: EntityId;
 }
 
 export interface UpdateTeamRequest {

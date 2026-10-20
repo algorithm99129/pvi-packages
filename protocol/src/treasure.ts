@@ -841,7 +841,10 @@ export interface TreasureGrant {
 
 /** POST /treasure/buy */
 export interface TreasureBuyRequest {
-  tierId: string;
+  /** Catalog tier id from GET /treasure (e.g. `seed_pouch`, `wooden_box`). */
+  tierId?: string;
+  /** Alias for {@link tierId}. */
+  boxId?: string;
 }
 
 export interface TreasureBuyResult {
