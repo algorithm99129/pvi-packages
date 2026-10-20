@@ -48,14 +48,14 @@ export interface HubUnlockProgress {
 }
 
 /**
- * The shipped order: Missions is open from the first minute; each next village opens off the
- * chapter 1 mission that first gives the player something to do there.
+ * The shipped order: Missions is open from the first minute; Plants after 1-01, Garden after
+ * 1-03, Insects after 1-04 (the first raid is next). Battle and Team stay later.
  */
 export const DEFAULT_HUB_UNLOCK_TABLE: HubUnlockTable = {
   features: [
     { id: 'missions', minUserLevel: 1, missionId: '', match: 'all' },
     { id: 'plants', minUserLevel: 1, missionId: 'chapter_1_01', match: 'all' },
-    { id: 'insects', minUserLevel: 1, missionId: 'chapter_1_i01', match: 'all' },
+    { id: 'insects', minUserLevel: 1, missionId: 'chapter_1_04', match: 'all' },
     { id: 'garden', minUserLevel: 1, missionId: 'chapter_1_03', match: 'all' },
     { id: 'battle', minUserLevel: 4, missionId: 'chapter_1_05', match: 'any' },
     { id: 'team', minUserLevel: 6, missionId: 'chapter_1_10', match: 'any' },
