@@ -140,6 +140,34 @@ export function battlePotionSlotCountForRole(role: BattlePotionRole): number {
     : DEFENDER_BATTLE_POTION_SLOT_COUNT;
 }
 
+/**
+ * The battle loadouts a potion works in. Defending you field plants and face insects; attacking
+ * you field insects and face plants. So a potion for your plants (or against insects) is a
+ * defender potion, one for your insects (or against plants) an attacker potion, and one that
+ * hits or helps any unit fits both. Garden potions fit neither.
+ */
+export function battlePotionRoles(
+  potion: Pick<PotionDefinition, 'category' | 'effect'> | null | undefined,
+): BattlePotionRole[] {
+  if (!potion || potion.category !== 'battle') return [];
+  const effect = potion.effect;
+  const mode = effect?.targetMode ?? '';
+  const side =
+    effect?.battleSide
+    ?? (mode.startsWith('enemy') || effect?.kind === 'freeze' || effect?.kind === 'poison' ? 'enemy' : 'ally');
+  const unit = effect?.battleUnitKind ?? 'any';
+  if (unit === 'plant') return [side === 'ally' ? 'defender' : 'attacker'];
+  if (unit === 'insect') return [side === 'ally' ? 'attacker' : 'defender'];
+  return ['defender', 'attacker'];
+}
+
+export function battlePotionFitsRole(
+  potion: Pick<PotionDefinition, 'category' | 'effect'> | null | undefined,
+  role: BattlePotionRole,
+): boolean {
+  return battlePotionRoles(potion).includes(role);
+}
+
 const PLANT_ROLES: ReadonlyArray<PlantRole> = [
   'shooter',
   'splash',
