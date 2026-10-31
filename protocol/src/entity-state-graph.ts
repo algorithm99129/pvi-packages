@@ -1943,7 +1943,7 @@ export const STATE_ACTION_PARAM_FIELDS: ReadonlyArray<{
     key: 'duration',
     label: 'Impact mark (seconds)',
     hint:
-      'After a successful shove, mark that insect so nearby shooters prioritize it and deal +15% damage (Chestnut Cannon). None / 0 = no mark.',
+      'After a successful shove, mark that insect so nearby shooters prioritize it and deal +15% damage. None / 0 = no mark.',
     defaultAttribute: 'extra.impactMarkSeconds',
   },
   {
@@ -2496,7 +2496,7 @@ export const STATE_ACTION_OPTIONS: ReadonlyArray<{
     type: 'knockback_insects',
     label: 'Knockback insects',
     hint:
-      'Push insects in this lane back a set number of cells and deal damage. Optional impact mark makes shooters prioritize the shoved target (Chestnut Cannon).',
+      'Push insects in this lane back a set number of cells and deal damage. Optional impact mark makes shooters prioritize the shoved target.',
     kind: 'plant',
   },
   {

@@ -584,7 +584,7 @@ export function plantIsGardenItemBox(server: { gardenItemBox?: boolean | null } 
 /**
  * May a shell (Bubble Aloe) cover this plant? Authored per plant in Studio
  * (`server.canBeCovered`, default yes). A shell is one cell wide, so a multi-cell plant
- * (Chestnut Cannon) is never covered, and neither is a pad, a shell or a ground hazard.
+ * is never covered, and neither is a pad, a shell or a ground hazard.
  */
 export function plantCanBeCovered(server: PlantStackingFields | null | undefined): boolean {
   if (server?.stackRole) return false;
